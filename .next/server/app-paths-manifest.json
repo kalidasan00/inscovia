@@ -1,0 +1,9 @@
+{
+  "/not-found": "app/not-found.js",
+  "/institute/dashboard/edit/page": "app/institute/dashboard/edit/page.js",
+  "/institute/dashboard/page": "app/institute/dashboard/page.js",
+  "/institute/dashboard/courses/page": "app/institute/dashboard/courses/page.js",
+  "/institute/register/page": "app/institute/register/page.js",
+  "/centers/[id]/page": "app/centers/[id]/page.js",
+  "/centers/page": "app/centers/page.js"
+}
