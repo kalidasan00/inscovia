@@ -1,10 +1,9 @@
-/** next.config.js */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  images: {
-    // allow local images from /public
-    unoptimized: true
-  }
+  output: 'standalone', // required for Vercel server functions
+  experimental: {
+    serverActions: true,
+  },
 };
 
 module.exports = nextConfig;
