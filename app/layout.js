@@ -1,5 +1,6 @@
 // app/layout.js
 import "./globals.css";
+import BottomNav from "../components/BottomNav";
 
 export const metadata = {
   title: "Inscovia — Coaching & Training Centers",
@@ -11,6 +12,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="bg-gray-50 text-gray-900">
         {children}
+        <BottomNav />
       </body>
     </html>
   );

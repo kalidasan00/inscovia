@@ -6,7 +6,8 @@
     "location": "Bangalore",
     "rating": 4.7,
     "courses": ["Python", "Full Stack Development", "Data Science"],
-    "image": "/center-images/techwave.jpg",
+    "image": "https://images.unsplash.com/photo-1537432376769-00a2e169f86e",
+    "logo": "https://cdn-icons-png.flaticon.com/512/2721/2721296.png",
     "description": "Industry-oriented IT training with hands-on projects and placement support."
   },
   {
@@ -16,7 +17,8 @@
     "location": "Chennai",
     "rating": 4.5,
     "courses": ["Digital Marketing", "Graphic Design", "Communication Skills"],
-    "image": "/center-images/skillbridge.jpg",
+    "image": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
+    "logo": "https://cdn-icons-png.flaticon.com/512/2554/2554183.png",
     "description": "Creative and professional skills for non-technical careers."
   },
   {
@@ -26,7 +28,8 @@
     "location": "Hyderabad",
     "rating": 4.8,
     "courses": ["Java", "Spring Boot", "Cloud Computing"],
-    "image": "/center-images/codemaster.jpg",
+    "image": "https://images.unsplash.com/photo-1518770660439-4636190af475",
+    "logo": "https://cdn-icons-png.flaticon.com/512/1822/1822899.png",
     "description": "Advanced corporate-style training focused on enterprise development."
   },
   {
@@ -36,7 +39,8 @@
     "location": "Mumbai",
     "rating": 4.4,
     "courses": ["Finance", "Tally ERP", "Stock Market Basics"],
-    "image": "/center-images/brightfuture.jpg",
+    "image": "https://images.unsplash.com/photo-1581092334360-270dc1418dee",
+    "logo": "https://cdn-icons-png.flaticon.com/512/1907/1907808.png",
     "description": "Financial & business skills to kickstart careers in finance."
   },
   {
@@ -46,7 +50,8 @@
     "location": "Delhi",
     "rating": 4.9,
     "courses": ["Machine Learning", "AI Fundamentals", "Big Data"],
-    "image": "/center-images/datalabs.jpg",
+    "image": "https://images.unsplash.com/photo-1555949963-aa79dcee981c",
+    "logo": "https://cdn-icons-png.flaticon.com/512/1087/1087840.png",
     "description": "Premium institute offering advanced AI and ML programs."
   },
   {
@@ -56,7 +61,8 @@
     "location": "Pune",
     "rating": 4.6,
     "courses": ["UI/UX", "Adobe Suite", "Illustration"],
-    "image": "/center-images/designhive.jpg",
+    "image": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
+    "logo": "https://cdn-icons-png.flaticon.com/512/1829/1829580.png",
     "description": "Design-focused bootcamps for creative professionals."
   },
   {
@@ -66,7 +72,8 @@
     "location": "Bangalore",
     "rating": 4.7,
     "courses": ["AWS", "Azure", "DevOps"],
-    "image": "/center-images/cloudsprint.jpg",
+    "image": "https://images.unsplash.com/photo-1555949963-aa79dcee981c",
+    "logo": "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
     "description": "Short, practical DevOps and Cloud certification courses."
   },
   {
@@ -76,7 +83,8 @@
     "location": "Kochi",
     "rating": 4.3,
     "courses": ["Spoken English", "Interview Skills", "Personality Development"],
-    "image": "/center-images/speakwell.jpg",
+    "image": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d",
+    "logo": "https://cdn-icons-png.flaticon.com/512/1995/1995574.png",
     "description": "Communication skills and interview training for freshers."
   },
   {
@@ -86,7 +94,8 @@
     "location": "Hyderabad",
     "rating": 4.9,
     "courses": ["Deep Learning", "NLP", "Computer Vision"],
-    "image": "/center-images/aiforge.jpg",
+    "image": "https://images.unsplash.com/photo-1518770660439-4636190af475",
+    "logo": "https://cdn-icons-png.flaticon.com/512/2103/2103847.png",
     "description": "Research-oriented AI courses with project mentorship."
   },
   {
@@ -96,107 +105,8 @@
     "location": "Delhi",
     "rating": 4.2,
     "courses": ["Banking Exams", "Competitive Exams Coaching"],
-    "image": "/center-images/careerplus.jpg",
+    "image": "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b",
+    "logo": "https://cdn-icons-png.flaticon.com/512/3135/3135692.png",
     "description": "Trusted institute for government & competitive exam preparation."
-  },
-  {
-    "id": 11,
-    "name": "MobileDev Camp",
-    "type": "IT",
-    "location": "Chennai",
-    "rating": 4.5,
-    "courses": ["Android", "iOS", "React Native"],
-    "image": "/center-images/mobiledev.jpg",
-    "description": "Practical mobile app development courses and portfolio projects."
-  },
-  {
-    "id": 12,
-    "name": "SkillUp Academy",
-    "type": "Non-IT",
-    "location": "Ahmedabad",
-    "rating": 4.1,
-    "courses": ["Retail Management", "Customer Service"],
-    "image": "/center-images/skillup.jpg",
-    "description": "Industry-ready non-IT vocational programs."
-  },
-  {
-    "id": 13,
-    "name": "FullStack Foundry",
-    "type": "IT",
-    "location": "Mumbai",
-    "rating": 4.6,
-    "courses": ["Frontend", "Backend", "MERN Stack"],
-    "image": "/center-images/fullstack.jpg",
-    "description": "End-to-end web development bootcamps with hiring help."
-  },
-  {
-    "id": 14,
-    "name": "CulinaryCraft Institute",
-    "type": "Non-IT",
-    "location": "Kochi",
-    "rating": 4.7,
-    "courses": ["Culinary Arts", "Baking & Pastry"],
-    "image": "/center-images/culinarycraft.jpg",
-    "description": "Hands-on culinary training from experienced chefs."
-  },
-  {
-    "id": 15,
-    "name": "NetworkGurus",
-    "type": "IT",
-    "location": "Pune",
-    "rating": 4.4,
-    "courses": ["CCNA", "Network Security"],
-    "image": "/center-images/networkgurus.jpg",
-    "description": "Practical networking and security programs."
-  },
-  {
-    "id": 16,
-    "name": "BizSoft Trainings",
-    "type": "Non-IT",
-    "location": "Bangalore",
-    "rating": 4.0,
-    "courses": ["MS Office", "Tally"],
-    "image": "/center-images/bizsoft.jpg",
-    "description": "Basic office-skills vocational training."
-  },
-  {
-    "id": 17,
-    "name": "RoboticsLab",
-    "type": "IT",
-    "location": "Delhi",
-    "rating": 4.8,
-    "courses": ["Robotics", "Embedded Systems"],
-    "image": "/center-images/roboticslab.jpg",
-    "description": "Project-based robotics and embedded systems training."
-  },
-  {
-    "id": 18,
-    "name": "MediaMinds Institute",
-    "type": "Non-IT",
-    "location": "Kolkata",
-    "rating": 4.5,
-    "courses": ["Video Editing", "Photography"],
-    "image": "/center-images/mediaminds.jpg",
-    "description": "Creative media courses with portfolio projects."
-  },
-  {
-    "id": 19,
-    "name": "QuantEdge Academy",
-    "type": "IT",
-    "location": "Mumbai",
-    "rating": 4.6,
-    "courses": ["Algo Trading", "Quantitative Finance"],
-    "image": "/center-images/quantedge.jpg",
-    "description": "Technical finance courses bridging quant & engineering."
-  },
-  {
-    "id": 20,
-    "name": "SoftSkills Pro",
-    "type": "Non-IT",
-    "location": "Bangalore",
-    "rating": 4.3,
-    "courses": ["Leadership", "Team Management"],
-    "image": "/center-images/softskills.jpg",
-    "description": "Professional development and leadership training programs."
   }
 ]
