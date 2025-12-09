@@ -1,0 +1,82 @@
+// backend/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Institute User for Authentication
+model InstituteUser {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  password String   // Hashed password
+
+  // Institute Details
+  instituteName String
+  phone         String
+  type          String   // IT, Non-IT, etc.
+
+  // Location
+  state    String
+  district String
+  city     String
+  location String
+
+  // Status
+  isVerified Boolean  @default(false)
+  isActive   Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation to centers they own
+  centers Center[]
+
+  @@index([email])
+}
+
+model Center {
+  id   String @id @default(cuid())
+  name String
+  type String
+
+  // Location fields (hierarchical)
+  state    String
+  district String
+  city     String
+  location String // Full address/area
+
+  rating  Float    @default(0)
+  courses String[] // Array of course names
+
+  // Images
+  image   String? // Cover image
+  logo    String?
+  gallery String[] @default([]) // Array of image URLs
+
+  description String @db.Text
+
+  // Contact Information
+  website  String?
+  whatsapp String? // Phone number for WhatsApp
+  phone    String?
+  email    String?
+
+  // Social Media (optional)
+  facebook  String?
+  instagram String?
+  linkedin  String?
+
+  // Admin/Owner - Now properly linked
+  userId String?
+  owner  InstituteUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([state, district, city])
+  @@index([userId])
+}
