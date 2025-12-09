@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "name": "TechWave IT Training Institute",
+    "email": "admin@techwave.com",
+    "location": "Bangalore",
+    "description": "Industry IT training with hands-on labs.",
+    "image": "/center-images/techwave.jpg",
+    "courses": ["Python", "Full Stack Development", "Data Science"]
+  }
+]
