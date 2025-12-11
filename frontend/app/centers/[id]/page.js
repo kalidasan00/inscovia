@@ -13,7 +13,8 @@ export default function CenterDetails() {
   useEffect(() => {
     async function loadCenter() {
       try {
-        const res = await fetch(`http://localhost:5001/api/centers/${params.id}`);
+        const res = await fetch(const res = await fetch(`https://inscovia.onrender.com/api/centers/${id}`);
+);
         if (res.ok) {
           const data = await res.json();
           setCenter(data);

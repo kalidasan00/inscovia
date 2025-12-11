@@ -19,7 +19,7 @@ export default function Centers() {
   useEffect(() => {
     async function loadCenters() {
       try {
-        const res = await fetch("http://localhost:5001/api/centers");  // Changed to 5001
+        const res = await fetch("https://inscovia.onrender.com/api/centers");  // Changed to 5001
         const data = await res.json();
         setCenters(data.centers || []);
       } catch (err) {
