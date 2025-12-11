@@ -15,19 +15,33 @@ export default function Centers() {
 
   const searchParams = useSearchParams();
 
-  // 🔥 Fetch from backend
+  // ⭐ Use environment variable (works on Vercel + Mobile)
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
     async function loadCenters() {
       try {
-        const res = await fetch("https://inscovia.onrender.com/api/centers");  // Changed to 5001
+        const res = await fetch(`${API_URL}/centers`, {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          console.warn("Backend not awake, retrying...");
+          setTimeout(loadCenters, 2000);
+          return;
+        }
+
         const data = await res.json();
         setCenters(data.centers || []);
+
       } catch (err) {
-        console.error("Error loading centers:", err);
+        console.error("Error reaching backend, retrying...", err);
+        setTimeout(loadCenters, 2000);
       } finally {
         setLoading(false);
       }
     }
+
     loadCenters();
   }, []);
 
@@ -36,12 +50,10 @@ export default function Centers() {
   const location = searchParams.get("location") || "";
   const q = searchParams.get("q") || "";
 
-  // Unique locations for filter sidebar
   const uniqueLocations = Array.from(
     new Set(centers.map((c) => c.location))
   ).sort();
 
-  // Apply filters
   let filtered = centers;
   if (type) filtered = filtered.filter((c) => c.type.toLowerCase() === type.toLowerCase());
   if (location) filtered = filtered.filter((c) => c.location.toLowerCase() === location.toLowerCase());
@@ -83,7 +95,6 @@ export default function Centers() {
         {/* Loading State */}
         {loading && <p className="text-gray-600 text-sm">Loading centers...</p>}
 
-        {/* Results Count */}
         {!loading && (
           <p className="text-sm text-gray-600 mb-4">
             {filtered.length} {filtered.length === 1 ? "center" : "centers"} found
