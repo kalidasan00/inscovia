@@ -14,7 +14,7 @@ export default function Home() {
         {/* Hero Section with Search */}
         <HeroSection />
 
-        {/* Category Cards */}
+        {/* ------------------------ CATEGORY CARDS ------------------------ */}
         <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
             Explore by Category
@@ -77,7 +77,47 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features Section */}
+        {/* ------------------------ FEATURED TRAINING CENTERS ------------------------ */}
+        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
+            ⭐ Featured Training Centers
+          </h2>
+
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="min-w-[260px] bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all"
+              >
+                <div className="w-full h-32 bg-gray-100 rounded-lg mb-3"></div>
+                <h3 className="font-semibold text-sm text-gray-900">Featured Center {i}</h3>
+                <p className="text-xs text-gray-600">City • Popular Courses</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ------------------------ TOP COACHING CENTERS ------------------------ */}
+        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-2">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
+            🔥 Top Coaching Centers
+          </h2>
+
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="min-w-[260px] bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all"
+              >
+                <div className="w-full h-32 bg-gray-100 rounded-lg mb-3"></div>
+                <h3 className="font-semibold text-sm text-gray-900">Top Center {i}</h3>
+                <p className="text-xs text-gray-600">Best Rated • Trending Courses</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ------------------------ FEATURES SECTION ------------------------ */}
         <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-5">

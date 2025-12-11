@@ -1,63 +1,43 @@
 // app/institute/dashboard/edit/page.js
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
-import { useRouter } from "next/navigation";
 
-// Indian States and Districts
-const LOCATION_DATA = {
-  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Tirupati"],
-  "Delhi": ["Central Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi", "New Delhi"],
-  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar"],
-  "Karnataka": ["Bengaluru Urban", "Bengaluru Rural", "Mysuru", "Mangaluru", "Hubli-Dharwad", "Belagavi"],
-  "Kerala": ["Thiruvananthapuram", "Kollam", "Kottayam", "Ernakulam", "Thrissur", "Kozhikode", "Kannur", "Kasaragod"],
-  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik", "Aurangabad", "Solapur", "Kolhapur"],
-  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Tirunelveli"],
-  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Khammam", "Karimnagar"],
-  "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri"],
-};
-
-export default function EditInstitute() {
+export default function EditProfile() {
   const router = useRouter();
-  const coverInputRef = useRef(null);
-  const logoInputRef = useRef(null);
-  const galleryInputRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [centerId, setCenterId] = useState(null);
 
-  const [form, setForm] = useState({
-    name: "",
-    type: "Training Institute",
-    state: "",
-    district: "",
+  const [formData, setFormData] = useState({
+    instituteName: "",
+    email: "",
+    phone: "",
     city: "",
+    district: "",
+    state: "",
+    type: "",
     location: "",
     description: "",
-    image: "",
-    logo: "",
-    gallery: [],
     website: "",
     whatsapp: "",
-    phone: "",
-    email: "",
     facebook: "",
     instagram: "",
     linkedin: "",
-    courses: []
   });
 
-  const [centerId, setCenterId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
-  const [newCourse, setNewCourse] = useState("");
+  const [logoFile, setLogoFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
 
   useEffect(() => {
-    loadCenterData();
+    fetchInstituteData();
   }, []);
 
-  const loadCenterData = async () => {
+  const fetchInstituteData = async () => {
     const token = localStorage.getItem("instituteToken");
     if (!token) {
       router.push("/institute/login");
@@ -66,124 +46,183 @@ export default function EditInstitute() {
 
     try {
       const response = await fetch("http://localhost:5001/api/auth/me", {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.ok) throw new Error("Failed to fetch data");
 
       const data = await response.json();
+      const user = data.user;
       const center = data.center;
+
+      setFormData({
+        instituteName: user.instituteName || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        city: user.city || "",
+        district: user.district || "",
+        state: user.state || "",
+        type: user.type || "",
+        location: user.location || "",
+        description: center?.description || "",
+        website: center?.website || "",
+        whatsapp: center?.whatsapp || "",
+        facebook: center?.facebook || "",
+        instagram: center?.instagram || "",
+        linkedin: center?.linkedin || "",
+      });
 
       if (center) {
         setCenterId(center.id);
-        setForm({
-          name: center.name || "",
-          type: center.type || "Training Institute",
-          state: center.state || "",
-          district: center.district || "",
-          city: center.city || "",
-          location: center.location || "",
-          description: center.description || "",
-          image: center.image || "",
-          logo: center.logo || "",
-          gallery: center.gallery || [],
-          website: center.website || "",
-          whatsapp: center.whatsapp || "",
-          phone: center.phone || "",
-          email: center.email || "",
-          facebook: center.facebook || "",
-          instagram: center.instagram || "",
-          linkedin: center.linkedin || "",
-          courses: center.courses || []
-        });
+        setLogoPreview(center.logo);
+        setCoverPreview(center.image);
       }
     } catch (error) {
       console.error("Error:", error);
-      setMessage({ type: "error", text: "Failed to load data" });
+      alert("Failed to load data. Please login again.");
+      router.push("/institute/login");
     } finally {
       setLoading(false);
     }
   };
 
-  const update = (key, value) => {
-    setForm({ ...form, [key]: value });
-    if (key === "state") {
-      setForm({ ...form, state: value, district: "", city: "" });
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddCourse = () => {
-    if (newCourse.trim() && !form.courses.includes(newCourse.trim())) {
-      setForm({ ...form, courses: [...form.courses, newCourse.trim()] });
-      setNewCourse("");
-    }
-  };
-
-  const handleRemoveCourse = (index) => {
-    setForm({ ...form, courses: form.courses.filter((_, i) => i !== index) });
-  };
-
-  const uploadFile = async (file, type) => {
-    const token = localStorage.getItem("instituteToken");
-    setUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append(type, file);
-
-      const endpoint = type === "logo" ? "upload-logo" : "upload-cover";
-      const response = await fetch(`http://localhost:5001/api/centers/${centerId}/${endpoint}`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` },
-        body: formData
-      });
-
-      if (!response.ok) throw new Error("Upload failed");
-
-      const data = await response.json();
-      const urlKey = type === "logo" ? "logoUrl" : "imageUrl";
-      setForm({ ...form, [type === "logo" ? "logo" : "image"]: data[urlKey] });
-      setMessage({ type: "success", text: `${type === "logo" ? "Logo" : "Cover"} uploaded successfully!` });
-    } catch (error) {
-      setMessage({ type: "error", text: `Failed to upload ${type}` });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const uploadLogo = (e) => {
+  const handleLogoChange = (e) => {
     const file = e.target.files[0];
-    if (file) uploadFile(file, "logo");
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size should be less than 5MB");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setLogoPreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
-  const uploadCover = (e) => {
+  const handleCoverChange = (e) => {
     const file = e.target.files[0];
-    if (file) uploadFile(file, "image");
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size should be less than 5MB");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    setCoverFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setCoverPreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
-  const save = async (e) => {
+  const uploadLogo = async (token) => {
+    if (!logoFile || !centerId) return null;
+
+    const formData = new FormData();
+    formData.append("logo", logoFile);
+
+    const response = await fetch(`http://localhost:5001/api/centers/${centerId}/upload-logo`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!response.ok) throw new Error("Logo upload failed");
+    const data = await response.json();
+    return data.logoUrl;
+  };
+
+  const uploadCover = async (token) => {
+    if (!coverFile || !centerId) return null;
+
+    const formData = new FormData();
+    formData.append("image", coverFile);
+
+    const response = await fetch(`http://localhost:5001/api/centers/${centerId}/upload-cover`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!response.ok) throw new Error("Cover upload failed");
+    const data = await response.json();
+    return data.imageUrl;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage({ type: "", text: "" });
 
     const token = localStorage.getItem("instituteToken");
+    if (!token) {
+      router.push("/institute/login");
+      return;
+    }
 
     try {
-      const response = await fetch(`http://localhost:5001/api/centers/${centerId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(form)
-      });
+      // Upload images first if selected
+      if (logoFile) {
+        await uploadLogo(token);
+      }
+      if (coverFile) {
+        await uploadCover(token);
+      }
 
-      if (!response.ok) throw new Error("Failed to save");
+      // Update center data
+      if (centerId) {
+        const centerUpdateData = {
+          name: formData.instituteName,
+          type: formData.type,
+          state: formData.state,
+          district: formData.district,
+          city: formData.city,
+          location: formData.location,
+          description: formData.description,
+          website: formData.website,
+          whatsapp: formData.whatsapp,
+          phone: formData.phone,
+          email: formData.email,
+          facebook: formData.facebook,
+          instagram: formData.instagram,
+          linkedin: formData.linkedin,
+        };
 
-      setMessage({ type: "success", text: "✅ Profile updated successfully!" });
-      setTimeout(() => router.push("/institute/dashboard"), 2000);
+        const response = await fetch(`http://localhost:5001/api/centers/${centerId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(centerUpdateData)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update profile");
+        }
+      }
+
+      alert("Profile updated successfully!");
+      router.push("/institute/dashboard");
     } catch (error) {
-      setMessage({ type: "error", text: "❌ Failed to save changes. Please try again." });
+      console.error("Error:", error);
+      alert(error.message || "Failed to update profile. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -193,7 +232,7 @@ export default function EditInstitute() {
     return (
       <>
         <Navbar />
-        <main className="max-w-4xl mx-auto px-4 py-10">
+        <main className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
           </div>
@@ -207,333 +246,318 @@ export default function EditInstitute() {
     <>
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-10 pb-24 md:pb-10">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Edit Profile</h1>
-            <p className="text-sm text-gray-600 mt-1">Update your institute information</p>
-          </div>
-          <button
-            onClick={() => router.push("/institute/dashboard")}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
-          >
-            Cancel
-          </button>
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
+          <p className="text-gray-600 mt-1">Update your institute information</p>
         </div>
 
-        {/* Message */}
-        {message.text && (
-          <div className={`mb-6 p-4 rounded-lg ${message.type === "success" ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"}`}>
-            {message.text}
-          </div>
-        )}
-
-        <form onSubmit={save} className="space-y-6">
-          {/* Cover Image */}
-          <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <h2 className="text-base sm:text-lg font-semibold mb-4">Cover Image</h2>
-            <div
-              onClick={() => !uploading && coverInputRef.current?.click()}
-              className="relative h-32 sm:h-48 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg overflow-hidden cursor-pointer border-2 border-dashed border-gray-300 hover:border-accent"
-            >
-              {form.image ? (
-                <img src={form.image} alt="Cover" className="w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-                  <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm">{uploading ? "Uploading..." : "Click to upload cover"}</p>
-                </div>
-              )}
-            </div>
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/*"
-              onChange={uploadCover}
-              disabled={uploading}
-              className="hidden"
-            />
-          </section>
-
-          {/* Logo */}
-          <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <h2 className="text-base sm:text-lg font-semibold mb-4">Logo</h2>
-            <div className="flex items-center gap-4 sm:gap-6">
-              <div
-                onClick={() => !uploading && logoInputRef.current?.click()}
-                className="w-24 h-24 sm:w-32 sm:h-32 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-accent overflow-hidden"
-              >
-                {form.logo ? (
-                  <img src={form.logo} alt="Logo" className="w-full h-full object-cover" />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Cover Image Section */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-lg font-semibold mb-4">Cover Image</h2>
+            <div className="space-y-4">
+              <div className="relative h-48 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg overflow-hidden">
+                {coverPreview ? (
+                  <img
+                    src={coverPreview}
+                    alt="Cover"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <div className="text-center text-gray-500">
-                    <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <p className="text-xs">{uploading ? "..." : "Logo"}</p>
                   </div>
                 )}
               </div>
               <div>
-                <p className="text-sm text-gray-600">Upload your logo</p>
-                <p className="text-xs text-gray-400 mt-1">Square recommended</p>
-              </div>
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={uploadLogo}
-                disabled={uploading}
-                className="hidden"
-              />
-            </div>
-          </section>
-
-          {/* Basic Info */}
-          <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <h2 className="text-base sm:text-lg font-semibold mb-4">Basic Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Institute Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Cover Image
+                </label>
                 <input
-                  type="text"
-                  required
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20 focus:border-accent"
-                  value={form.name}
-                  onChange={(e) => update("name", e.target.value)}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Type *</label>
-                <select
-                  required
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.type}
-                  onChange={(e) => update("type", e.target.value)}
-                >
-                  <option value="Training Institute">Training Institute</option>
-                  <option value="Skill Development">Skill Development</option>
-                  <option value="Coaching Center">Coaching Center</option>
-                  <option value="Language Institute">Language Institute</option>
-                  <option value="Professional Training">Professional Training</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Description *</label>
-                <textarea
-                  required
-                  rows="4"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20 resize-none"
-                  value={form.description}
-                  onChange={(e) => update("description", e.target.value)}
-                  placeholder="Describe your institute..."
-                />
+                <p className="text-xs text-gray-500 mt-1">Recommended: 1200x400px, Max 5MB</p>
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Location */}
-          <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <h2 className="text-base sm:text-lg font-semibold mb-4">Location</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">State *</label>
-                <select
-                  required
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.state}
-                  onChange={(e) => update("state", e.target.value)}
-                >
-                  <option value="">Select State</option>
-                  {Object.keys(LOCATION_DATA).sort().map((state) => (
-                    <option key={state} value={state}>{state}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">District *</label>
-                <select
-                  required
-                  disabled={!form.state}
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20 disabled:bg-gray-100"
-                  value={form.district}
-                  onChange={(e) => update("district", e.target.value)}
-                >
-                  <option value="">Select District</option>
-                  {form.state && LOCATION_DATA[form.state]?.map((district) => (
-                    <option key={district} value={district}>{district}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">City *</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.city}
-                  onChange={(e) => update("city", e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Address *</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.location}
-                  onChange={(e) => update("location", e.target.value)}
-                  placeholder="MG Road, Near Mall"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Courses */}
-          <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <h2 className="text-base sm:text-lg font-semibold mb-4">Courses</h2>
-            <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newCourse}
-                onChange={(e) => setNewCourse(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCourse())}
-                placeholder="Add course (e.g., Python)"
-                className="flex-1 border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-              />
-              <button
-                type="button"
-                onClick={handleAddCourse}
-                className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90"
-              >
-                Add
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {form.courses.map((course, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-sm">
-                  <span>{course}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveCourse(idx)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          {/* Logo Section */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-lg font-semibold mb-4">Logo</h2>
+            <div className="flex items-start gap-6">
+              <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border-2 border-gray-200">
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                  </button>
-                </div>
-              ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Logo
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90"
+                />
+                <p className="text-xs text-gray-500 mt-1">Recommended: Square image, Max 5MB</p>
+              </div>
             </div>
-          </section>
+          </div>
 
-          {/* Contact */}
-          <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <h2 className="text-base sm:text-lg font-semibold mb-4">Contact</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Basic Information */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Institute Name <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="tel"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.phone}
-                  onChange={(e) => update("phone", e.target.value)}
+                  type="text"
+                  name="instituteName"
+                  value={formData.instituteName}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium mb-2">WhatsApp</label>
-                <input
-                  type="tel"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.whatsapp}
-                  onChange={(e) => update("whatsapp", e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="email"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.email}
-                  onChange={(e) => update("email", e.target.value)}
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                />
+                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                  pattern="[6-9][0-9]{9}"
+                  placeholder="10-digit mobile number"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium mb-2">Website</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="type"
+                  value={formData.type}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  <option value="">Select Type</option>
+                  <option value="Coaching Center">Coaching Center</option>
+                  <option value="Training Institute">Training Institute</option>
+                  <option value="Skill Development">Skill Development</option>
+                  <option value="Language Institute">Language Institute</option>
+                  <option value="Computer Institute">Computer Institute</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="url"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.website}
-                  onChange={(e) => update("website", e.target.value)}
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  District <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="district"
+                  value={formData.district}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Location/Area <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="e.g., MG Road, Gandhi Nagar"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows="4"
+                  placeholder="Tell students about your institute, courses, facilities, achievements..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Social Media */}
-          <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border">
-            <h2 className="text-base sm:text-lg font-semibold mb-4">Social Media</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Contact & Social */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-lg font-semibold mb-4">Contact & Social Media</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Facebook</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Website
+                </label>
                 <input
                   type="url"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.facebook}
-                  onChange={(e) => update("facebook", e.target.value)}
-                  placeholder="https://facebook.com/..."
+                  name="website"
+                  value={formData.website}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium mb-2">Instagram</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  WhatsApp
+                </label>
                 <input
-                  type="url"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.instagram}
-                  onChange={(e) => update("instagram", e.target.value)}
-                  placeholder="https://instagram.com/..."
+                  type="tel"
+                  name="whatsapp"
+                  value={formData.whatsapp}
+                  onChange={handleInputChange}
+                  placeholder="10-digit number"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium mb-2">LinkedIn</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Facebook
+                </label>
                 <input
                   type="url"
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-accent/20"
-                  value={form.linkedin}
-                  onChange={(e) => update("linkedin", e.target.value)}
-                  placeholder="https://linkedin.com/..."
+                  name="facebook"
+                  value={formData.facebook}
+                  onChange={handleInputChange}
+                  placeholder="https://facebook.com/yourpage"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Instagram
+                </label>
+                <input
+                  type="url"
+                  name="instagram"
+                  value={formData.instagram}
+                  onChange={handleInputChange}
+                  placeholder="https://instagram.com/yourpage"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  LinkedIn
+                </label>
+                <input
+                  type="url"
+                  name="linkedin"
+                  value={formData.linkedin}
+                  onChange={handleInputChange}
+                  placeholder="https://linkedin.com/company/yourcompany"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Submit */}
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 bg-white rounded-lg shadow-sm border p-6">
             <button
               type="button"
               onClick={() => router.push("/institute/dashboard")}
-              className="px-6 py-2.5 border rounded-lg hover:bg-gray-50 order-2 sm:order-1"
+              disabled={saving}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving || uploading}
-              className="px-6 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50 flex items-center justify-center gap-2 order-1 sm:order-2"
+              disabled={saving}
+              className="px-6 py-2 bg-accent text-white rounded-md hover:bg-accent/90 disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? (
                 <>
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   Saving...
                 </>
               ) : (

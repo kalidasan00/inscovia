@@ -180,6 +180,8 @@ export const loginInstitute = async (req, res) => {
 // Get Current User with Centers - FIXED VERSION
 export const getCurrentUser = async (req, res) => {
   try {
+    console.log("Getting user with ID:", req.userId); // Debug log
+
     const user = await prisma.instituteUser.findUnique({
       where: { id: req.userId },
       select: {
@@ -227,9 +229,19 @@ export const getCurrentUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    console.log("User found:", user.instituteName); // Debug log
+    console.log("Centers count:", user.centers.length); // Debug log
+
+    // Get the first center or null
+    const center = user.centers && user.centers.length > 0 ? user.centers[0] : null;
+
+    if (!center) {
+      console.log("WARNING: No center found for user", user.instituteName);
+    }
+
     res.json({
       user,
-      center: user.centers[0] || null // Return first center if exists
+      center
     });
   } catch (error) {
     console.error("Get user error:", error);
