@@ -32,29 +32,24 @@ export default function UserMenuPage() {
     setLoading(true);
 
     try {
-      console.log("Login data:", loginData);
+      const response = await fetch("http://localhost:5001/api/user/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData)
+      });
 
-      // TODO: Connect to your backend API
-      // const response = await fetch("http://localhost:5001/api/user/login", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(loginData)
-      // });
+      const data = await response.json();
 
-      // const data = await response.json();
-
-      // if (response.ok) {
-      //   localStorage.setItem("userToken", data.token);
-      //   localStorage.setItem("userLoggedIn", "true");
-      //   router.push("/");
-      // } else {
-      //   setError(data.error || "Login failed");
-      // }
-
-      // Temporary success message
-      alert("Login successful! (Connect to your backend API)");
-
+      if (response.ok) {
+        localStorage.setItem("userToken", data.token);
+        localStorage.setItem("userLoggedIn", "true");
+        localStorage.setItem("userData", JSON.stringify(data.user));
+        router.push("/user/dashboard");
+      } else {
+        setError(data.error || "Login failed");
+      }
     } catch (err) {
+      console.error("Login error:", err);
       setError("Login failed. Please try again.");
     } finally {
       setLoading(false);
@@ -81,34 +76,29 @@ export default function UserMenuPage() {
     setLoading(true);
 
     try {
-      console.log("Signup data:", signupData);
+      const response = await fetch("http://localhost:5001/api/user/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: signupData.name,
+          email: signupData.email,
+          phone: signupData.phone,
+          password: signupData.password
+        })
+      });
 
-      // TODO: Connect to your backend API
-      // const response = await fetch("http://localhost:5001/api/user/register", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     name: signupData.name,
-      //     email: signupData.email,
-      //     phone: signupData.phone,
-      //     password: signupData.password
-      //   })
-      // });
+      const data = await response.json();
 
-      // const data = await response.json();
-
-      // if (response.ok) {
-      //   localStorage.setItem("userToken", data.token);
-      //   localStorage.setItem("userLoggedIn", "true");
-      //   router.push("/");
-      // } else {
-      //   setError(data.error || "Registration failed");
-      // }
-
-      // Temporary success message
-      alert("Registration successful! (Connect to your backend API)");
-
+      if (response.ok) {
+        localStorage.setItem("userToken", data.token);
+        localStorage.setItem("userLoggedIn", "true");
+        localStorage.setItem("userData", JSON.stringify(data.user));
+        router.push("/user/dashboard");
+      } else {
+        setError(data.error || "Registration failed");
+      }
     } catch (err) {
+      console.error("Signup error:", err);
       setError("Registration failed. Please try again.");
     } finally {
       setLoading(false);
