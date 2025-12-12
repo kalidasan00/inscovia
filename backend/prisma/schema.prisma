@@ -12,27 +12,23 @@ datasource db {
 model InstituteUser {
   id       String   @id @default(cuid())
   email    String   @unique
-  password String   // Hashed password
+  password String
 
-  // Institute Details
   instituteName String
   phone         String
-  type          String   // IT, Non-IT, etc.
+  type          String
 
-  // Location
   state    String
   district String
   city     String
   location String
 
-  // Status
   isVerified Boolean  @default(false)
   isActive   Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relation to centers they own
   centers Center[]
 
   @@index([email])
@@ -43,34 +39,29 @@ model Center {
   name String
   type String
 
-  // Location fields (hierarchical)
   state    String
   district String
   city     String
-  location String // Full address/area
+  location String
 
   rating  Float    @default(0)
-  courses String[] // Array of course names
+  courses String[]
 
-  // Images
-  image   String? // Cover image
+  image   String?
   logo    String?
-  gallery String[] @default([]) // Array of image URLs
+  gallery String[] @default([])
 
   description String @db.Text
 
-  // Contact Information
   website  String?
-  whatsapp String? // Phone number for WhatsApp
+  whatsapp String?
   phone    String?
   email    String?
 
-  // Social Media (optional)
   facebook  String?
   instagram String?
   linkedin  String?
 
-  // Admin/Owner - Now properly linked
   userId String?
   owner  InstituteUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -79,4 +70,21 @@ model Center {
 
   @@index([state, district, city])
   @@index([userId])
+}
+
+// Student/Regular User for Authentication
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  password  String
+
+  isVerified Boolean  @default(false)
+  isActive   Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
 }

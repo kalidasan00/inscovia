@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import centersRouter from "./routes/centers.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import userRouter from "./routes/user.routes.js";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use("/api/centers", centersRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
 
 // Health check
 app.get("/", (req, res) => {
