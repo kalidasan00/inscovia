@@ -27,7 +27,7 @@ export default function InstituteDashboard() {
     }
 
     try {
-      const response = await fetch("http://localhost:5001/api/auth/me", {
+      const response = await fetch("https://inscovia.onrender.com/api/auth/me", {
         headers: { "Authorization": `Bearer ${token}` }
       });
 

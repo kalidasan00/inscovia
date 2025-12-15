@@ -1,4 +1,3 @@
-// app/institute/login/page.js
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,24 +12,20 @@ export default function InstituteLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    if (!email || !password) {
-      setError("Please fill in all fields");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const response = await fetch("http://localhost:5001/api/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -58,20 +53,17 @@ export default function InstituteLogin() {
       <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-gray-900">Institute Login</h1>
               <p className="text-gray-600 mt-2">Login to manage your institute</p>
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {error}
               </div>
             )}
 
-            {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -101,16 +93,6 @@ export default function InstituteLogin() {
                 />
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span className="text-gray-600">Remember me</span>
-                </label>
-                <Link href="/institute/forgot-password" className="text-accent hover:text-accent/80">
-                  Forgot password?
-                </Link>
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
@@ -120,14 +102,12 @@ export default function InstituteLogin() {
               </button>
             </form>
 
-            {/* Divider */}
             <div className="my-6 flex items-center gap-4">
               <div className="flex-1 border-t border-gray-200"></div>
               <span className="text-sm text-gray-500">or</span>
               <div className="flex-1 border-t border-gray-200"></div>
             </div>
 
-            {/* Register Link */}
             <div className="text-center">
               <p className="text-gray-600">
                 Don't have an account?{" "}
