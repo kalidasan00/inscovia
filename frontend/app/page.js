@@ -1,11 +1,62 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import HeroSection from "../components/HeroSection";
 import Link from "next/link";
+import {
+  MonitorSmartphone,
+  BookOpen,
+  Building2,
+  CheckCircle2,
+  BarChart3,
+  Zap,
+  ChevronRight,
+  ArrowRight,
+  Code2,
+  Globe,
+  TrendingUp,
+  Table,
+  Palette
+} from "lucide-react";
 
 export default function Home() {
+  const [centers, setCenters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+  useEffect(() => {
+    async function loadCenters() {
+      try {
+        const res = await fetch(`${API_URL}/centers`, {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          console.warn("Backend not awake, retrying...");
+          setTimeout(loadCenters, 2000);
+          return;
+        }
+
+        const data = await res.json();
+        setCenters(data.centers || []);
+      } catch (err) {
+        console.error("Error reaching backend, retrying...", err);
+        setTimeout(loadCenters, 2000);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCenters();
+  }, []);
+
+  // Get counts for categories
+  const itCount = centers.filter(c => c.type === "IT").length;
+  const nonItCount = centers.filter(c => c.type === "Non-IT").length;
+  const totalCount = centers.length;
+
   return (
     <>
       <Navbar />
@@ -15,26 +66,31 @@ export default function Home() {
         <HeroSection />
 
         {/* ------------------------ CATEGORY CARDS ------------------------ */}
-        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
-            Explore by Category
-          </h2>
+        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              Explore by Category
+            </h2>
+            <p className="text-gray-600">Choose your learning path and discover top training centers</p>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* IT Training */}
             <Link
               href="/centers?type=IT"
-              className="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-accent/30 transition-all"
+              className="group bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-xl hover:border-indigo-200 transition-all hover:-translate-y-1"
             >
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors flex-shrink-0">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <MonitorSmartphone className="w-8 h-8 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm text-gray-900 mb-0.5">IT Training Centers</h3>
-                  <p className="text-xs text-gray-600">Software, Cloud, AI & more</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">IT Training</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Software Development, Cloud Computing, AI & Data Science
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-semibold">
+                  {loading ? "..." : `${itCount} Centers`}
+                  <ChevronRight className="w-4 h-4" />
                 </div>
               </div>
             </Link>
@@ -42,17 +98,19 @@ export default function Home() {
             {/* Non-IT Training */}
             <Link
               href="/centers?type=Non-IT"
-              className="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-accent/30 transition-all"
+              className="group bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-xl hover:border-green-200 transition-all hover:-translate-y-1"
             >
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors flex-shrink-0">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-8 h-8 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm text-gray-900 mb-0.5">Non-IT Training</h3>
-                  <p className="text-xs text-gray-600">Finance, Marketing & Design</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Non-IT Training</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Finance, Marketing, Design, Languages & Soft Skills
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-full text-sm font-semibold">
+                  {loading ? "..." : `${nonItCount} Centers`}
+                  <ChevronRight className="w-4 h-4" />
                 </div>
               </div>
             </Link>
@@ -60,125 +118,122 @@ export default function Home() {
             {/* All Centers */}
             <Link
               href="/centers"
-              className="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-accent/30 transition-all"
+              className="group bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-sm border border-purple-200 p-6 hover:shadow-xl transition-all hover:-translate-y-1"
             >
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors flex-shrink-0">
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Building2 className="w-8 h-8 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm text-gray-900 mb-0.5">Browse All Centers</h3>
-                  <p className="text-xs text-gray-600">View all training centers</p>
+                <h3 className="text-lg font-bold text-white mb-2">Browse All</h3>
+                <p className="text-sm text-white/90 mb-3">
+                  Explore all training centers in one place
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-full text-sm font-semibold border border-white/30">
+                  {loading ? "..." : `${totalCount} Centers`}
+                  <ChevronRight className="w-4 h-4" />
                 </div>
               </div>
             </Link>
           </div>
         </section>
 
-        {/* ------------------------ FEATURED TRAINING CENTERS ------------------------ */}
+        {/* ------------------------ POPULAR COURSES ------------------------ */}
         <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-            ⭐ Featured Training Centers
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                🔥 Popular Courses
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">Trending courses students are enrolling in</p>
+            </div>
+          </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="min-w-[260px] bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all"
-              >
-                <div className="w-full h-32 bg-gray-100 rounded-lg mb-3"></div>
-                <h3 className="font-semibold text-sm text-gray-900">Featured Center {i}</h3>
-                <p className="text-xs text-gray-600">City • Popular Courses</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { name: "Python", icon: Code2, color: "from-blue-500 to-cyan-500", query: "Python" },
+              { name: "Data Science", icon: BarChart3, color: "from-purple-500 to-pink-500", query: "Data Science" },
+              { name: "Web Dev", icon: Globe, color: "from-green-500 to-emerald-500", query: "Web Development" },
+              { name: "Digital Marketing", icon: TrendingUp, color: "from-orange-500 to-red-500", query: "Digital Marketing" },
+              { name: "Excel", icon: Table, color: "from-teal-500 to-cyan-500", query: "Excel" },
+              { name: "UI/UX", icon: Palette, color: "from-violet-500 to-purple-500", query: "UI UX Design" }
+            ].map((course) => {
+              const Icon = course.icon;
+              return (
+                <Link
+                  key={course.name}
+                  href={`/centers?q=${encodeURIComponent(course.query)}`}
+                  className="group bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-indigo-200 transition-all text-center"
+                >
+                  <div className={`w-12 h-12 bg-gradient-to-br ${course.color} rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    {course.name}
+                  </h3>
+                </Link>
+              );
+            })}
           </div>
         </section>
 
-        {/* ------------------------ TOP COACHING CENTERS ------------------------ */}
-        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-2">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">
-            🔥 Top Coaching Centers
-          </h2>
-
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="min-w-[260px] bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all"
-              >
-                <div className="w-full h-32 bg-gray-100 rounded-lg mb-3"></div>
-                <h3 className="font-semibold text-sm text-gray-900">Top Center {i}</h3>
-                <p className="text-xs text-gray-600">Best Rated • Trending Courses</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ------------------------ FEATURES SECTION ------------------------ */}
-        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-5">
+        {/* ------------------------ WHY CHOOSE US ------------------------ */}
+        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Why Choose Inscovia?
             </h2>
+            <p className="text-gray-600">Your trusted partner in finding the perfect training center</p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-              <div className="flex gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-gray-900 mb-1">Verified Centers</h3>
-                  <p className="text-xs text-gray-600">All centers verified & reviewed</p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md transition-all">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-white" />
               </div>
-
-              <div className="flex gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-gray-900 mb-1">Compare & Choose</h3>
-                  <p className="text-xs text-gray-600">Compare courses & ratings easily</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-gray-900 mb-1">Fast & Simple</h3>
-                  <p className="text-xs text-gray-600">Find centers in minutes</p>
-                </div>
-              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Verified Centers</h3>
+              <p className="text-sm text-gray-600">
+                All training centers are thoroughly verified and reviewed by our team
+              </p>
             </div>
 
-            <div className="mt-6 pt-5 border-t border-gray-200 text-center">
-              <Link
-                href="/centers"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
-              >
-                Explore All Training Centers
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md transition-all">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Easy Comparison</h3>
+              <p className="text-sm text-gray-600">
+                Compare courses, fees, ratings and reviews to make informed decisions
+              </p>
             </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center hover:shadow-md transition-all">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Quick & Simple</h3>
+              <p className="text-sm text-gray-600">
+                Find and enroll in your perfect training center within minutes
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------ CTA SECTION ------------------------ */}
+        <section className="max-w-6xl mx-auto px-3 sm:px-4 py-6">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-8 sm:p-12 text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+              Ready to Start Learning?
+            </h2>
+            <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
+              Browse through 500+ verified training centers and find the perfect course for your career goals
+            </p>
+            <Link
+              href="/centers"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-indigo-600 rounded-xl text-lg font-semibold hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl"
+            >
+              Explore All Centers
+              <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
         </section>
       </main>

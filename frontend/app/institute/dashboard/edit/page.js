@@ -45,7 +45,7 @@ export default function EditProfile() {
     }
 
     try {
-      const response = await fetch("http://localhost:5001/api/auth/me", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -137,7 +137,8 @@ export default function EditProfile() {
     const formData = new FormData();
     formData.append("logo", logoFile);
 
-    const response = await fetch(`http://localhost:5001/api/centers/${centerId}/upload-logo`, {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL.replace('/api', '');
+    const response = await fetch(`${apiBase}/api/centers/${centerId}/upload-logo`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData
@@ -154,7 +155,8 @@ export default function EditProfile() {
     const formData = new FormData();
     formData.append("image", coverFile);
 
-    const response = await fetch(`http://localhost:5001/api/centers/${centerId}/upload-cover`, {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL.replace('/api', '');
+    const response = await fetch(`${apiBase}/api/centers/${centerId}/upload-cover`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData
@@ -203,7 +205,8 @@ export default function EditProfile() {
           linkedin: formData.linkedin,
         };
 
-        const response = await fetch(`http://localhost:5001/api/centers/${centerId}`, {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL.replace('/api', '');
+        const response = await fetch(`${apiBase}/api/centers/${centerId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
