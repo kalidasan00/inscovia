@@ -10,11 +10,13 @@ dotenv.config();
 
 const app = express();
 
-// CORS Configuration - Updated with correct Vercel URL
+// CORS Configuration - Updated with ALL your domains
 app.use(cors({
   origin: [
-    'https://inscovia-qopq.vercel.app',  // Your production URL
-    'https://inscovia.vercel.app',        // If you have custom domain
+    'https://www.inscovia.com',          // ✅ ADD THIS - Your custom domain with www
+    'https://inscovia.com',              // ✅ ADD THIS - Your custom domain without www
+    'https://inscovia-qopq.vercel.app',  // Your Vercel URL
+    'https://inscovia.vercel.app',       // If you have custom domain on Vercel
     'http://localhost:3000',
     'http://localhost:3001'
   ],
