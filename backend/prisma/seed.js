@@ -1,13 +1,11 @@
-import { PrismaClient } from "@prisma/client";
-import { centersData } from "./centers-data.js";
+// backend/prisma/seed.js
+import { PrismaClient } from '@prisma/client';
+import { centersData } from './seed-data.js';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding centers...");
-
-  // Clear existing data
-  await prisma.center.deleteMany();
+  console.log('Seeding database...');
 
   for (const center of centersData) {
     await prisma.center.create({
@@ -15,12 +13,12 @@ async function main() {
     });
   }
 
-  console.log("✅ Seeding completed!");
+  console.log(`Seeded ${centersData.length} centers successfully!`);
 }
 
 main()
-  .catch((error) => {
-    console.error(error);
+  .catch((e) => {
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
