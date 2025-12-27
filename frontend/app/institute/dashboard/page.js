@@ -1,4 +1,3 @@
-
 // app/institute/dashboard/page.js
 "use client";
 import { useState, useEffect } from "react";
@@ -27,7 +26,7 @@ export default function InstituteDashboard() {
     }
 
     try {
-      const response = await fetch("https://inscovia.onrender.com/api/auth/me", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
@@ -46,6 +45,18 @@ export default function InstituteDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to format category for display
+  const formatCategory = (category) => {
+    if (!category) return "";
+    return category.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Helper function to format teaching mode
+  const formatTeachingMode = (mode) => {
+    if (!mode) return "";
+    return mode.charAt(0) + mode.slice(1).toLowerCase();
   };
 
   if (loading) {
@@ -97,22 +108,13 @@ export default function InstituteDashboard() {
       <main className="min-h-screen bg-gray-50 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* Welcome Header */}
+          {/* Header */}
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome back, {institute.instituteName}!</h1>
-                <p className="text-gray-600 mt-1">Manage your institute profile and showcase your offerings</p>
+                <h1 className="text-3xl font-bold text-gray-900">{institute.instituteName}</h1>
+                <p className="text-gray-600 mt-1">Institute Dashboard</p>
               </div>
-              <Link
-                href="/institute/dashboard/edit"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-all hover:shadow-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit Profile
-              </Link>
             </div>
           </div>
 
@@ -133,19 +135,9 @@ export default function InstituteDashboard() {
                         <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <p className="text-sm font-medium">Add cover image</p>
                       </div>
                     </div>
                   )}
-                  <Link
-                    href="/institute/dashboard/edit"
-                    className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white transition-all shadow-lg"
-                  >
-                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </Link>
                 </div>
 
                 {/* Profile Info */}
@@ -163,14 +155,6 @@ export default function InstituteDashboard() {
                           </div>
                         )}
                       </div>
-                      <Link
-                        href="/institute/dashboard/edit"
-                        className="absolute -bottom-2 -right-2 p-2 bg-accent text-white rounded-full shadow-lg hover:bg-accent/90 transition-all"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </Link>
                     </div>
                     <div className="flex-1 pt-4">
                       <div className="flex items-center gap-2">
@@ -192,18 +176,39 @@ export default function InstituteDashboard() {
                           </svg>
                           {fullLocation}
                         </span>
-                        {institute.type && (
+                        {institute.primaryCategory && (
                           <>
                             <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                             <span className="flex items-center gap-1.5">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                               </svg>
-                              {institute.type}
+                              {formatCategory(institute.primaryCategory)}
+                            </span>
+                          </>
+                        )}
+                        {institute.teachingMode && (
+                          <>
+                            <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                            <span className="flex items-center gap-1.5">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              {formatTeachingMode(institute.teachingMode)}
                             </span>
                           </>
                         )}
                       </div>
+                      {/* Secondary Categories */}
+                      {institute.secondaryCategories && institute.secondaryCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {institute.secondaryCategories.map((category, idx) => (
+                            <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
+                              {formatCategory(category)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -236,7 +241,7 @@ export default function InstituteDashboard() {
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link
                   href="/institute/dashboard/edit"
                   className="group bg-white p-6 rounded-xl border border-gray-200 hover:border-accent hover:shadow-lg transition-all"
@@ -247,7 +252,7 @@ export default function InstituteDashboard() {
                     </svg>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">Edit Profile</h3>
-                  <p className="text-sm text-gray-600">Update institute information</p>
+                  <p className="text-sm text-gray-600">Update information</p>
                 </Link>
 
                 <Link
@@ -260,7 +265,20 @@ export default function InstituteDashboard() {
                     </svg>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">Manage Courses</h3>
-                  <p className="text-sm text-gray-600">Add and update courses</p>
+                  <p className="text-sm text-gray-600">Add or update courses</p>
+                </Link>
+
+                <Link
+                  href="/institute/dashboard/contacts"
+                  className="group bg-white p-6 rounded-xl border border-gray-200 hover:border-accent hover:shadow-lg transition-all"
+                >
+                  <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                    <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Contacts</h3>
+                  <p className="text-sm text-gray-600">Social & contact info</p>
                 </Link>
 
                 <Link
@@ -273,7 +291,7 @@ export default function InstituteDashboard() {
                     </svg>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">Gallery</h3>
-                  <p className="text-sm text-gray-600">Manage your photos</p>
+                  <p className="text-sm text-gray-600">Manage photos</p>
                 </Link>
               </div>
             </div>
@@ -342,9 +360,7 @@ export default function InstituteDashboard() {
                   ></div>
                 </div>
                 <p className="text-sm text-white/90">
-                  {profileCompletion === 100
-                    ? "🎉 Your profile is complete!"
-                    : "Complete your profile to attract more students"}
+                  {profileCompletion === 100 ? "Profile complete" : "Add logo and cover image"}
                 </p>
               </div>
 
@@ -359,12 +375,9 @@ export default function InstituteDashboard() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">Profile Status</h3>
-                      <p className="text-xs text-green-600 font-medium">Live on Inscovia</p>
+                      <p className="text-xs text-green-600 font-medium">Live</p>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Your center is now visible to students searching for institutes
-                  </p>
                   <Link
                     href={`/centers/${center.id}`}
                     className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gray-100 text-gray-900 rounded-lg font-medium hover:bg-gray-200 transition-colors"

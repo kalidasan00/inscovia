@@ -6,17 +6,14 @@ import {
   GraduationCap,
   Menu,
   X,
-  ChevronDown,
   Building2,
   User,
   LogOut,
-  LayoutDashboard,
-  UserCircle
+  LayoutDashboard
 } from "lucide-react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [showAuthMenu, setShowAuthMenu] = useState(false);
   const [isInstituteLoggedIn, setIsInstituteLoggedIn] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const pathname = usePathname();
@@ -27,9 +24,6 @@ export default function Navbar() {
       try {
         const instituteAuth = localStorage.getItem("instituteLoggedIn") === "true";
         const userAuth = localStorage.getItem("userLoggedIn") === "true";
-
-        console.log("Navbar Auth Check:", { instituteAuth, userAuth }); // Debug log
-
         setIsInstituteLoggedIn(instituteAuth);
         setIsUserLoggedIn(userAuth);
       } catch (error) {
@@ -37,45 +31,23 @@ export default function Navbar() {
       }
     };
 
-    // Check immediately
     checkAuth();
-
-    // Listen for custom auth event
-    const handleAuthChange = () => {
-      console.log("Auth change event received"); // Debug log
-      checkAuth();
-    };
-
     window.addEventListener('storage', checkAuth);
-    window.addEventListener('authStateChanged', handleAuthChange);
-
-    // Check on focus (when user comes back to tab)
+    window.addEventListener('authStateChanged', checkAuth);
     window.addEventListener('focus', checkAuth);
-
-    // Small delay to ensure localStorage is ready
     const timeoutId = setTimeout(checkAuth, 100);
 
     return () => {
       window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('authStateChanged', handleAuthChange);
+      window.removeEventListener('authStateChanged', checkAuth);
       window.removeEventListener('focus', checkAuth);
       clearTimeout(timeoutId);
     };
   }, [pathname]);
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest('.auth-menu-container')) {
-        setShowAuthMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleInstituteLogout = () => {
     localStorage.removeItem("instituteLoggedIn");
+    localStorage.removeItem("instituteToken");
     localStorage.removeItem("instituteData");
     setIsInstituteLoggedIn(false);
     window.location.href = "/";
@@ -94,10 +66,10 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md">
+            <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-accent">
               Inscovia
             </span>
           </Link>
@@ -108,124 +80,88 @@ export default function Navbar() {
             <div className="flex items-center gap-6">
               <Link
                 href="/centers"
-                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
-                  pathname === '/centers' ? 'text-blue-600' : 'text-gray-700'
+                className={`text-sm font-medium transition-colors hover:text-accent ${
+                  pathname === '/centers' ? 'text-accent' : 'text-gray-700'
                 }`}
               >
                 Browse Centers
               </Link>
               <Link
                 href="/about"
-                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
-                  pathname === '/about' ? 'text-blue-600' : 'text-gray-700'
+                className={`text-sm font-medium transition-colors hover:text-accent ${
+                  pathname === '/about' ? 'text-accent' : 'text-gray-700'
                 }`}
               >
                 About
               </Link>
               <Link
                 href="/contact"
-                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
-                  pathname === '/contact' ? 'text-blue-600' : 'text-gray-700'
+                className={`text-sm font-medium transition-colors hover:text-accent ${
+                  pathname === '/contact' ? 'text-accent' : 'text-gray-700'
                 }`}
               >
                 Contact
               </Link>
             </div>
 
-            {/* Auth Section - User section ALWAYS visible */}
-            <div className="flex items-center gap-3">
-              {/* User Auth - ALWAYS RENDERED */}
-              <div className="flex items-center gap-2">
-                {isUserLoggedIn ? (
-                  <>
-                    <Link
-                      href="/user/dashboard"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <UserCircle className="w-4 h-4" />
-                      My Account
-                    </Link>
-                    <button
-                      onClick={handleUserLogout}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
-                      title="User Logout"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    href="/user-menu"
-                    className="inline-flex items-center gap-2 px-4 py-2 border-2 border-blue-600 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-50 transition-colors"
-                  >
-                    <User className="w-4 h-4" />
-                    User Login
-                  </Link>
-                )}
-              </div>
-
-              {/* Institute Auth */}
-              {isInstituteLoggedIn ? (
+            {/* Auth Section */}
+            <div className="flex items-center gap-2">
+              {/* User */}
+              {isUserLoggedIn ? (
                 <>
                   <Link
-                    href="/institute/dashboard"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm"
+                    href="/user/dashboard"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-accent text-sm font-medium rounded-lg hover:bg-accent/10 transition-colors"
                   >
-                    <LayoutDashboard className="w-4 h-4" />
-                    Institute Dashboard
+                    <User className="w-4 h-4" />
+                    <span>Account</span>
                   </Link>
                   <button
-                    onClick={handleInstituteLogout}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
-                    title="Institute Logout"
+                    onClick={handleUserLogout}
+                    className="p-1.5 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                    title="Logout"
                   >
                     <LogOut className="w-4 h-4" />
                   </button>
                 </>
               ) : (
-                <div className="relative auth-menu-container">
-                  <button
-                    onClick={() => setShowAuthMenu(!showAuthMenu)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm"
-                  >
-                    <Building2 className="w-4 h-4" />
-                    <span>Institute</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showAuthMenu ? 'rotate-180' : ''}`} />
-                  </button>
+                <Link
+                  href="/user-menu"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Login</span>
+                </Link>
+              )}
 
-                  {/* Institute Dropdown */}
-                  {showAuthMenu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 overflow-hidden">
-                      <Link
-                        href="/institute/login"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setShowAuthMenu(false)}
-                      >
-                        <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                          <Building2 className="w-4 h-4 text-indigo-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">Institute Login</div>
-                          <div className="text-xs text-gray-500">Access dashboard</div>
-                        </div>
-                      </Link>
-                      <div className="border-t border-gray-100 my-1"></div>
-                      <Link
-                        href="/institute/register"
-                        className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setShowAuthMenu(false)}
-                      >
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <GraduationCap className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">Register Institute</div>
-                          <div className="text-xs text-gray-500">List your center</div>
-                        </div>
-                      </Link>
-                    </div>
-                  )}
-                </div>
+              <div className="w-px h-6 bg-gray-300"></div>
+
+              {/* Institute */}
+              {isInstituteLoggedIn ? (
+                <>
+                  <Link
+                    href="/institute/dashboard"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                  <button
+                    onClick={handleInstituteLogout}
+                    className="p-1.5 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                    title="Logout"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/institute/login"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
+                >
+                  <Building2 className="w-4 h-4" />
+                  <span>Institute</span>
+                </Link>
               )}
             </div>
           </div>
@@ -251,9 +187,9 @@ export default function Navbar() {
               {/* Navigation Links */}
               <Link
                 href="/centers"
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   pathname === '/centers'
-                    ? 'bg-blue-50 text-blue-600'
+                    ? 'bg-accent/10 text-accent'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
                 onClick={() => setIsOpen(false)}
@@ -262,9 +198,9 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/about"
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   pathname === '/about'
-                    ? 'bg-blue-50 text-blue-600'
+                    ? 'bg-accent/10 text-accent'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
                 onClick={() => setIsOpen(false)}
@@ -273,9 +209,9 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/contact"
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   pathname === '/contact'
-                    ? 'bg-blue-50 text-blue-600'
+                    ? 'bg-accent/10 text-accent'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
                 onClick={() => setIsOpen(false)}
@@ -283,88 +219,84 @@ export default function Navbar() {
                 Contact
               </Link>
 
-              <div className="pt-3 border-t border-gray-200 mt-2"></div>
+              <div className="pt-2 border-t border-gray-200 mt-2"></div>
 
               {/* User Section */}
-              <div className="px-3 py-2 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="w-4 h-4 text-blue-600" />
-                  <p className="text-xs font-semibold text-blue-900 uppercase">Student / User</p>
-                </div>
-                {isUserLoggedIn ? (
-                  <div className="space-y-2">
-                    <Link
-                      href="/user/dashboard"
-                      className="block px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium text-center"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      My Dashboard
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleUserLogout();
-                        setIsOpen(false);
-                      }}
-                      className="w-full px-4 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg text-sm font-medium"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                ) : (
+              {isUserLoggedIn ? (
+                <div className="space-y-2">
                   <Link
-                    href="/user-menu"
-                    className="block px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium text-center"
+                    href="/user/dashboard"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-lg text-sm font-medium"
                     onClick={() => setIsOpen(false)}
                   >
-                    Login / Register
+                    <User className="w-4 h-4" />
+                    My Account
                   </Link>
-                )}
-              </div>
+                  <button
+                    onClick={() => {
+                      handleUserLogout();
+                      setIsOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/user-menu"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-lg text-sm font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <User className="w-4 h-4" />
+                  User Login
+                </Link>
+              )}
+
+              <div className="pt-2 border-t border-gray-200"></div>
 
               {/* Institute Section */}
-              <div className="px-3 py-2 bg-indigo-50 rounded-lg mt-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="w-4 h-4 text-indigo-600" />
-                  <p className="text-xs font-semibold text-indigo-900 uppercase">Training Institute</p>
+              {isInstituteLoggedIn ? (
+                <div className="space-y-2">
+                  <Link
+                    href="/institute/dashboard"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-lg text-sm font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Institute Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleInstituteLogout();
+                      setIsOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
                 </div>
-                {isInstituteLoggedIn ? (
-                  <div className="space-y-2">
-                    <Link
-                      href="/institute/dashboard"
-                      className="block px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium text-center"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Institute Dashboard
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleInstituteLogout();
-                        setIsOpen(false);
-                      }}
-                      className="w-full px-4 py-2.5 border-2 border-indigo-600 text-indigo-600 rounded-lg text-sm font-medium"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Link
-                      href="/institute/login"
-                      className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium text-center"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/institute/register"
-                      className="flex-1 px-4 py-2.5 border-2 border-indigo-600 text-indigo-600 rounded-lg text-sm font-medium text-center"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Register
-                    </Link>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Link
+                    href="/institute/login"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white rounded-lg text-sm font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Building2 className="w-4 h-4" />
+                    Institute Login
+                  </Link>
+                  <Link
+                    href="/institute/register"
+                    className="flex-1 px-4 py-2.5 border border-accent text-accent rounded-lg text-sm font-medium text-center"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}

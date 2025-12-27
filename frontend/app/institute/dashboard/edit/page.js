@@ -5,11 +5,29 @@ import { useRouter } from "next/navigation";
 import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
 
+// Category and Teaching Mode options based on schema enums
+const CATEGORIES = [
+  { value: "TECHNOLOGY", label: "Technology" },
+  { value: "MANAGEMENT", label: "Management" },
+  { value: "SKILL_DEVELOPMENT", label: "Skill Development" },
+  { value: "EXAM_COACHING", label: "Exam Coaching" }
+];
+
+const TEACHING_MODES = [
+  { value: "ONLINE", label: "Online" },
+  { value: "OFFLINE", label: "Offline" },
+  { value: "HYBRID", label: "Hybrid" }
+];
+
 export default function EditProfile() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [centerId, setCenterId] = useState(null);
+  const [error, setError] = useState(null);
+
+  // ✅ USE ENVIRONMENT VARIABLE
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   const [formData, setFormData] = useState({
     instituteName: "",
@@ -18,7 +36,9 @@ export default function EditProfile() {
     city: "",
     district: "",
     state: "",
-    type: "",
+    primaryCategory: "",
+    secondaryCategories: [],
+    teachingMode: "",
     location: "",
     description: "",
     website: "",
@@ -45,13 +65,20 @@ export default function EditProfile() {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
       });
 
-      if (!response.ok) throw new Error("Failed to fetch data");
+      if (!response.ok) {
+        throw new Error("Failed to fetch data");
+      }
 
       const data = await response.json();
+      console.log("Edit page data:", data);
+
       const user = data.user;
       const center = data.center;
 
@@ -62,7 +89,9 @@ export default function EditProfile() {
         city: user.city || "",
         district: user.district || "",
         state: user.state || "",
-        type: user.type || "",
+        primaryCategory: user.primaryCategory || "",
+        secondaryCategories: user.secondaryCategories || [],
+        teachingMode: user.teachingMode || "",
         location: user.location || "",
         description: center?.description || "",
         website: center?.website || "",
@@ -78,9 +107,11 @@ export default function EditProfile() {
         setCoverPreview(center.image);
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to load data. Please login again.");
-      router.push("/institute/login");
+      console.error("Error fetching data:", error);
+      setError("Failed to load data. Please login again.");
+      setTimeout(() => {
+        router.push("/institute/login");
+      }, 2000);
     } finally {
       setLoading(false);
     }
@@ -89,6 +120,30 @@ export default function EditProfile() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSecondaryCategoryToggle = (category) => {
+    setFormData(prev => {
+      const currentSecondary = prev.secondaryCategories || [];
+      const isSelected = currentSecondary.includes(category);
+
+      if (isSelected) {
+        return {
+          ...prev,
+          secondaryCategories: currentSecondary.filter(c => c !== category)
+        };
+      } else {
+        // Maximum 3 secondary categories
+        if (currentSecondary.length >= 3) {
+          alert("You can select maximum 3 secondary categories");
+          return prev;
+        }
+        return {
+          ...prev,
+          secondaryCategories: [...currentSecondary, category]
+        };
+      }
+    });
   };
 
   const handleLogoChange = (e) => {
@@ -134,17 +189,20 @@ export default function EditProfile() {
   const uploadLogo = async (token) => {
     if (!logoFile || !centerId) return null;
 
-    const formData = new FormData();
-    formData.append("logo", logoFile);
+    const formDataUpload = new FormData();
+    formDataUpload.append("logo", logoFile);
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL.replace('/api', '');
-    const response = await fetch(`${apiBase}/api/centers/${centerId}/upload-logo`, {
+    const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${centerId}/upload-logo`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
-      body: formData
+      body: formDataUpload
     });
 
-    if (!response.ok) throw new Error("Logo upload failed");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Logo upload failed");
+    }
+
     const data = await response.json();
     return data.logoUrl;
   };
@@ -152,17 +210,20 @@ export default function EditProfile() {
   const uploadCover = async (token) => {
     if (!coverFile || !centerId) return null;
 
-    const formData = new FormData();
-    formData.append("image", coverFile);
+    const formDataUpload = new FormData();
+    formDataUpload.append("image", coverFile);
 
-    const apiBase = process.env.NEXT_PUBLIC_API_URL.replace('/api', '');
-    const response = await fetch(`${apiBase}/api/centers/${centerId}/upload-cover`, {
+    const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${centerId}/upload-cover`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
-      body: formData
+      body: formDataUpload
     });
 
-    if (!response.ok) throw new Error("Cover upload failed");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Cover upload failed");
+    }
+
     const data = await response.json();
     return data.imageUrl;
   };
@@ -170,6 +231,7 @@ export default function EditProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setError(null);
 
     const token = localStorage.getItem("instituteToken");
     if (!token) {
@@ -180,9 +242,11 @@ export default function EditProfile() {
     try {
       // Upload images first if selected
       if (logoFile) {
+        console.log("Uploading logo...");
         await uploadLogo(token);
       }
       if (coverFile) {
+        console.log("Uploading cover...");
         await uploadCover(token);
       }
 
@@ -190,7 +254,9 @@ export default function EditProfile() {
       if (centerId) {
         const centerUpdateData = {
           name: formData.instituteName,
-          type: formData.type,
+          primaryCategory: formData.primaryCategory,
+          secondaryCategories: formData.secondaryCategories,
+          teachingMode: formData.teachingMode,
           state: formData.state,
           district: formData.district,
           city: formData.city,
@@ -205,8 +271,9 @@ export default function EditProfile() {
           linkedin: formData.linkedin,
         };
 
-        const apiBase = process.env.NEXT_PUBLIC_API_URL.replace('/api', '');
-        const response = await fetch(`${apiBase}/api/centers/${centerId}`, {
+        console.log("Updating center data:", centerUpdateData);
+
+        const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${centerId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -219,12 +286,16 @@ export default function EditProfile() {
           const error = await response.json();
           throw new Error(error.error || "Failed to update profile");
         }
+
+        const result = await response.json();
+        console.log("Update result:", result);
       }
 
       alert("Profile updated successfully!");
       router.push("/institute/dashboard");
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error updating profile:", error);
+      setError(error.message || "Failed to update profile. Please try again.");
       alert(error.message || "Failed to update profile. Please try again.");
     } finally {
       setSaving(false);
@@ -237,13 +308,42 @@ export default function EditProfile() {
         <Navbar />
         <main className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading profile data...</p>
+            </div>
           </div>
         </main>
         <Footer />
       </>
     );
   }
+
+  if (error && !formData.email) {
+    return (
+      <>
+        <Navbar />
+        <main className="max-w-4xl mx-auto px-4 py-8">
+          <div className="text-center py-20">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Profile</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-sm text-gray-500">Redirecting to login...</p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  // Get available secondary categories (exclude primary category)
+  const availableSecondaryCategories = CATEGORIES.filter(
+    cat => cat.value !== formData.primaryCategory
+  );
 
   return (
     <>
@@ -254,6 +354,17 @@ export default function EditProfile() {
           <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
           <p className="text-gray-600 mt-1">Update your institute information</p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 text-red-800">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="font-medium">{error}</p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Cover Image Section */}
@@ -269,9 +380,12 @@ export default function EditProfile() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <div className="text-center">
+                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-sm">No cover image</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -283,7 +397,7 @@ export default function EditProfile() {
                   type="file"
                   accept="image/*"
                   onChange={handleCoverChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90 file:cursor-pointer"
                 />
                 <p className="text-xs text-gray-500 mt-1">Recommended: 1200x400px, Max 5MB</p>
               </div>
@@ -317,7 +431,7 @@ export default function EditProfile() {
                   type="file"
                   accept="image/*"
                   onChange={handleLogoChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90 file:cursor-pointer"
                 />
                 <p className="text-xs text-gray-500 mt-1">Recommended: Square image, Max 5MB</p>
               </div>
@@ -376,22 +490,69 @@ export default function EditProfile() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type <span className="text-red-500">*</span>
+                  Primary Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="type"
-                  value={formData.type}
+                  name="primaryCategory"
+                  value={formData.primaryCategory}
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 >
-                  <option value="">Select Type</option>
-                  <option value="Coaching Center">Coaching Center</option>
-                  <option value="Training Institute">Training Institute</option>
-                  <option value="Skill Development">Skill Development</option>
-                  <option value="Language Institute">Language Institute</option>
-                  <option value="Computer Institute">Computer Institute</option>
+                  <option value="">Select Primary Category</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Teaching Mode <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="teachingMode"
+                  value={formData.teachingMode}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  <option value="">Select Teaching Mode</option>
+                  {TEACHING_MODES.map(mode => (
+                    <option key={mode.value} value={mode.value}>{mode.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Secondary Categories (Optional - Max 3)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableSecondaryCategories.map(cat => {
+                    const isSelected = formData.secondaryCategories?.includes(cat.value);
+                    return (
+                      <button
+                        key={cat.value}
+                        type="button"
+                        onClick={() => handleSecondaryCategoryToggle(cat.value)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isSelected
+                            ? 'bg-accent text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {cat.label}
+                        {isSelected && (
+                          <span className="ml-2">✓</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Selected: {formData.secondaryCategories?.length || 0}/3
+                </p>
               </div>
 
               <div>
@@ -467,96 +628,20 @@ export default function EditProfile() {
             </div>
           </div>
 
-          {/* Contact & Social */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-lg font-semibold mb-4">Contact & Social Media</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Website
-                </label>
-                <input
-                  type="url"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  WhatsApp
-                </label>
-                <input
-                  type="tel"
-                  name="whatsapp"
-                  value={formData.whatsapp}
-                  onChange={handleInputChange}
-                  placeholder="10-digit number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Facebook
-                </label>
-                <input
-                  type="url"
-                  name="facebook"
-                  value={formData.facebook}
-                  onChange={handleInputChange}
-                  placeholder="https://facebook.com/yourpage"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Instagram
-                </label>
-                <input
-                  type="url"
-                  name="instagram"
-                  value={formData.instagram}
-                  onChange={handleInputChange}
-                  placeholder="https://instagram.com/yourpage"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  LinkedIn
-                </label>
-                <input
-                  type="url"
-                  name="linkedin"
-                  value={formData.linkedin}
-                  onChange={handleInputChange}
-                  placeholder="https://linkedin.com/company/yourcompany"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 bg-white rounded-lg shadow-sm border p-6">
             <button
               type="button"
               onClick={() => router.push("/institute/dashboard")}
               disabled={saving}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-accent text-white rounded-md hover:bg-accent/90 disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-2 bg-accent text-white rounded-md hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
             >
               {saving ? (
                 <>

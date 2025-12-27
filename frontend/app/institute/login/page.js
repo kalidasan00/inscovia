@@ -12,7 +12,8 @@ export default function InstituteLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  // ✅ FIXED: Use environment variable
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
