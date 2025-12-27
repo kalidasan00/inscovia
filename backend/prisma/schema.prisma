@@ -8,21 +8,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums for categories
+enum InstituteCategory {
+  TECHNOLOGY
+  MANAGEMENT
+  SKILL_DEVELOPMENT
+  EXAM_COACHING
+}
+
+enum CenterCategory {
+  TECHNOLOGY
+  MANAGEMENT
+  SKILL_DEVELOPMENT
+  EXAM_COACHING
+}
+
+enum UserRole {
+  ADMIN
+  INSTITUTE
+  USER
+}
+
+enum TeachingMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
 // Institute User for Authentication
 model InstituteUser {
   id       String   @id @default(cuid())
   email    String   @unique
   password String
 
-  instituteName String
-  phone         String
-  type          String
+  instituteName       String
+  phone               String
+  primaryCategory     InstituteCategory              // Primary category (required)
+  secondaryCategories InstituteCategory[] @default([]) // Secondary categories (optional)
+  teachingMode        TeachingMode                   // Online, Offline, or Hybrid
 
   state    String
   district String
   city     String
   location String
 
+  role       UserRole @default(INSTITUTE)
   isVerified Boolean  @default(false)
   isActive   Boolean  @default(true)
 
@@ -32,12 +62,17 @@ model InstituteUser {
   centers Center[]
 
   @@index([email])
+  @@index([primaryCategory])
+  @@index([teachingMode])
+  @@index([role])
 }
 
 model Center {
-  id   String @id @default(cuid())
+  id   String         @id @default(cuid())
   name String
-  type String
+  primaryCategory     CenterCategory              // Primary category (required)
+  secondaryCategories CenterCategory[] @default([]) // Secondary categories (optional)
+  teachingMode        TeachingMode                // Online, Offline, or Hybrid
 
   state    String
   district String
@@ -70,6 +105,8 @@ model Center {
 
   @@index([state, district, city])
   @@index([userId])
+  @@index([primaryCategory])
+  @@index([teachingMode])
 }
 
 // Student/Regular User for Authentication

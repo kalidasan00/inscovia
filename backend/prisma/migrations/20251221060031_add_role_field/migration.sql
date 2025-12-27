@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "InstituteUser" ADD COLUMN     "role" TEXT NOT NULL DEFAULT 'INSTITUTE';
