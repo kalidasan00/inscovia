@@ -65,6 +65,9 @@ model InstituteUser {
   @@index([primaryCategory])
   @@index([teachingMode])
   @@index([role])
+  @@index([city])
+  @@index([state])
+  @@index([city, state])
 }
 
 model Center {
@@ -109,6 +112,9 @@ model Center {
   @@index([userId])
   @@index([primaryCategory])
   @@index([teachingMode])
+  @@index([city])
+  @@index([state])
+  @@index([rating])
 }
 
 model Review {
@@ -127,6 +133,8 @@ model Review {
 
   @@index([centerId])
   @@unique([userEmail, centerId])
+  @@index([rating])
+  @@index([createdAt])
 }
 
 // Student/Regular User for Authentication
