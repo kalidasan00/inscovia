@@ -5,19 +5,20 @@ import dotenv from "dotenv";
 import centersRouter from "./routes/centers.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
-import adminRouter from "./routes/admin.routes.js";  // ← ADD THIS
+import adminRouter from "./routes/admin.routes.js";
+import reviewsRouter from "./routes/reviews.routes.js";  // ← ADD THIS
 
 dotenv.config();
 
 const app = express();
 
-// CORS Configuration - Updated with ALL your domains
+// CORS Configuration
 app.use(cors({
   origin: [
-    'https://www.inscovia.com',          // ✅ Your custom domain with www
-    'https://inscovia.com',              // ✅ Your custom domain without www
-    'https://inscovia-qopq.vercel.app',  // Your Vercel URL
-    'https://inscovia.vercel.app',       // If you have custom domain on Vercel
+    'https://www.inscovia.com',
+    'https://inscovia.com',
+    'https://inscovia-qopq.vercel.app',
+    'https://inscovia.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001'
   ],
@@ -32,7 +33,8 @@ app.use(express.json());
 app.use("/api/centers", centersRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
-app.use("/api/admin", adminRouter);  // ← ADD THIS
+app.use("/api/admin", adminRouter);
+app.use("/api/reviews", reviewsRouter);  // ← ADD THIS
 
 // Health check
 app.get("/", (req, res) => {

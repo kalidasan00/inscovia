@@ -100,6 +100,8 @@ model Center {
   userId String?
   owner  InstituteUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  reviews Review[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -107,6 +109,24 @@ model Center {
   @@index([userId])
   @@index([primaryCategory])
   @@index([teachingMode])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+
+  userName  String
+  userEmail String
+  rating    Int
+  comment   String   @db.Text
+
+  centerId  String
+  center    Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([centerId])
+  @@unique([userEmail, centerId])
 }
 
 // Student/Regular User for Authentication
