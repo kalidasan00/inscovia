@@ -6,16 +6,19 @@ export const centersData = [
     secondaryCategories: [],
     teachingMode: "HYBRID",
 
-    // Location
     state: "Karnataka",
     district: "Bengaluru Urban",
     city: "Bangalore",
     location: "MG Road, Near City Center",
 
     rating: 4.7,
-    courses: ["Python Programming", "Full Stack Development", "Data Science with Python", "Machine Learning"],
+    courses: [
+      "TECHNOLOGY: Python Programming",
+      "TECHNOLOGY: Full Stack Development",
+      "TECHNOLOGY: Data Science with Python",
+      "TECHNOLOGY: Machine Learning"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/2721/2721296.png",
     gallery: [
@@ -26,13 +29,11 @@ export const centersData = [
 
     description: "Industry-oriented IT training with hands-on projects and placement support. We provide comprehensive training programs designed to meet industry standards with experienced faculty and modern infrastructure.",
 
-    // Contact Information
     website: "https://techwave.example.com",
     whatsapp: "9876543210",
     phone: "9876543210",
     email: "contact@techwave.com",
 
-    // Social Media
     facebook: "https://facebook.com/techwave",
     instagram: "https://instagram.com/techwave",
     linkedin: "https://linkedin.com/company/techwave",
@@ -43,16 +44,20 @@ export const centersData = [
     secondaryCategories: ["SKILL_DEVELOPMENT"],
     teachingMode: "OFFLINE",
 
-    // Location
     state: "Maharashtra",
     district: "Mumbai",
     city: "Mumbai",
     location: "Andheri West, Link Road",
 
     rating: 4.5,
-    courses: ["MBA Preparation", "Business Management", "Project Management", "Leadership Skills"],
+    courses: [
+      "MANAGEMENT: MBA Preparation",
+      "MANAGEMENT: Business Management",
+      "MANAGEMENT: Project Management",
+      "SKILL_DEVELOPMENT: Leadership Skills",
+      "SKILL_DEVELOPMENT: Team Building"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1907/1907808.png",
     gallery: [
@@ -62,13 +67,11 @@ export const centersData = [
 
     description: "Premier management training institute offering specialized courses in business management, leadership development, and MBA preparation with industry expert faculty.",
 
-    // Contact Information
     website: "https://excelamc.example.com",
     whatsapp: "9876543211",
     phone: "9876543211",
     email: "info@excelamc.com",
 
-    // Social Media
     facebook: "https://facebook.com/excelamc",
     instagram: "https://instagram.com/excelamc",
     linkedin: "https://linkedin.com/company/excelamc",
@@ -79,16 +82,20 @@ export const centersData = [
     secondaryCategories: ["TECHNOLOGY"],
     teachingMode: "ONLINE",
 
-    // Location
     state: "Tamil Nadu",
     district: "Chennai",
     city: "Chennai",
     location: "Anna Salai, T Nagar",
 
     rating: 4.6,
-    courses: ["Digital Marketing", "Graphic Design", "Communication Skills", "Content Writing"],
+    courses: [
+      "SKILL_DEVELOPMENT: Digital Marketing",
+      "SKILL_DEVELOPMENT: Graphic Design",
+      "SKILL_DEVELOPMENT: Communication Skills",
+      "TECHNOLOGY: Web Development Basics",
+      "TECHNOLOGY: WordPress"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/2554/2554183.png",
     gallery: [
@@ -98,13 +105,11 @@ export const centersData = [
 
     description: "Creative and professional skills development for modern careers. Expert trainers with industry experience providing practical, hands-on training in various skill domains.",
 
-    // Contact Information
     website: "https://skillbridge.example.com",
     whatsapp: "9876543212",
     phone: "9876543212",
     email: "contact@skillbridge.com",
 
-    // Social Media
     facebook: "https://facebook.com/skillbridge",
     instagram: "https://instagram.com/skillbridge",
     linkedin: "https://linkedin.com/company/skillbridge",
@@ -115,16 +120,19 @@ export const centersData = [
     secondaryCategories: [],
     teachingMode: "OFFLINE",
 
-    // Location
     state: "Delhi",
     district: "Central Delhi",
     city: "New Delhi",
     location: "Rajendra Place, Metro Station",
 
     rating: 4.8,
-    courses: ["NEET Preparation", "JEE Mains", "JEE Advanced", "Foundation Course"],
+    courses: [
+      "EXAM_COACHING: NEET Preparation",
+      "EXAM_COACHING: JEE Mains",
+      "EXAM_COACHING: JEE Advanced",
+      "EXAM_COACHING: Foundation Course"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/3135/3135692.png",
     gallery: [
@@ -134,13 +142,11 @@ export const centersData = [
 
     description: "Top-ranked coaching institute for NEET and JEE preparation with experienced faculty, comprehensive study materials, and proven track record of success.",
 
-    // Contact Information
     website: "https://neetsuccessacademy.example.com",
     whatsapp: "9876543213",
     phone: "9876543213",
     email: "info@neetsuccessacademy.com",
 
-    // Social Media
     facebook: "https://facebook.com/neetsuccessacademy",
     instagram: "https://instagram.com/neetsuccessacademy",
     linkedin: null,
@@ -151,16 +157,21 @@ export const centersData = [
     secondaryCategories: ["SKILL_DEVELOPMENT"],
     teachingMode: "HYBRID",
 
-    // Location
     state: "Telangana",
     district: "Hyderabad",
     city: "Hyderabad",
     location: "HITEC City, Madhapur",
 
     rating: 4.9,
-    courses: ["Java Development", "Spring Boot", "Cloud Computing", "AWS Certification"],
+    courses: [
+      "TECHNOLOGY: Java Development",
+      "TECHNOLOGY: Spring Boot",
+      "TECHNOLOGY: Cloud Computing",
+      "TECHNOLOGY: AWS Certification",
+      "SKILL_DEVELOPMENT: Problem Solving",
+      "SKILL_DEVELOPMENT: Interview Preparation"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1822/1822899.png",
     gallery: [
@@ -171,13 +182,11 @@ export const centersData = [
 
     description: "Advanced corporate-style training focused on enterprise development. Real-time project experience with 100% placement assistance and industry partnerships.",
 
-    // Contact Information
     website: "https://codemaster.example.com",
     whatsapp: "9876543214",
     phone: "9876543214",
     email: "admin@codemaster.com",
 
-    // Social Media
     facebook: "https://facebook.com/codemaster",
     instagram: "https://instagram.com/codemaster",
     linkedin: "https://linkedin.com/company/codemaster",
@@ -188,16 +197,19 @@ export const centersData = [
     secondaryCategories: [],
     teachingMode: "ONLINE",
 
-    // Location
     state: "Delhi",
     district: "South Delhi",
     city: "New Delhi",
     location: "Connaught Place, Central Delhi",
 
     rating: 4.7,
-    courses: ["Machine Learning", "AI Fundamentals", "Big Data Analytics", "Data Engineering"],
+    courses: [
+      "TECHNOLOGY: Machine Learning",
+      "TECHNOLOGY: AI Fundamentals",
+      "TECHNOLOGY: Big Data Analytics",
+      "TECHNOLOGY: Data Engineering"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1087/1087840.png",
     gallery: [
@@ -208,13 +220,11 @@ export const centersData = [
 
     description: "Premium online institute offering advanced AI and ML programs. Research-oriented curriculum with industry partnerships and hands-on project work.",
 
-    // Contact Information
     website: "https://datalabs.example.com",
     whatsapp: "9876543215",
     phone: "9876543215",
     email: "hello@datalabs.com",
 
-    // Social Media
     facebook: "https://facebook.com/datalabs",
     instagram: "https://instagram.com/datalabs",
     linkedin: "https://linkedin.com/company/datalabs",
@@ -225,16 +235,19 @@ export const centersData = [
     secondaryCategories: ["TECHNOLOGY"],
     teachingMode: "OFFLINE",
 
-    // Location
     state: "Maharashtra",
     district: "Pune",
     city: "Pune",
     location: "Koregaon Park, Near ABC Mall",
 
     rating: 4.6,
-    courses: ["UI/UX Design", "Adobe Creative Suite", "3D Design", "Illustration"],
+    courses: [
+      "SKILL_DEVELOPMENT: UI/UX Design",
+      "SKILL_DEVELOPMENT: Adobe Creative Suite",
+      "TECHNOLOGY: Figma",
+      "TECHNOLOGY: Web Design Basics"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1829/1829580.png",
     gallery: [
@@ -244,13 +257,11 @@ export const centersData = [
 
     description: "Design-focused bootcamps for creative professionals. Build stunning portfolios with real client projects and learn from industry design experts.",
 
-    // Contact Information
     website: "https://designhive.example.com",
     whatsapp: "9876543216",
     phone: "9876543216",
     email: "studio@designhive.com",
 
-    // Social Media
     facebook: "https://facebook.com/designhive",
     instagram: "https://instagram.com/designhive",
     linkedin: "https://linkedin.com/company/designhive",
@@ -261,16 +272,19 @@ export const centersData = [
     secondaryCategories: [],
     teachingMode: "HYBRID",
 
-    // Location
     state: "Delhi",
     district: "Central Delhi",
     city: "New Delhi",
     location: "Mukherjee Nagar",
 
     rating: 4.8,
-    courses: ["UPSC Civil Services", "State PSC", "Essay Writing", "Current Affairs"],
+    courses: [
+      "EXAM_COACHING: UPSC Civil Services",
+      "EXAM_COACHING: State PSC",
+      "EXAM_COACHING: Essay Writing",
+      "EXAM_COACHING: Current Affairs"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
     gallery: [
@@ -280,13 +294,11 @@ export const centersData = [
 
     description: "Premier coaching institute for UPSC and state civil services preparation. Experienced faculty with proven results and comprehensive study materials.",
 
-    // Contact Information
     website: "https://upscaspirants.example.com",
     whatsapp: "9876543217",
     phone: "9876543217",
     email: "contact@upscaspirants.com",
 
-    // Social Media
     facebook: "https://facebook.com/upscaspirants",
     instagram: "https://instagram.com/upscaspirants",
     linkedin: null,
@@ -297,16 +309,19 @@ export const centersData = [
     secondaryCategories: [],
     teachingMode: "ONLINE",
 
-    // Location
     state: "Karnataka",
     district: "Bengaluru Urban",
     city: "Bangalore",
     location: "Whitefield, ITPL Main Road",
 
     rating: 4.7,
-    courses: ["AWS Solutions Architect", "Azure Fundamentals", "DevOps Engineering", "Kubernetes"],
+    courses: [
+      "TECHNOLOGY: AWS Solutions Architect",
+      "TECHNOLOGY: Azure Fundamentals",
+      "TECHNOLOGY: DevOps Engineering",
+      "TECHNOLOGY: Kubernetes"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
     gallery: [
@@ -316,13 +331,11 @@ export const centersData = [
 
     description: "Fast-track your cloud career with hands-on labs and certification-focused training. Short, practical DevOps and Cloud courses with job assistance.",
 
-    // Contact Information
     website: "https://cloudsprint.example.com",
     whatsapp: "9876543218",
     phone: "9876543218",
     email: "learn@cloudsprint.com",
 
-    // Social Media
     facebook: "https://facebook.com/cloudsprint",
     instagram: "https://instagram.com/cloudsprint",
     linkedin: "https://linkedin.com/company/cloudsprint",
@@ -333,16 +346,20 @@ export const centersData = [
     secondaryCategories: ["SKILL_DEVELOPMENT"],
     teachingMode: "HYBRID",
 
-    // Location
     state: "Maharashtra",
     district: "Mumbai",
     city: "Mumbai",
     location: "Bandra Kurla Complex",
 
     rating: 4.5,
-    courses: ["Executive Leadership", "Team Management", "Strategic Planning", "Corporate Training"],
+    courses: [
+      "MANAGEMENT: Executive Leadership",
+      "MANAGEMENT: Team Management",
+      "MANAGEMENT: Strategic Planning",
+      "SKILL_DEVELOPMENT: Corporate Training",
+      "SKILL_DEVELOPMENT: Communication"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1995/1995467.png",
     gallery: [
@@ -352,13 +369,11 @@ export const centersData = [
 
     description: "Executive leadership and management training for professionals. Transform into effective leaders with our comprehensive management programs.",
 
-    // Contact Information
     website: "https://leadershippro.example.com",
     whatsapp: "9876543219",
     phone: "9876543219",
     email: "info@leadershippro.com",
 
-    // Social Media
     facebook: "https://facebook.com/leadershippro",
     instagram: "https://instagram.com/leadershippro",
     linkedin: "https://linkedin.com/company/leadershippro",
@@ -369,16 +384,19 @@ export const centersData = [
     secondaryCategories: [],
     teachingMode: "OFFLINE",
 
-    // Location
     state: "Kerala",
     district: "Ernakulam",
     city: "Kochi",
     location: "Marine Drive, Near High Court",
 
     rating: 4.4,
-    courses: ["Spoken English", "Interview Skills", "Personality Development", "Public Speaking"],
+    courses: [
+      "SKILL_DEVELOPMENT: Spoken English",
+      "SKILL_DEVELOPMENT: Interview Skills",
+      "SKILL_DEVELOPMENT: Personality Development",
+      "SKILL_DEVELOPMENT: Public Speaking"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1995/1995574.png",
     gallery: [
@@ -388,13 +406,11 @@ export const centersData = [
 
     description: "Communication skills and interview training for freshers and professionals. Build confidence, speak fluently, and ace your interviews.",
 
-    // Contact Information
     website: "https://speakwell.example.com",
     whatsapp: "9876543220",
     phone: "9876543220",
     email: "info@speakwell.com",
 
-    // Social Media
     facebook: "https://facebook.com/speakwell",
     instagram: "https://instagram.com/speakwell",
     linkedin: null,
@@ -405,16 +421,20 @@ export const centersData = [
     secondaryCategories: ["SKILL_DEVELOPMENT"],
     teachingMode: "OFFLINE",
 
-    // Location
     state: "Uttar Pradesh",
     district: "Lucknow",
     city: "Lucknow",
     location: "Hazratganj, City Center",
 
     rating: 4.6,
-    courses: ["IBPS PO", "SBI Clerk", "RRB", "Bank Exams"],
+    courses: [
+      "EXAM_COACHING: IBPS PO",
+      "EXAM_COACHING: SBI Clerk",
+      "EXAM_COACHING: RRB",
+      "SKILL_DEVELOPMENT: Quantitative Aptitude",
+      "SKILL_DEVELOPMENT: Reasoning"
+    ],
 
-    // Images
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/3135/3135706.png",
     gallery: [
@@ -424,13 +444,11 @@ export const centersData = [
 
     description: "Specialized coaching for banking and SSC exams with experienced faculty and comprehensive study materials. High success rate in all banking exams.",
 
-    // Contact Information
     website: "https://bankingpro.example.com",
     whatsapp: "9876543221",
     phone: "9876543221",
     email: "contact@bankingpro.com",
 
-    // Social Media
     facebook: "https://facebook.com/bankingpro",
     instagram: "https://instagram.com/bankingpro",
     linkedin: "https://linkedin.com/company/bankingpro",
