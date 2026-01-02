@@ -143,6 +143,7 @@ model User {
   name      String
   email     String   @unique
   phone     String
+  gender    String
   password  String
 
   isVerified Boolean  @default(false)

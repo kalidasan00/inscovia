@@ -9,6 +9,7 @@ import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import reviewsRouter from "./routes/reviews.routes.js";
+import passwordResetRouter from "./routes/password-reset.routes.js";
 
 dotenv.config();
 
@@ -46,7 +47,7 @@ const generalLimiter = rateLimit({
 // Strict limit for auth routes - 5 attempts per 15 minutes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 10, // ← INCREASED FROM 5 TO 10 for testing
   message: { error: 'Too many login attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -62,16 +63,17 @@ const reviewLimiter = rateLimit({
 // Apply general rate limiting to all API routes
 app.use('/api/', generalLimiter);
 
-// Apply strict limiting to auth routes
+// Apply strict limiting ONLY to specific auth routes (not all /api/auth)
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
 // Apply review limiting
 app.use('/api/reviews', reviewLimiter);
 
-// Routes
+// ===== ROUTES (IMPORTANT ORDER) =====
 app.use("/api/centers", centersRouter);
-app.use("/api/auth", authRouter);
+app.use("/api/auth", passwordResetRouter); // ← PASSWORD RESET FIRST
+app.use("/api/auth", authRouter);           // ← THEN REGULAR AUTH
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/reviews", reviewsRouter);
@@ -116,5 +118,5 @@ app.listen(PORT, '0.0.0.0', () => {
     } catch (error) {
       console.error('❌ Keep-alive failed:', error.message);
     }
-  }, 10 * 60 * 1000); // Every 10 minutes
+  }, 10 * 60 * 1000);
 });

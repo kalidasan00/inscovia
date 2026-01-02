@@ -103,13 +103,19 @@ router.post("/verify-otp", async (req, res) => {
 
 // ============= EXISTING ROUTES =============
 
-// Student Register
+// Student Register - UPDATED WITH GENDER
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, gender, password } = req.body; // ← ADDED gender
 
-    if (!name || !email || !phone || !password) {
+    // Validation
+    if (!name || !email || !phone || !gender || !password) {
       return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Validate gender - ADDED
+    if (!["Male", "Female", "Other"].includes(gender)) {
+      return res.status(400).json({ error: "Invalid gender selection" });
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -127,6 +133,7 @@ router.post("/register", async (req, res) => {
         name,
         email,
         phone,
+        gender, // ← ADDED gender to database
         password: hashedPassword
       }
     });
@@ -145,7 +152,8 @@ router.post("/register", async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        gender: user.gender // ← ADDED gender to response
       }
     });
   } catch (error) {
@@ -195,7 +203,8 @@ router.post("/login", async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        gender: user.gender // ← ADDED gender to login response
       }
     });
   } catch (error) {
