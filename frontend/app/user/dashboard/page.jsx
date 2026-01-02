@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import Link from "next/link";
+import { useFavorites } from "../../../contexts/FavoritesContext";
+import { useCompare } from "../../../contexts/CompareContext";
+import { Heart, GitCompare, Search, MessageSquare } from "lucide-react";
 
 export default function UserDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { favoritesCount } = useFavorites();
+  const { compareCount } = useCompare();
 
   useEffect(() => {
     checkAuth();
@@ -102,6 +107,74 @@ export default function UserDashboard() {
           </div>
         </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Saved Centers */}
+          <Link
+            href="/user/saved"
+            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-red-200 transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
+                <Heart className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{favoritesCount}</p>
+                <p className="text-xs text-gray-600">Saved</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Compare */}
+          <Link
+            href="/user/compare"
+            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-blue-200 transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                <GitCompare className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{compareCount}</p>
+                <p className="text-xs text-gray-600">Comparing</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Profile Status */}
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-green-50 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {user.isVerified ? "Verified" : "Active"}
+                </p>
+                <p className="text-xs text-gray-600">Status</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Browse */}
+          <Link
+            href="/centers"
+            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-accent transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-accent/10 rounded-lg group-hover:bg-accent/20 transition-colors">
+                <Search className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Browse</p>
+                <p className="text-xs text-gray-600">Centers</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+
         {/* Profile Card */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -171,16 +244,14 @@ export default function UserDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <Link
             href="/centers"
             className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md hover:border-accent/30 transition-all group"
           >
             <div className="flex flex-col items-center text-center gap-3">
               <div className="p-4 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <Search className="w-8 h-8 text-blue-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Browse Centers</h3>
@@ -191,65 +262,92 @@ export default function UserDashboard() {
 
           <Link
             href="/user/saved"
-            className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md hover:border-accent/30 transition-all group"
+            className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md hover:border-accent/30 transition-all group relative"
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-red-50 rounded-full group-hover:bg-red-100 transition-colors">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
+              <div className="p-4 bg-red-50 rounded-full group-hover:bg-red-100 transition-colors relative">
+                <Heart className="w-8 h-8 text-red-600" />
+                {favoritesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {favoritesCount}
+                  </span>
+                )}
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Saved Centers</h3>
-                <p className="text-sm text-gray-600">View your saved centers</p>
+                <p className="text-sm text-gray-600">View your {favoritesCount} saved centers</p>
               </div>
             </div>
           </Link>
 
           <Link
-            href="/user/profile/edit"
+            href="/user/reviews"
             className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md hover:border-accent/30 transition-all group"
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-green-50 rounded-full group-hover:bg-green-100 transition-colors">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+              <div className="p-4 bg-purple-50 rounded-full group-hover:bg-purple-100 transition-colors">
+                <MessageSquare className="w-8 h-8 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Settings</h3>
-                <p className="text-sm text-gray-600">Manage your account</p>
+                <h3 className="font-semibold text-gray-900 mb-1">My Reviews</h3>
+                <p className="text-sm text-gray-600">Manage your reviews</p>
               </div>
             </div>
           </Link>
         </div>
 
         {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-blue-900 mb-1">Start Your Learning Journey</h3>
-              <p className="text-sm text-blue-700 mb-3">
-                Browse through hundreds of training centers and find the perfect course for your career growth.
-              </p>
-              <Link
-                href="/centers"
-                className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-              >
-                Explore Training Centers
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
+        {compareCount > 0 ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <GitCompare className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">
+                  You're comparing {compareCount} {compareCount === 1 ? 'center' : 'centers'}
+                </h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  View them side-by-side to find the perfect match for your learning goals.
+                </p>
+                <Link
+                  href="/user/compare"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  View Comparison
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 mb-1">Start Your Learning Journey</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  Browse through hundreds of training centers and find the perfect course for your career growth.
+                </p>
+                <Link
+                  href="/centers"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Explore Training Centers
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />

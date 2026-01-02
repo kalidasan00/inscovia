@@ -1,19 +1,34 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 import ReviewSection from "../../../components/ReviewSection";
+import { useFavorites } from "../../../contexts/FavoritesContext";
+import { useCompare } from "../../../contexts/CompareContext";
+import { Heart, GitCompare } from "lucide-react";
 
 export default function CenterDetails() {
   const { id } = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [center, setCenter] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showToast, setShowToast] = useState(null);
+
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isInCompare, toggleCompare, canAddMore } = useCompare();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+
+  // Check login status
+  useEffect(() => {
+    const userLoggedIn = localStorage.getItem("userLoggedIn") === "true";
+    setIsLoggedIn(userLoggedIn);
+  }, []);
 
   useEffect(() => {
     async function loadCenter() {
@@ -40,6 +55,38 @@ export default function CenterDetails() {
     loadCenter();
   }, [id, API_URL]);
 
+  const handleFavoriteClick = () => {
+    if (!isLoggedIn) {
+      setShowToast("login-required");
+      setTimeout(() => {
+        router.push("/user-menu");
+      }, 1500);
+      return;
+    }
+
+    toggleFavorite(id);
+    setShowToast(isFavorite(id) ? "removed-fav" : "added-fav");
+    setTimeout(() => setShowToast(null), 2000);
+  };
+
+  const handleCompareClick = () => {
+    if (!isLoggedIn) {
+      setShowToast("login-required");
+      setTimeout(() => {
+        router.push("/user-menu");
+      }, 1500);
+      return;
+    }
+
+    const result = toggleCompare(id);
+    if (result.success) {
+      setShowToast(result.action === "added" ? "added-compare" : "removed-compare");
+    } else {
+      setShowToast("compare-limit");
+    }
+    setTimeout(() => setShowToast(null), 2000);
+  };
+
   // Parse courses by category
   const parseCourses = (courses) => {
     const coursesByCategory = {
@@ -52,14 +99,12 @@ export default function CenterDetails() {
     if (!courses || courses.length === 0) return coursesByCategory;
 
     courses.forEach(course => {
-      // Check if course has category prefix
       if (course.includes(':')) {
         const [category, courseName] = course.split(':').map(s => s.trim());
         if (coursesByCategory[category]) {
           coursesByCategory[category].push(courseName);
         }
       } else {
-        // Old format without category - assign to primary category
         if (center?.primaryCategory) {
           coursesByCategory[center.primaryCategory].push(course);
         }
@@ -69,16 +114,13 @@ export default function CenterDetails() {
     return coursesByCategory;
   };
 
-  // Get categories that have courses
   const getCategoriesWithCourses = (coursesByCategory) => {
     const categories = [];
 
-    // Check primary category first
     if (center?.primaryCategory && coursesByCategory[center.primaryCategory]?.length > 0) {
       categories.push(center.primaryCategory);
     }
 
-    // Then secondary categories
     center?.secondaryCategories?.forEach(cat => {
       if (coursesByCategory[cat]?.length > 0) {
         categories.push(cat);
@@ -88,7 +130,6 @@ export default function CenterDetails() {
     return categories;
   };
 
-  // Set initial active tab based on filter or primary category
   useEffect(() => {
     if (!center || !center.courses) return;
 
@@ -97,14 +138,11 @@ export default function CenterDetails() {
 
     if (categoriesWithCourses.length === 0) return;
 
-    // Check if user filtered by a category
     const filterCategory = searchParams.get('category');
 
     if (filterCategory && categoriesWithCourses.includes(filterCategory)) {
-      // Show filtered category first
       setActiveTab(filterCategory);
     } else {
-      // Show primary category first
       setActiveTab(categoriesWithCourses[0]);
     }
   }, [center, searchParams]);
@@ -150,11 +188,27 @@ export default function CenterDetails() {
 
   const coursesByCategory = parseCourses(center.courses);
   const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
+  const isLiked = isFavorite(id);
+  const isComparing = isInCompare(id);
 
   return (
     <>
       <Navbar />
-      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-20 md:pb-8">
+      <main className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-20 md:pb-8 relative">
+        {/* Toast Notifications */}
+        {showToast && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+            <div className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg whitespace-nowrap">
+              {showToast === "added-fav" && "❤️ Added to favorites"}
+              {showToast === "removed-fav" && "Removed from favorites"}
+              {showToast === "added-compare" && "✓ Added to compare"}
+              {showToast === "removed-compare" && "Removed from compare"}
+              {showToast === "compare-limit" && "⚠️ Max 3 centers to compare"}
+              {showToast === "login-required" && "🔒 Please login to continue"}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg sm:rounded-xl shadow-sm overflow-hidden border">
           {/* Cover Image */}
           <div className="relative h-32 sm:h-48 bg-gradient-to-br from-accent to-accent/80">
@@ -177,6 +231,32 @@ export default function CenterDetails() {
                   </svg>
                 )}
               </div>
+            </div>
+
+            {/* Save & Compare Buttons - Top Right */}
+            <div className="absolute top-2 right-2 flex gap-2">
+              <button
+                onClick={handleFavoriteClick}
+                className={`p-2 rounded-lg backdrop-blur-sm transition-all ${
+                  isLiked
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'bg-white/90 text-gray-700 hover:bg-white'
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              </button>
+
+              <button
+                onClick={handleCompareClick}
+                disabled={!canAddMore() && !isComparing}
+                className={`p-2 rounded-lg backdrop-blur-sm transition-all ${
+                  isComparing
+                    ? 'bg-blue-500 text-white hover:bg-blue-600'
+                    : 'bg-white/90 text-gray-700 hover:bg-white disabled:opacity-50'
+                }`}
+              >
+                <GitCompare className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
@@ -234,7 +314,6 @@ export default function CenterDetails() {
                   Courses Offered
                 </h2>
 
-                {/* Tabs (only show if multiple categories) */}
                 {categoriesWithCourses.length > 1 && (
                   <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
                     {categoriesWithCourses.map(cat => (
@@ -253,7 +332,6 @@ export default function CenterDetails() {
                   </div>
                 )}
 
-                {/* Course List */}
                 {activeTab && coursesByCategory[activeTab] && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {coursesByCategory[activeTab].map((course, i) => (

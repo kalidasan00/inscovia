@@ -1,6 +1,8 @@
 // app/layout.js
 import "./globals.css";
 import BottomNav from "../components/BottomNav";
+import { FavoritesProvider } from "../contexts/FavoritesContext";
+import { CompareProvider } from "../contexts/CompareContext";
 
 export const metadata = {
   title: "Inscovia — Coaching & Training Centers",
@@ -11,8 +13,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="bg-gray-50 text-gray-900">
-        {children}
-        <BottomNav />
+        <FavoritesProvider>
+          <CompareProvider>
+            {children}
+            <BottomNav />
+          </CompareProvider>
+        </FavoritesProvider>
       </body>
     </html>
   );

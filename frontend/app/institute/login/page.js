@@ -12,7 +12,6 @@ export default function InstituteLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // ✅ FIXED: Use environment variable
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   const handleSubmit = async (e) => {
@@ -92,6 +91,20 @@ export default function InstituteLogin() {
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
                   required
                 />
+              </div>
+
+              {/* Forgot Password Link */}
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" className="rounded border-gray-300 text-accent focus:ring-accent" />
+                  <span className="text-gray-600">Remember me</span>
+                </label>
+                <Link
+                  href="/institute/forgot-password"
+                  className="text-accent hover:text-accent/80 font-medium"
+                >
+                  Forgot password?
+                </Link>
               </div>
 
               <button
