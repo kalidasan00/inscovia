@@ -6,6 +6,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import CenterCard from "../../components/CenterCard";
 import SmartSearch from "../../components/SmartSearch";
+import MobileFilters from "../../components/MobileFilters";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
@@ -13,6 +14,7 @@ export default function Centers() {
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -110,6 +112,25 @@ export default function Centers() {
     router.push('/centers');
   };
 
+  // Handle mobile filter changes
+  const handleMobileFilterChange = (newFilters) => {
+    const params = new URLSearchParams();
+
+    if (newFilters.state) {
+      params.set('state', newFilters.state);
+    }
+
+    if (newFilters.city) {
+      params.set('city', newFilters.city);
+    }
+
+    if (newFilters.categories && newFilters.categories.length > 0) {
+      params.set('category', newFilters.categories[0]);
+    }
+
+    router.push(`/centers?${params.toString()}`);
+  };
+
   return (
     <>
       <Navbar />
@@ -124,19 +145,19 @@ export default function Centers() {
 
             {/* Mobile Filter Toggle */}
             <button
-              onClick={() => setShowFilters(!showFilters)}
+              onClick={() => setShowMobileFilters(true)}
               className="md:hidden px-3 py-1.5 bg-accent text-white rounded-lg text-xs font-medium"
             >
               Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
             </button>
           </div>
 
-          {/* Smart Search - NEW */}
+          {/* Smart Search */}
           <SmartSearch centers={centers} />
         </div>
 
         <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
-          {/* Filters Sidebar */}
+          {/* Filters Sidebar - Desktop */}
           <aside className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-56 flex-shrink-0`}>
             <div className="bg-white rounded-lg border p-3 sticky top-20">
               <div className="flex items-center justify-between mb-3">
@@ -270,6 +291,22 @@ export default function Centers() {
           </div>
         </div>
       </main>
+
+      {/* Mobile Filters Modal */}
+      <MobileFilters
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        filters={{
+          categories: category ? [category] : [],
+          teachingModes: [],
+          state: state || "",
+          city: city || ""
+        }}
+        onFilterChange={handleMobileFilterChange}
+        categories={["TECHNOLOGY", "MANAGEMENT", "SKILL_DEVELOPMENT", "EXAM_COACHING"]}
+        teachingModes={["ONLINE", "OFFLINE", "HYBRID"]}
+        states={uniqueStates}
+      />
 
       <Footer />
     </>
