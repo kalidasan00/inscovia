@@ -8,7 +8,10 @@ export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('🔍 Admin login attempt:', email); // DEBUG
+
     if (!email || !password) {
+      console.log('❌ Missing email or password'); // DEBUG
       return res.status(400).json({ error: "Email and password are required" });
     }
 
@@ -17,18 +20,26 @@ export const adminLogin = async (req, res) => {
       where: { email }
     });
 
+    console.log('👤 Admin found:', !!admin); // DEBUG
+    console.log('🎭 Role:', admin?.role); // DEBUG
+    console.log('✅ isActive:', admin?.isActive); // DEBUG
+
     if (!admin || admin.role !== "ADMIN") {
+      console.log('❌ Invalid credentials - not admin or not found'); // DEBUG
       return res.status(401).json({ error: "Invalid admin credentials" });
     }
 
     if (!admin.isActive) {
+      console.log('❌ Admin account deactivated'); // DEBUG
       return res.status(403).json({ error: "Admin account is deactivated" });
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, admin.password);
+    console.log('🔑 Password valid:', isPasswordValid); // DEBUG
 
     if (!isPasswordValid) {
+      console.log('❌ Invalid password'); // DEBUG
       return res.status(401).json({ error: "Invalid admin credentials" });
     }
 
@@ -38,6 +49,8 @@ export const adminLogin = async (req, res) => {
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "7d" }
     );
+
+    console.log('✅ Login successful, token generated'); // DEBUG
 
     res.json({
       success: true,
@@ -51,7 +64,7 @@ export const adminLogin = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Admin login error:", error);
+    console.error("❌ Admin login error:", error);
     res.status(500).json({ error: "Login failed" });
   }
 };
@@ -59,13 +72,16 @@ export const adminLogin = async (req, res) => {
 // Get Dashboard Statistics
 export const getDashboardStats = async (req, res) => {
   try {
+    console.log('📊 Fetching dashboard stats...'); // DEBUG
+
     const [
       totalCenters,
       totalInstitutes,
       pendingInstitutes,
       activeInstitutes,
       totalUsers,
-      recentCenters
+      recentCenters,
+      recentReviews
     ] = await Promise.all([
       prisma.center.count(),
       prisma.instituteUser.count({ where: { role: "INSTITUTE" } }),
@@ -87,8 +103,21 @@ export const getDashboardStats = async (req, res) => {
             }
           }
         }
+      }),
+      prisma.review.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          center: {
+            select: {
+              name: true
+            }
+          }
+        }
       })
     ]);
+
+    console.log('✅ Dashboard stats loaded successfully'); // DEBUG
 
     res.json({
       stats: {
@@ -98,10 +127,11 @@ export const getDashboardStats = async (req, res) => {
         activeInstitutes,
         totalUsers
       },
-      recentCenters
+      recentCenters,
+      recentReviews
     });
   } catch (error) {
-    console.error("Dashboard stats error:", error);
+    console.error("❌ Dashboard stats error:", error);
     res.status(500).json({ error: "Failed to fetch dashboard stats" });
   }
 };
@@ -115,6 +145,8 @@ export const getAllInstitutes = async (req, res) => {
 
     if (status === "pending") {
       where.isVerified = false;
+    } else if (status === "verified") {
+      where.isVerified = true;
     } else if (status === "active") {
       where.isActive = true;
       where.isVerified = true;
@@ -125,13 +157,8 @@ export const getAllInstitutes = async (req, res) => {
     const institutes = await prisma.instituteUser.findMany({
       where,
       include: {
-        centers: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            rating: true
-          }
+        _count: {
+          select: { centers: true }
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -173,7 +200,6 @@ export const deleteInstitute = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // This will also delete associated centers due to cascade
     await prisma.instituteUser.delete({
       where: { id }
     });

@@ -27,7 +27,9 @@ async function createAdmin() {
         email: 'admin@inscovia.com',
         phone: '1234567890',
         password: hashedPassword,
-        type: 'Admin',
+        primaryCategory: 'TECHNOLOGY', // REQUIRED FIELD
+        secondaryCategories: [],
+        teachingMode: 'HYBRID', // REQUIRED FIELD
         state: 'Karnataka',
         district: 'Bangalore',
         city: 'Bangalore',
