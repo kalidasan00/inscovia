@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 export default function UserMenuPage() {
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function UserMenuPage() {
     name: "",
     email: "",
     phone: "",
-    gender: "", // NEW: Gender field
+    gender: "",
     password: "",
     confirmPassword: ""
   });
@@ -46,6 +48,10 @@ export default function UserMenuPage() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handlePhoneChange = (value) => {
+    setSignupData({ ...signupData, phone: value || "" });
   };
 
   // Handle Login
@@ -88,19 +94,16 @@ export default function UserMenuPage() {
     e.preventDefault();
     setError("");
 
-    // Validate gender
     if (!signupData.gender) {
       setError("Please select your gender");
       return;
     }
 
-    // Validate passwords match
     if (signupData.password !== signupData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    // Validate password length
     if (signupData.password.length < 6) {
       setError("Password must be at least 6 characters");
       return;
@@ -147,7 +150,6 @@ export default function UserMenuPage() {
     }
 
     try {
-      // Verify OTP
       const verifyResponse = await fetch(`${API_URL}/user/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -163,7 +165,6 @@ export default function UserMenuPage() {
         throw new Error(verifyData.error || "Invalid OTP");
       }
 
-      // Register User with gender
       const registerResponse = await fetch(`${API_URL}/user/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,7 +172,7 @@ export default function UserMenuPage() {
           name: signupData.name,
           email: signupData.email,
           phone: signupData.phone,
-          gender: signupData.gender, // NEW: Include gender
+          gender: signupData.gender,
           password: signupData.password
         })
       });
@@ -229,49 +230,40 @@ export default function UserMenuPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4 pb-20">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 pb-20">
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-md border border-gray-200">
 
         {/* Welcome Menu */}
         {activeTab === "menu" && (
           <>
-            <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-10 text-white text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
-
-              <div className="relative z-10">
-                <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <h1 className="text-3xl font-bold mb-2">Welcome to Inscovia</h1>
-                <p className="text-blue-100">Your learning journey starts here</p>
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-8 text-white text-center rounded-t-xl">
+              <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
               </div>
+              <h1 className="text-2xl font-bold">Welcome to Inscovia</h1>
             </div>
 
-            <div className="p-8 space-y-4">
+            <div className="p-6 space-y-3">
               <button
                 onClick={() => setActiveTab("login")}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
                 Login to Your Account
               </button>
 
               <button
                 onClick={() => setActiveTab("signup")}
-                className="w-full border-2 border-blue-600 text-blue-600 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all"
+                className="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
               >
                 Create New Account
               </button>
 
-              <div className="text-center pt-6 border-t border-gray-200">
-                <p className="text-sm text-gray-500 mb-3">Or continue as</p>
-                <Link href="/institute/login" className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1">
-                  Institute Login
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
+              <div className="text-center pt-4 border-t border-gray-200 mt-4">
+                <p className="text-xs text-gray-500 mb-2">Or continue as</p>
+                <Link href="/institute/login" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                  Institute Login →
                 </Link>
               </div>
             </div>
@@ -281,50 +273,47 @@ export default function UserMenuPage() {
         {/* Login Form */}
         {activeTab === "login" && (
           <>
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 text-white">
+            <div className="bg-white border-b border-gray-200 p-5 rounded-t-xl">
               <button
                 onClick={() => setActiveTab("menu")}
-                className="flex items-center text-white/90 hover:text-white mb-4 transition-colors"
+                className="flex items-center text-gray-600 hover:text-gray-900 mb-3 text-sm"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back
               </button>
-              <h2 className="text-2xl font-bold">Welcome Back</h2>
-              <p className="text-blue-100 mt-1">Login to continue your journey</p>
+              <h2 className="text-xl font-bold text-gray-900">Welcome Back</h2>
+              <p className="text-gray-600 text-sm mt-1">Enter your credentials</p>
             </div>
 
             {error && (
-              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-start gap-2">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="p-6 space-y-5">
+            <form onSubmit={handleLogin} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
                 <input
                   type="email"
                   required
                   value={loginData.email}
                   onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="your@email.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
                 <input
                   type="password"
                   required
                   value={loginData.password}
                   onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="••••••••"
                 />
               </div>
@@ -332,7 +321,7 @@ export default function UserMenuPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
               >
                 {loading ? "Logging in..." : "Login"}
               </button>
@@ -346,7 +335,7 @@ export default function UserMenuPage() {
                       setActiveTab("signup");
                       setError("");
                     }}
-                    className="text-blue-600 hover:text-blue-700 font-semibold"
+                    className="text-blue-600 hover:text-blue-700 font-medium"
                   >
                     Sign Up
                   </button>
@@ -359,156 +348,137 @@ export default function UserMenuPage() {
         {/* Signup Form */}
         {activeTab === "signup" && (
           <>
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 text-white">
+            <div className="bg-white border-b border-gray-200 p-5 rounded-t-xl">
               <button
                 onClick={() => setActiveTab("menu")}
-                className="flex items-center text-white/90 hover:text-white mb-4 transition-colors"
+                className="flex items-center text-gray-600 hover:text-gray-900 mb-3 text-sm"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 Back
               </button>
-              <h2 className="text-2xl font-bold">Create Account</h2>
-              <p className="text-blue-100 mt-1">Join thousands of learners</p>
+              <h2 className="text-xl font-bold text-gray-900">Create Account</h2>
+              <p className="text-gray-600 text-sm mt-1">Fill in your details</p>
             </div>
 
             {error && (
-              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-start gap-2">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleSendOTP} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name *</label>
                 <input
                   type="text"
                   required
                   value={signupData.name}
                   onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address *</label>
                 <input
                   type="email"
                   required
                   value={signupData.email}
                   onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="your@email.com"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
-                <input
-                  type="tel"
-                  required
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number *</label>
+                <PhoneInput
+                  international
+                  defaultCountry="IN"
                   value={signupData.phone}
-                  onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  placeholder="9876543210"
+                  onChange={handlePhoneChange}
+                  className="phone-input-user"
+                  placeholder="Enter phone number"
+                  required
                 />
+                <style jsx global>{`
+                  .phone-input-user .PhoneInputInput {
+                    width: 100%;
+                    padding: 10px 12px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 0.5rem;
+                    font-size: 14px;
+                    outline: none;
+                  }
+                  .phone-input-user .PhoneInputInput:focus {
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+                  }
+                  .phone-input-user .PhoneInputCountry {
+                    margin-right: 8px;
+                  }
+                `}</style>
               </div>
 
-              {/* Gender Field - NEW */}
+              {/* Gender Field */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Gender *</label>
-                <div className="grid grid-cols-3 gap-3">
-                  <label className={`flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                    signupData.gender === "Male"
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}>
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="Male"
-                      checked={signupData.gender === "Male"}
-                      onChange={(e) => setSignupData({ ...signupData, gender: e.target.value })}
-                      className="sr-only"
-                      required
-                    />
-                    <span className={`text-sm font-medium ${signupData.gender === "Male" ? "text-blue-600" : "text-gray-700"}`}>
-                      Male
-                    </span>
-                  </label>
-
-                  <label className={`flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                    signupData.gender === "Female"
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}>
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="Female"
-                      checked={signupData.gender === "Female"}
-                      onChange={(e) => setSignupData({ ...signupData, gender: e.target.value })}
-                      className="sr-only"
-                      required
-                    />
-                    <span className={`text-sm font-medium ${signupData.gender === "Female" ? "text-blue-600" : "text-gray-700"}`}>
-                      Female
-                    </span>
-                  </label>
-
-                  <label className={`flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                    signupData.gender === "Other"
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}>
-                    <input
-                      type="radio"
-                      name="gender"
-                      value="Other"
-                      checked={signupData.gender === "Other"}
-                      onChange={(e) => setSignupData({ ...signupData, gender: e.target.value })}
-                      className="sr-only"
-                    />
-                    <span className={`text-sm font-medium ${signupData.gender === "Other" ? "text-blue-600" : "text-gray-700"}`}>
-                      Other
-                    </span>
-                  </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {["Male", "Female", "Other"].map((gender) => (
+                    <label
+                      key={gender}
+                      className={`flex items-center justify-center p-2.5 border-2 rounded-lg cursor-pointer transition-all ${
+                        signupData.gender === gender
+                          ? "border-blue-600 bg-blue-50 text-blue-600"
+                          : "border-gray-300 hover:border-gray-400 text-gray-700"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="gender"
+                        value={gender}
+                        checked={signupData.gender === gender}
+                        onChange={(e) => setSignupData({ ...signupData, gender: e.target.value })}
+                        className="sr-only"
+                        required
+                      />
+                      <span className="text-sm font-medium">{gender}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Password *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Password *</label>
                 <input
                   type="password"
                   required
                   value={signupData.password}
                   onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  placeholder="Create a password (min 6 chars)"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Min 6 characters"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password *</label>
                 <input
                   type="password"
                   required
                   value={signupData.confirmPassword}
                   onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                  placeholder="Re-enter your password"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Re-enter password"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-6"
               >
                 {loading ? "Sending OTP..." : "Continue →"}
               </button>
@@ -522,7 +492,7 @@ export default function UserMenuPage() {
                       setActiveTab("login");
                       setError("");
                     }}
-                    className="text-blue-600 hover:text-blue-700 font-semibold"
+                    className="text-blue-600 hover:text-blue-700 font-medium"
                   >
                     Login
                   </button>
@@ -535,35 +505,28 @@ export default function UserMenuPage() {
         {/* OTP Verification */}
         {activeTab === "otp" && (
           <>
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-10 text-white text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-
-              <div className="relative z-10">
-                <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Verify Your Email</h2>
-                <p className="text-blue-100">
-                  We sent a 6-digit code to<br />
-                  <span className="font-semibold text-white">{signupData.email}</span>
-                </p>
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-8 text-white text-center rounded-t-xl">
+              <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
               </div>
+              <h2 className="text-xl font-bold mb-1">Verify Your Email</h2>
+              <p className="text-blue-100 text-sm">
+                Code sent to<br />
+                <span className="font-medium text-white">{signupData.email}</span>
+              </p>
             </div>
 
             {error && (
-              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-start gap-2">
-                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleVerifyAndRegister} className="p-8 space-y-6">
+            <form onSubmit={handleVerifyAndRegister} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 text-center">
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
                   Enter 6-Digit Code
                 </label>
                 <input
@@ -572,42 +535,40 @@ export default function UserMenuPage() {
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="000000"
                   maxLength={6}
-                  className="w-full px-4 py-4 text-center text-3xl font-bold border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest"
+                  className="w-full px-4 py-3 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest"
                   required
                 />
               </div>
 
               {timer > 0 && (
-                <div className="text-center p-3 bg-blue-50 rounded-xl">
-                  <p className="text-sm text-gray-600">
-                    Code expires in <span className="font-bold text-blue-600 text-lg">{formatTime(timer)}</span>
-                  </p>
+                <div className="text-center text-sm text-gray-600">
+                  Code expires in <span className="font-semibold text-blue-600">{formatTime(timer)}</span>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Verifying..." : "Verify & Register"}
               </button>
 
-              <div className="text-center space-y-3">
+              <div className="text-center space-y-2">
                 <button
                   type="button"
                   onClick={handleResendOTP}
                   disabled={!canResend || loading}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-semibold disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
-                  {canResend ? "↻ Resend OTP" : "Resend available after timer"}
+                  {canResend ? "Resend OTP" : "Resend after timer expires"}
                 </button>
 
                 <div>
                   <button
                     type="button"
                     onClick={() => setActiveTab("signup")}
-                    className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                    className="text-sm text-gray-600 hover:text-gray-900"
                   >
                     ← Change email
                   </button>

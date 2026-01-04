@@ -2,8 +2,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
+import { getStateNames, getDistrictsByState } from "../../../lib/locationUtils";
 
 export default function RegisterInstitute() {
   const [step, setStep] = useState(1);
@@ -26,6 +29,11 @@ export default function RegisterInstitute() {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
+
+  // Location state
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
+
   const router = useRouter();
 
   const API_URL = "http://localhost:5001/api";
@@ -36,6 +44,31 @@ export default function RegisterInstitute() {
     { value: "SKILL_DEVELOPMENT", label: "Skills Development" },
     { value: "EXAM_COACHING", label: "Exam Coaching" }
   ];
+
+  // Load states on mount
+  useEffect(() => {
+    try {
+      const stateList = getStateNames();
+      setStates(stateList);
+    } catch (error) {
+      console.error("Error loading states:", error);
+    }
+  }, []);
+
+  // Load districts when state changes
+  useEffect(() => {
+    if (formData.state) {
+      try {
+        const districtList = getDistrictsByState(formData.state);
+        setDistricts(districtList);
+      } catch (error) {
+        console.error("Error loading districts:", error);
+        setDistricts([]);
+      }
+    } else {
+      setDistricts([]);
+    }
+  }, [formData.state]);
 
   useEffect(() => {
     if (timer > 0) {
@@ -49,9 +82,27 @@ export default function RegisterInstitute() {
   }, [timer]);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // Reset district when state changes
+    if (name === 'state') {
+      setFormData({
+        ...formData,
+        [name]: value,
+        district: ""
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
+  };
+
+  const handlePhoneChange = (value) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      phone: value || ""
     });
   };
 
@@ -419,15 +470,32 @@ export default function RegisterInstitute() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Phone Number *
                         </label>
-                        <input
-                          type="tel"
-                          name="phone"
+                        <PhoneInput
+                          international
+                          defaultCountry="IN"
                           value={formData.phone}
-                          onChange={handleChange}
-                          placeholder="+91 9876543210"
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          onChange={handlePhoneChange}
+                          className="phone-input-custom"
+                          placeholder="Enter phone number"
                           required
                         />
+                        <style jsx global>{`
+                          .phone-input-custom .PhoneInputInput {
+                            width: 100%;
+                            padding: 10px 14px;
+                            border: 1px solid #d1d5db;
+                            border-radius: 0.5rem;
+                            font-size: 14px;
+                            outline: none;
+                          }
+                          .phone-input-custom .PhoneInputInput:focus {
+                            border-color: #3b82f6;
+                            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+                          }
+                          .phone-input-custom .PhoneInputCountry {
+                            margin-right: 8px;
+                          }
+                        `}</style>
                       </div>
                     </div>
                   </div>
@@ -438,28 +506,46 @@ export default function RegisterInstitute() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
-                        <input
-                          type="text"
+                        <select
                           name="state"
                           value={formData.state}
                           onChange={handleChange}
-                          placeholder="Karnataka"
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                           required
-                        />
+                        >
+                          <option value="">Select State</option>
+                          {states.map((state) => (
+                            <option key={state} value={state}>
+                              {state}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">District *</label>
-                        <input
-                          type="text"
+                        <select
                           name="district"
                           value={formData.district}
                           onChange={handleChange}
-                          placeholder="Bangalore Urban"
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          disabled={!formData.state}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
                           required
-                        />
+                        >
+                          <option value="">
+                            {formData.state ? 'Select District' : 'Select State First'}
+                          </option>
+                          {districts.map((district) => (
+                            <option key={district} value={district}>
+                              {district}
+                            </option>
+                          ))}
+                        </select>
+                        {formData.state && districts.length > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {districts.length} districts available
+                          </p>
+                        )}
                       </div>
 
                       <div>

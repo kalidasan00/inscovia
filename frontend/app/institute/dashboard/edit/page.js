@@ -2,8 +2,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
+import { getStateNames, getDistrictsByState } from "../../../../lib/locationUtils";
 
 // Category and Teaching Mode options based on schema enums
 const CATEGORIES = [
@@ -25,6 +28,10 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const [centerId, setCenterId] = useState(null);
   const [error, setError] = useState(null);
+
+  // Location state
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
 
   // ✅ USE ENVIRONMENT VARIABLE
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -52,6 +59,31 @@ export default function EditProfile() {
   const [coverFile, setCoverFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
+
+  // Load states on mount
+  useEffect(() => {
+    try {
+      const stateList = getStateNames();
+      setStates(stateList);
+    } catch (error) {
+      console.error("Error loading states:", error);
+    }
+  }, []);
+
+  // Load districts when state changes
+  useEffect(() => {
+    if (formData.state) {
+      try {
+        const districtList = getDistrictsByState(formData.state);
+        setDistricts(districtList);
+      } catch (error) {
+        console.error("Error loading districts:", error);
+        setDistricts([]);
+      }
+    } else {
+      setDistricts([]);
+    }
+  }, [formData.state]);
 
   useEffect(() => {
     fetchInstituteData();
@@ -119,7 +151,24 @@ export default function EditProfile() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Reset district when state changes
+    if (name === 'state') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        district: ""
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handlePhoneChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      phone: value || ""
+    }));
   };
 
   const handleSecondaryCategoryToggle = (category) => {
@@ -476,16 +525,32 @@ export default function EditProfile() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Phone <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="tel"
-                  name="phone"
+                <PhoneInput
+                  international
+                  defaultCountry="IN"
                   value={formData.phone}
-                  onChange={handleInputChange}
+                  onChange={handlePhoneChange}
+                  className="phone-input-edit"
+                  placeholder="Enter phone number"
                   required
-                  pattern="[6-9][0-9]{9}"
-                  placeholder="10-digit mobile number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                 />
+                <style jsx global>{`
+                  .phone-input-edit .PhoneInputInput {
+                    width: 100%;
+                    padding: 8px 12px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 0.375rem;
+                    font-size: 14px;
+                    outline: none;
+                  }
+                  .phone-input-edit .PhoneInputInput:focus {
+                    border-color: var(--accent-color, #3b82f6);
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+                  }
+                  .phone-input-edit .PhoneInputCountry {
+                    margin-right: 8px;
+                  }
+                `}</style>
               </div>
 
               <div>
@@ -557,40 +622,60 @@ export default function EditProfile() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City <span className="text-red-500">*</span>
+                  State <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
+                <select
+                  name="state"
+                  value={formData.state}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent bg-white"
+                >
+                  <option value="">Select State</option>
+                  {states.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   District <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   name="district"
                   value={formData.district}
                   onChange={handleInputChange}
+                  disabled={!formData.state}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {formData.state ? 'Select District' : 'Select State First'}
+                  </option>
+                  {districts.map((district) => (
+                    <option key={district} value={district}>
+                      {district}
+                    </option>
+                  ))}
+                </select>
+                {formData.state && districts.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {districts.length} districts available
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State <span className="text-red-500">*</span>
+                  City <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="state"
-                  value={formData.state}
+                  name="city"
+                  value={formData.city}
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"

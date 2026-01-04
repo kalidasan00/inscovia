@@ -76,6 +76,7 @@ export default function Centers() {
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
     filtered = filtered.filter((c) => {
+      // Build searchable text from all relevant fields
       const searchableText = [
         c.name,
         c.primaryCategory,
@@ -88,7 +89,15 @@ export default function Centers() {
         c.description || "",
         ...(c.courses || [])
       ].join(" ").toLowerCase();
-      return searchableText.includes(query);
+
+      // Split query into words for better matching
+      // This helps match "AI/ML" or "Artificial Intelligence Machine Learning"
+      const queryWords = query.split(/[\s\/]+/).filter(Boolean);
+
+      // Check if all query words are found in searchable text
+      // OR if the full query is found as-is
+      return queryWords.every(word => searchableText.includes(word)) ||
+             searchableText.includes(query);
     });
   }
 
@@ -140,7 +149,7 @@ export default function Centers() {
         <div className="mb-3 sm:mb-4">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              {category ? formatCategory(category) : "Training Centers"}
+              {category ? formatCategory(category) : searchQuery ? `Search: ${searchQuery}` : "Training Centers"}
             </h1>
 
             {/* Mobile Filter Toggle */}

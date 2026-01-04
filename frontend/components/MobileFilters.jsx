@@ -109,7 +109,7 @@ export default function MobileFilters({
       </div>
 
       {/* Content - Sidebar Layout */}
-      <div className="flex h-[calc(100vh-120px)]">
+      <div className="flex h-[calc(100vh-220px)]">
         {/* Left Sidebar - Filter Categories */}
         <div className="w-2/5 bg-gray-50 overflow-y-auto border-r border-gray-200">
           {filterSections.map((section) => (
@@ -182,7 +182,7 @@ export default function MobileFilters({
       </div>
 
       {/* Footer Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex gap-3 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 pb-20 flex gap-3 shadow-lg">
         <button
           onClick={handleReset}
           className="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"

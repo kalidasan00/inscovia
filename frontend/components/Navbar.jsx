@@ -6,10 +6,10 @@ import {
   GraduationCap,
   Menu,
   X,
-  Building2,
   User,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  Search
 } from "lucide-react";
 
 export default function Navbar() {
@@ -45,257 +45,177 @@ export default function Navbar() {
     };
   }, [pathname]);
 
-  const handleInstituteLogout = () => {
-    localStorage.removeItem("instituteLoggedIn");
-    localStorage.removeItem("instituteToken");
-    localStorage.removeItem("instituteData");
-    setIsInstituteLoggedIn(false);
+  const handleLogout = () => {
+    if (isInstituteLoggedIn) {
+      localStorage.removeItem("instituteLoggedIn");
+      localStorage.removeItem("instituteToken");
+      localStorage.removeItem("instituteData");
+    }
+    if (isUserLoggedIn) {
+      localStorage.removeItem("userLoggedIn");
+      localStorage.removeItem("userData");
+      localStorage.removeItem("userToken");
+    }
     window.location.href = "/";
   };
 
-  const handleUserLogout = () => {
-    localStorage.removeItem("userLoggedIn");
-    localStorage.removeItem("userData");
-    setIsUserLoggedIn(false);
-    window.location.href = "/";
-  };
+  const isLoggedIn = isInstituteLoggedIn || isUserLoggedIn;
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
+    <nav className="bg-white shadow-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-14">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
-              <GraduationCap className="w-6 h-6 text-white" />
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-accent">
-              Inscovia
-            </span>
+            <span className="text-lg font-bold text-gray-900">Inscovia</span>
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             {/* Navigation Links */}
             <div className="flex items-center gap-6">
               <Link
+                href="/"
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  pathname === '/' ? 'text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                Home
+              </Link>
+              <Link
                 href="/centers"
-                className={`text-sm font-medium transition-colors hover:text-accent ${
-                  pathname === '/centers' ? 'text-accent' : 'text-gray-700'
-                }`}
+                className="flex items-center gap-1.5 text-sm text-gray-700 hover:text-blue-600 transition-colors"
               >
-                Browse Centers
-              </Link>
-              <Link
-                href="/about"
-                className={`text-sm font-medium transition-colors hover:text-accent ${
-                  pathname === '/about' ? 'text-accent' : 'text-gray-700'
-                }`}
-              >
-                About
-              </Link>
-              <Link
-                href="/contact"
-                className={`text-sm font-medium transition-colors hover:text-accent ${
-                  pathname === '/contact' ? 'text-accent' : 'text-gray-700'
-                }`}
-              >
-                Contact
+                <Search className="w-4 h-4" />
+                <span>Browse</span>
               </Link>
             </div>
 
             {/* Auth Section */}
-            <div className="flex items-center gap-2">
-              {/* User */}
-              {isUserLoggedIn ? (
-                <>
-                  <Link
-                    href="/user/dashboard"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-accent text-sm font-medium rounded-lg hover:bg-accent/10 transition-colors"
-                  >
-                    <User className="w-4 h-4" />
-                    <span>Account</span>
-                  </Link>
-                  <button
-                    onClick={handleUserLogout}
-                    className="p-1.5 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                    title="Logout"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
+            {isLoggedIn ? (
+              <div className="flex items-center gap-2">
                 <Link
-                  href="/user-menu"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                  href={isInstituteLoggedIn ? "/institute/dashboard" : "/user/dashboard"}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  <User className="w-4 h-4" />
-                  <span>Login</span>
-                </Link>
-              )}
-
-              <div className="w-px h-6 bg-gray-300"></div>
-
-              {/* Institute */}
-              {isInstituteLoggedIn ? (
-                <>
-                  <Link
-                    href="/institute/dashboard"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
-                  >
+                  {isInstituteLoggedIn ? (
                     <LayoutDashboard className="w-4 h-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                  <button
-                    onClick={handleInstituteLogout}
-                    className="p-1.5 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                    title="Logout"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
-                <Link
-                  href="/institute/login"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span>Institute</span>
+                  ) : (
+                    <User className="w-4 h-4" />
+                  )}
+                  <span>{isInstituteLoggedIn ? "Dashboard" : "Account"}</span>
                 </Link>
-              )}
-            </div>
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/auth-menu"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <User className="w-4 h-4" />
+                <span>Login</span>
+              </Link>
+            )}
           </div>
 
-          {/* Mobile Hamburger */}
+          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            aria-label="Toggle menu"
+            className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-md"
           >
-            {isOpen ? (
-              <X className="w-6 h-6 text-gray-700" />
-            ) : (
-              <Menu className="w-6 h-6 text-gray-700" />
-            )}
+            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100">
-            <div className="flex flex-col space-y-2">
-              {/* Navigation Links */}
+          <div className="md:hidden py-3 border-t">
+            <div className="space-y-0">
+              {/* Home */}
+              <Link
+                href="/"
+                className={`flex items-center gap-3 px-4 py-3 text-sm border-b border-gray-100 ${
+                  pathname === '/'
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Home</span>
+              </Link>
+
+              {/* Browse Centers */}
               <Link
                 href="/centers"
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === '/centers'
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
                 onClick={() => setIsOpen(false)}
               >
-                Browse Centers
-              </Link>
-              <Link
-                href="/about"
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === '/about'
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                href="/contact"
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === '/contact'
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsOpen(false)}
-              >
-                Contact
+                <Search className="w-5 h-5 text-gray-600" />
+                <span>Browse Centers</span>
               </Link>
 
-              <div className="pt-2 border-t border-gray-200 mt-2"></div>
-
-              {/* User Section */}
-              {isUserLoggedIn ? (
-                <div className="space-y-2">
+              {/* Auth Section */}
+              {isLoggedIn ? (
+                <>
                   <Link
-                    href="/user/dashboard"
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-lg text-sm font-medium"
+                    href={isInstituteLoggedIn ? "/institute/dashboard" : "/user/dashboard"}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
                     onClick={() => setIsOpen(false)}
                   >
-                    <User className="w-4 h-4" />
-                    My Account
+                    {isInstituteLoggedIn ? (
+                      <>
+                        <LayoutDashboard className="w-5 h-5 text-gray-600" />
+                        <span>Dashboard</span>
+                      </>
+                    ) : (
+                      <>
+                        <User className="w-5 h-5 text-gray-600" />
+                        <span>My Account</span>
+                      </>
+                    )}
                   </Link>
                   <button
                     onClick={() => {
-                      handleUserLogout();
+                      handleLogout();
                       setIsOpen(false);
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    <LogOut className="w-4 h-4" />
-                    Logout
+                    <LogOut className="w-5 h-5 text-gray-600" />
+                    <span>Logout</span>
                   </button>
-                </div>
+                </>
               ) : (
-                <Link
-                  href="/user-menu"
-                  className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-lg text-sm font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <User className="w-4 h-4" />
-                  User Login
-                </Link>
-              )}
-
-              <div className="pt-2 border-t border-gray-200"></div>
-
-              {/* Institute Section */}
-              {isInstituteLoggedIn ? (
-                <div className="space-y-2">
+                <>
                   <Link
-                    href="/institute/dashboard"
-                    className="flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-lg text-sm font-medium"
+                    href="/user-menu"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
                     onClick={() => setIsOpen(false)}
                   >
-                    <LayoutDashboard className="w-4 h-4" />
-                    Institute Dashboard
+                    <User className="w-5 h-5 text-gray-600" />
+                    <span>User Login</span>
                   </Link>
-                  <button
-                    onClick={() => {
-                      handleInstituteLogout();
-                      setIsOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
                   <Link
                     href="/institute/login"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white rounded-lg text-sm font-medium"
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setIsOpen(false)}
                   >
-                    <Building2 className="w-4 h-4" />
-                    Institute Login
+                    <LayoutDashboard className="w-5 h-5 text-gray-600" />
+                    <span>Institute Login</span>
                   </Link>
-                  <Link
-                    href="/institute/register"
-                    className="flex-1 px-4 py-2.5 border border-accent text-accent rounded-lg text-sm font-medium text-center"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Register
-                  </Link>
-                </div>
+                </>
               )}
             </div>
           </div>
