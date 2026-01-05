@@ -26,8 +26,12 @@ export default function BottomNav() {
 
     checkAuth();
     window.addEventListener('storage', checkAuth);
+    window.addEventListener('authStateChanged', checkAuth);
 
-    return () => window.removeEventListener('storage', checkAuth);
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('authStateChanged', checkAuth);
+    };
   }, [pathname]);
 
   const navItems = [
