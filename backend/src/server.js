@@ -35,19 +35,10 @@ app.use(express.json());
 
 // ===== RATE LIMITING =====
 
-// General API rate limit - 100 requests per 15 minutes
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Strict limit for auth routes - 5 attempts per 15 minutes
+// Strict limit for auth routes only - 10 attempts per 15 minutes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // ← INCREASED FROM 5 TO 10 for testing
+  max: 10,
   message: { error: 'Too many login attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -60,15 +51,19 @@ const reviewLimiter = rateLimit({
   message: { error: 'Too many reviews submitted, please try again later.' },
 });
 
-// Apply general rate limiting to all API routes
-app.use('/api/', generalLimiter);
-
-// Apply strict limiting ONLY to specific auth routes (not all /api/auth)
+// Apply strict limiting ONLY to specific auth routes
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/user/login', authLimiter);
+app.use('/api/user/register', authLimiter);
 
-// Apply review limiting
-app.use('/api/reviews', reviewLimiter);
+// Apply review limiting only to POST requests
+app.use('/api/reviews', (req, res, next) => {
+  if (req.method === 'POST') {
+    return reviewLimiter(req, res, next);
+  }
+  next();
+});
 
 // ===== ROUTES (IMPORTANT ORDER) =====
 app.use("/api/centers", centersRouter);
@@ -108,7 +103,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
-  console.log(`🔒 Rate limiting enabled`);
+  console.log(`🔒 Rate limiting enabled for auth routes only`);
 
   // Start keep-alive pinger
   setInterval(async () => {
