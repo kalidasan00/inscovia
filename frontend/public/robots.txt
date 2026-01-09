@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.inscovia.com/sitemap.xml
+
+# Disallow admin/private pages
+Disallow: /api/
+Disallow: /admin/
+Disallow: */dashboard
+
+# Allow indexing of all public pages
+Allow: /centers
+Allow: /about
+Allow: /contact
