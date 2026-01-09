@@ -10,11 +10,17 @@ import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import reviewsRouter from "./routes/reviews.routes.js";
 import passwordResetRouter from "./routes/password-reset.routes.js";
+import { registerSlugMiddleware } from './middleware/slugMiddleware.js'; // ← NEW
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
+
+// ===== REGISTER SLUG MIDDLEWARE =====
+// This auto-generates slugs for all Center create/update operations
+registerSlugMiddleware(prisma); // ← NEW
+console.log('✅ Slug middleware registered'); // ← NEW
 
 // CORS Configuration
 app.use(cors({

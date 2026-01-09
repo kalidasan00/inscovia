@@ -1,8 +1,10 @@
 // backend/prisma/seed.js
 import { PrismaClient } from '@prisma/client';
 import { centersData } from './seed-data.js';
+import { registerSlugMiddleware } from '../src/middleware/slugMiddleware.js'; // ← NEW
 
 const prisma = new PrismaClient();
+registerSlugMiddleware(prisma); // ← NEW: Register slug auto-generation
 
 async function main() {
   console.log('Seeding database...');
