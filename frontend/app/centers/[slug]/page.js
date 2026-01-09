@@ -10,7 +10,7 @@ import { useCompare } from "../../../contexts/CompareContext";
 import { Heart, GitCompare, ChevronDown, Phone, Mail, Globe, MapPin } from "lucide-react";
 
 export default function CenterDetails() {
-  const { id } = useParams();
+  const { slug } = useParams(); // ← CHANGED: id to slug
   const searchParams = useSearchParams();
   const router = useRouter();
   const [center, setCenter] = useState(null);
@@ -33,7 +33,7 @@ export default function CenterDetails() {
   useEffect(() => {
     async function loadCenter() {
       try {
-        const res = await fetch(`${API_URL}/centers/${id}`, {
+        const res = await fetch(`${API_URL}/centers/${slug}`, { // ← CHANGED: id to slug
           cache: "no-store",
         });
 
@@ -53,7 +53,7 @@ export default function CenterDetails() {
     }
 
     loadCenter();
-  }, [id, API_URL]);
+  }, [slug, API_URL]); // ← CHANGED: id to slug
 
   const handleFavoriteClick = () => {
     if (!isLoggedIn) {
@@ -62,8 +62,8 @@ export default function CenterDetails() {
       return;
     }
 
-    toggleFavorite(id);
-    setShowToast(isFavorite(id) ? "removed-fav" : "added-fav");
+    toggleFavorite(center.id); // ← Keep as center.id (favorites use ID internally)
+    setShowToast(isFavorite(center.id) ? "removed-fav" : "added-fav");
     setTimeout(() => setShowToast(null), 2000);
   };
 
@@ -74,7 +74,7 @@ export default function CenterDetails() {
       return;
     }
 
-    const result = toggleCompare(id);
+    const result = toggleCompare(center.id); // ← Keep as center.id (compare uses ID internally)
     if (result.success) {
       setShowToast(result.action === "added" ? "added-compare" : "removed-compare");
     } else {
@@ -182,8 +182,8 @@ export default function CenterDetails() {
 
   const coursesByCategory = parseCourses(center.courses);
   const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
-  const isLiked = isFavorite(id);
-  const isComparing = isInCompare(id);
+  const isLiked = isFavorite(center.id); // ← Keep as center.id
+  const isComparing = isInCompare(center.id); // ← Keep as center.id
 
   return (
     <>
@@ -430,7 +430,7 @@ export default function CenterDetails() {
             )}
 
             {/* Reviews */}
-            <ReviewSection centerId={id} />
+            <ReviewSection centerId={center.id} /> {/* ← Keep as center.id (reviews use ID) */}
 
             {/* Back Link */}
             <div className="pt-3 border-t mt-3">
