@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
-  GraduationCap,
   Menu,
   X,
   User,
@@ -64,13 +64,17 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-gray-900">Inscovia</span>
+            <Image
+              src="/Inscovia - 1 2.png"
+              alt="Inscovia Logo"
+              width={240}
+              height={70}
+              priority
+              className="h-14  sm:h-14 w-auto"
+            />
           </Link>
 
           {/* Desktop Menu */}
