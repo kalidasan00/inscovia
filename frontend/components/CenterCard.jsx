@@ -1,4 +1,4 @@
-// components/CenterCard.jsx (with login check)
+// components/CenterCard.jsx - UPDATED TO USE SLUG
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -17,7 +17,6 @@ export default function CenterCard({ center }) {
 
   const [showToast, setShowToast] = useState(null);
 
-  // Check login status
   useEffect(() => {
     const userLoggedIn = localStorage.getItem("userLoggedIn") === "true";
     setIsLoggedIn(userLoggedIn);
@@ -32,7 +31,7 @@ export default function CenterCard({ center }) {
           setReviewStats(data);
         }
       } catch (err) {
-        // Silently fail - not critical
+        // Silently fail
       }
     }
 
@@ -45,12 +44,9 @@ export default function CenterCard({ center }) {
     e.preventDefault();
     e.stopPropagation();
 
-    // Check if logged in
     if (!isLoggedIn) {
       setShowToast("login-required");
-      setTimeout(() => {
-        router.push("/user-menu");
-      }, 1500);
+      setTimeout(() => router.push("/user-menu"), 1500);
       return;
     }
 
@@ -63,12 +59,9 @@ export default function CenterCard({ center }) {
     e.preventDefault();
     e.stopPropagation();
 
-    // Check if logged in
     if (!isLoggedIn) {
       setShowToast("login-required");
-      setTimeout(() => {
-        router.push("/user-menu");
-      }, 1500);
+      setTimeout(() => router.push("/user-menu"), 1500);
       return;
     }
 
@@ -86,9 +79,10 @@ export default function CenterCard({ center }) {
 
   return (
     <div className="relative">
-      <Link href={`/centers/${center.id}`}>
+      {/* ← CHANGED: Use slug instead of id in URL */}
+      <Link href={`/centers/${center.slug}`}>
         <article className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-          {/* Banner Image */}
+          {/* Rest of the component stays the same */}
           <div className="relative h-24 sm:h-32 w-full bg-gradient-to-br from-gray-100 to-gray-50">
             <img
               src={center.image}
@@ -96,7 +90,6 @@ export default function CenterCard({ center }) {
               className="object-cover h-full w-full"
             />
 
-            {/* Logo Badge */}
             <div className="absolute -bottom-4 left-2 sm:left-3">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg shadow-md border-2 border-white flex items-center justify-center overflow-hidden">
                 <img
@@ -107,7 +100,6 @@ export default function CenterCard({ center }) {
               </div>
             </div>
 
-            {/* Rating Badge */}
             {reviewStats && reviewStats.totalReviews > 0 ? (
               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-semibold text-yellow-600 bg-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md shadow-sm">
                 {reviewStats.averageRating.toFixed(1)}
@@ -125,12 +117,9 @@ export default function CenterCard({ center }) {
             ) : null}
           </div>
 
-          {/* Content */}
           <div className="pt-5 sm:pt-7 px-2.5 sm:px-3 pb-2.5 sm:pb-3">
-            {/* Name */}
             <h3 className="font-semibold text-xs sm:text-sm leading-tight truncate">{center.name}</h3>
 
-            {/* Location & Type */}
             <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 flex items-center gap-1">
               <span className="flex items-center gap-0.5 truncate">
                 <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,14 +135,12 @@ export default function CenterCard({ center }) {
               )}
             </div>
 
-            {/* Review Count */}
             {reviewStats && reviewStats.totalReviews > 0 && (
               <div className="mt-1 text-[10px] sm:text-xs text-gray-600">
                 {reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? 's' : ''}
               </div>
             )}
 
-            {/* Courses */}
             <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
               {center.courses.slice(0, 1).map((course, idx) => (
                 <span
@@ -173,9 +160,7 @@ export default function CenterCard({ center }) {
               )}
             </div>
 
-            {/* Action Buttons */}
             <div className="mt-2 sm:mt-3 flex gap-1.5">
-              {/* Favorite Button */}
               <button
                 onClick={handleFavoriteClick}
                 className={`flex-1 flex items-center justify-center gap-1 text-[10px] sm:text-xs font-medium px-2 py-1.5 rounded-md transition-all ${
@@ -188,7 +173,6 @@ export default function CenterCard({ center }) {
                 <span className="hidden sm:inline">{isLiked ? 'Saved' : 'Save'}</span>
               </button>
 
-              {/* Compare Button */}
               <button
                 onClick={handleCompareClick}
                 disabled={!canAddMore() && !isComparing}
@@ -203,7 +187,6 @@ export default function CenterCard({ center }) {
               </button>
             </div>
 
-            {/* View Details Button */}
             <button className="mt-1.5 sm:mt-2 w-full text-center text-[10px] sm:text-xs font-medium px-2 sm:px-3 py-1.5 sm:py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition-colors">
               View Details
             </button>
@@ -211,7 +194,6 @@ export default function CenterCard({ center }) {
         </article>
       </Link>
 
-      {/* Toast Notifications */}
       {showToast && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
           <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
