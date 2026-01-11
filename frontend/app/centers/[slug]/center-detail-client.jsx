@@ -1,4 +1,4 @@
-// app/centers/[slug]/center-detail-client.jsx - SIMPLIFIED VERSION
+// app/centers/[slug]/center-detail-client.jsx - CLEAN PRODUCTION VERSION
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -43,17 +43,6 @@ export default function CenterDetailClient() {
         }
 
         const data = await res.json();
-
-        // 🔍 DEBUG - Check received data
-        console.log("=== CENTER DATA ===");
-        console.log("courseDetails:", data.courseDetails);
-        console.log("Type:", typeof data.courseDetails);
-        console.log("Is array?:", Array.isArray(data.courseDetails));
-        if (data.courseDetails?.[0]) {
-          console.log("First course:", data.courseDetails[0]);
-        }
-        console.log("==================");
-
         setCenter(data);
       } catch (err) {
         console.error("Error loading center:", err);
@@ -330,7 +319,6 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* ✨ USE THE COURSE LIST COMPONENT */}
             <CourseList center={center} />
 
             {center.gallery && center.gallery.length > 0 && (
