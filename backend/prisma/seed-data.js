@@ -19,6 +19,34 @@ export const centersData = [
       "TECHNOLOGY: Machine Learning"
     ],
 
+    // ✨ NEW: Course details with fees and duration
+    courseDetails: [
+      {
+        name: "Python Programming",
+        category: "TECHNOLOGY",
+        fees: 15000,
+        duration: "3 months"
+      },
+      {
+        name: "Full Stack Development",
+        category: "TECHNOLOGY",
+        fees: 35000,
+        duration: "6 months"
+      },
+      {
+        name: "Data Science with Python",
+        category: "TECHNOLOGY",
+        fees: 45000,
+        duration: "5 months"
+      },
+      {
+        name: "Machine Learning",
+        category: "TECHNOLOGY",
+        fees: 40000,
+        duration: "4 months"
+      }
+    ],
+
     image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/2721/2721296.png",
     gallery: [
@@ -56,6 +84,39 @@ export const centersData = [
       "MANAGEMENT: Project Management",
       "SKILL_DEVELOPMENT: Leadership Skills",
       "SKILL_DEVELOPMENT: Team Building"
+    ],
+
+    courseDetails: [
+      {
+        name: "MBA Preparation",
+        category: "MANAGEMENT",
+        fees: 50000,
+        duration: "1 year"
+      },
+      {
+        name: "Business Management",
+        category: "MANAGEMENT",
+        fees: 30000,
+        duration: "6 months"
+      },
+      {
+        name: "Project Management",
+        category: "MANAGEMENT",
+        fees: 25000,
+        duration: "3 months"
+      },
+      {
+        name: "Leadership Skills",
+        category: "SKILL_DEVELOPMENT",
+        fees: 15000,
+        duration: "2 months"
+      },
+      {
+        name: "Team Building",
+        category: "SKILL_DEVELOPMENT",
+        fees: 12000,
+        duration: "1 month"
+      }
     ],
 
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop",
@@ -96,6 +157,39 @@ export const centersData = [
       "TECHNOLOGY: WordPress"
     ],
 
+    courseDetails: [
+      {
+        name: "Digital Marketing",
+        category: "SKILL_DEVELOPMENT",
+        fees: 20000,
+        duration: "3 months"
+      },
+      {
+        name: "Graphic Design",
+        category: "SKILL_DEVELOPMENT",
+        fees: 25000,
+        duration: "4 months"
+      },
+      {
+        name: "Communication Skills",
+        category: "SKILL_DEVELOPMENT",
+        fees: 8000,
+        duration: "2 months"
+      },
+      {
+        name: "Web Development Basics",
+        category: "TECHNOLOGY",
+        fees: 18000,
+        duration: "3 months"
+      },
+      {
+        name: "WordPress",
+        category: "TECHNOLOGY",
+        fees: 12000,
+        duration: "1 month"
+      }
+    ],
+
     image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/2554/2554183.png",
     gallery: [
@@ -131,6 +225,33 @@ export const centersData = [
       "EXAM_COACHING: JEE Mains",
       "EXAM_COACHING: JEE Advanced",
       "EXAM_COACHING: Foundation Course"
+    ],
+
+    courseDetails: [
+      {
+        name: "NEET Preparation",
+        category: "EXAM_COACHING",
+        fees: 80000,
+        duration: "2 years"
+      },
+      {
+        name: "JEE Mains",
+        category: "EXAM_COACHING",
+        fees: 75000,
+        duration: "2 years"
+      },
+      {
+        name: "JEE Advanced",
+        category: "EXAM_COACHING",
+        fees: 90000,
+        duration: "2 years"
+      },
+      {
+        name: "Foundation Course",
+        category: "EXAM_COACHING",
+        fees: 40000,
+        duration: "1 year"
+      }
     ],
 
     image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=1200&h=400&fit=crop",
@@ -172,6 +293,45 @@ export const centersData = [
       "SKILL_DEVELOPMENT: Interview Preparation"
     ],
 
+    courseDetails: [
+      {
+        name: "Java Development",
+        category: "TECHNOLOGY",
+        fees: 30000,
+        duration: "4 months"
+      },
+      {
+        name: "Spring Boot",
+        category: "TECHNOLOGY",
+        fees: 25000,
+        duration: "3 months"
+      },
+      {
+        name: "Cloud Computing",
+        category: "TECHNOLOGY",
+        fees: 35000,
+        duration: "5 months"
+      },
+      {
+        name: "AWS Certification",
+        category: "TECHNOLOGY",
+        fees: 28000,
+        duration: "3 months"
+      },
+      {
+        name: "Problem Solving",
+        category: "SKILL_DEVELOPMENT",
+        fees: 10000,
+        duration: "2 months"
+      },
+      {
+        name: "Interview Preparation",
+        category: "SKILL_DEVELOPMENT",
+        fees: 8000,
+        duration: "1 month"
+      }
+    ],
+
     image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1822/1822899.png",
     gallery: [
@@ -208,6 +368,33 @@ export const centersData = [
       "TECHNOLOGY: AI Fundamentals",
       "TECHNOLOGY: Big Data Analytics",
       "TECHNOLOGY: Data Engineering"
+    ],
+
+    courseDetails: [
+      {
+        name: "Machine Learning",
+        category: "TECHNOLOGY",
+        fees: 50000,
+        duration: "6 months"
+      },
+      {
+        name: "AI Fundamentals",
+        category: "TECHNOLOGY",
+        fees: 35000,
+        duration: "4 months"
+      },
+      {
+        name: "Big Data Analytics",
+        category: "TECHNOLOGY",
+        fees: 45000,
+        duration: "5 months"
+      },
+      {
+        name: "Data Engineering",
+        category: "TECHNOLOGY",
+        fees: 40000,
+        duration: "5 months"
+      }
     ],
 
     image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=1200&h=400&fit=crop",
@@ -248,6 +435,33 @@ export const centersData = [
       "TECHNOLOGY: Web Design Basics"
     ],
 
+    courseDetails: [
+      {
+        name: "UI/UX Design",
+        category: "SKILL_DEVELOPMENT",
+        fees: 35000,
+        duration: "4 months"
+      },
+      {
+        name: "Adobe Creative Suite",
+        category: "SKILL_DEVELOPMENT",
+        fees: 28000,
+        duration: "3 months"
+      },
+      {
+        name: "Figma",
+        category: "TECHNOLOGY",
+        fees: 15000,
+        duration: "2 months"
+      },
+      {
+        name: "Web Design Basics",
+        category: "TECHNOLOGY",
+        fees: 20000,
+        duration: "3 months"
+      }
+    ],
+
     image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1829/1829580.png",
     gallery: [
@@ -285,6 +499,33 @@ export const centersData = [
       "EXAM_COACHING: Current Affairs"
     ],
 
+    courseDetails: [
+      {
+        name: "UPSC Civil Services",
+        category: "EXAM_COACHING",
+        fees: 120000,
+        duration: "1.5 years"
+      },
+      {
+        name: "State PSC",
+        category: "EXAM_COACHING",
+        fees: 80000,
+        duration: "1 year"
+      },
+      {
+        name: "Essay Writing",
+        category: "EXAM_COACHING",
+        fees: 15000,
+        duration: "3 months"
+      },
+      {
+        name: "Current Affairs",
+        category: "EXAM_COACHING",
+        fees: 10000,
+        duration: "6 months"
+      }
+    ],
+
     image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
     gallery: [
@@ -320,6 +561,33 @@ export const centersData = [
       "TECHNOLOGY: Azure Fundamentals",
       "TECHNOLOGY: DevOps Engineering",
       "TECHNOLOGY: Kubernetes"
+    ],
+
+    courseDetails: [
+      {
+        name: "AWS Solutions Architect",
+        category: "TECHNOLOGY",
+        fees: 32000,
+        duration: "4 months"
+      },
+      {
+        name: "Azure Fundamentals",
+        category: "TECHNOLOGY",
+        fees: 28000,
+        duration: "3 months"
+      },
+      {
+        name: "DevOps Engineering",
+        category: "TECHNOLOGY",
+        fees: 38000,
+        duration: "5 months"
+      },
+      {
+        name: "Kubernetes",
+        category: "TECHNOLOGY",
+        fees: 25000,
+        duration: "2 months"
+      }
     ],
 
     image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=1200&h=400&fit=crop",
@@ -360,6 +628,39 @@ export const centersData = [
       "SKILL_DEVELOPMENT: Communication"
     ],
 
+    courseDetails: [
+      {
+        name: "Executive Leadership",
+        category: "MANAGEMENT",
+        fees: 60000,
+        duration: "6 months"
+      },
+      {
+        name: "Team Management",
+        category: "MANAGEMENT",
+        fees: 35000,
+        duration: "3 months"
+      },
+      {
+        name: "Strategic Planning",
+        category: "MANAGEMENT",
+        fees: 40000,
+        duration: "4 months"
+      },
+      {
+        name: "Corporate Training",
+        category: "SKILL_DEVELOPMENT",
+        fees: 25000,
+        duration: "2 months"
+      },
+      {
+        name: "Communication",
+        category: "SKILL_DEVELOPMENT",
+        fees: 18000,
+        duration: "2 months"
+      }
+    ],
+
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop",
     logo: "https://cdn-icons-png.flaticon.com/512/1995/1995467.png",
     gallery: [
@@ -395,6 +696,33 @@ export const centersData = [
       "SKILL_DEVELOPMENT: Interview Skills",
       "SKILL_DEVELOPMENT: Personality Development",
       "SKILL_DEVELOPMENT: Public Speaking"
+    ],
+
+    courseDetails: [
+      {
+        name: "Spoken English",
+        category: "SKILL_DEVELOPMENT",
+        fees: 12000,
+        duration: "3 months"
+      },
+      {
+        name: "Interview Skills",
+        category: "SKILL_DEVELOPMENT",
+        fees: 8000,
+        duration: "1 month"
+      },
+      {
+        name: "Personality Development",
+        category: "SKILL_DEVELOPMENT",
+        fees: 15000,
+        duration: "2 months"
+      },
+      {
+        name: "Public Speaking",
+        category: "SKILL_DEVELOPMENT",
+        fees: 10000,
+        duration: "2 months"
+      }
     ],
 
     image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200&h=400&fit=crop",
@@ -433,6 +761,39 @@ export const centersData = [
       "EXAM_COACHING: RRB",
       "SKILL_DEVELOPMENT: Quantitative Aptitude",
       "SKILL_DEVELOPMENT: Reasoning"
+    ],
+
+    courseDetails: [
+      {
+        name: "IBPS PO",
+        category: "EXAM_COACHING",
+        fees: 35000,
+        duration: "1 year"
+      },
+      {
+        name: "SBI Clerk",
+        category: "EXAM_COACHING",
+        fees: 28000,
+        duration: "9 months"
+      },
+      {
+        name: "RRB",
+        category: "EXAM_COACHING",
+        fees: 25000,
+        duration: "8 months"
+      },
+      {
+        name: "Quantitative Aptitude",
+        category: "SKILL_DEVELOPMENT",
+        fees: 8000,
+        duration: "3 months"
+      },
+      {
+        name: "Reasoning",
+        category: "SKILL_DEVELOPMENT",
+        fees: 8000,
+        duration: "3 months"
+      }
     ],
 
     image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop",

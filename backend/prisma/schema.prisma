@@ -72,11 +72,11 @@ model InstituteUser {
 
 model Center {
   id   String         @id @default(cuid())
-  slug String         @unique  // ← NEW: URL-friendly identifier
+  slug String         @unique
   name String
-  primaryCategory     CenterCategory              // Primary category (required)
-  secondaryCategories CenterCategory[] @default([]) // Secondary categories (optional)
-  teachingMode        TeachingMode                // Online, Offline, or Hybrid
+  primaryCategory     CenterCategory
+  secondaryCategories CenterCategory[] @default([])
+  teachingMode        TeachingMode
 
   state    String
   district String
@@ -85,6 +85,9 @@ model Center {
 
   rating  Float    @default(0)
   courses String[]
+
+  // ✨ NEW: Course details with fees and duration (optional)
+  courseDetails Json? @default("[]")
 
   image   String?
   logo    String?
@@ -109,7 +112,7 @@ model Center {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([slug])  // ← NEW: Index for fast slug lookups
+  @@index([slug])
   @@index([state, district, city])
   @@index([userId])
   @@index([primaryCategory])

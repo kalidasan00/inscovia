@@ -1,50 +1,131 @@
 import prisma from "../lib/prisma.js";
 import cloudinary from "../config/cloudinary.js";
 
+// ✨ Helper function to parse and validate courseDetails
+const parseCourseDetails = (coursesInput) => {
+  if (!coursesInput) return [];
+
+  // If it's already an array of objects with details
+  if (Array.isArray(coursesInput) && coursesInput.length > 0 && typeof coursesInput[0] === 'object' && coursesInput[0].name) {
+    return coursesInput.map(course => ({
+      name: course.name || '',
+      category: course.category || 'TECHNOLOGY',
+      fees: course.fees ? parseInt(course.fees) : null,
+      duration: course.duration || null
+    }));
+  }
+
+  // If it's an array of strings (old format)
+  if (Array.isArray(coursesInput) && coursesInput.length > 0 && typeof coursesInput[0] === 'string') {
+    return coursesInput.map(courseName => ({
+      name: courseName,
+      category: 'TECHNOLOGY',
+      fees: null,
+      duration: null
+    }));
+  }
+
+  return [];
+};
+
 export const getCenters = async (req, res) => {
   const centers = await prisma.center.findMany();
-  res.json({ centers });
+
+  // Parse courseDetails for all centers
+  const centersWithParsedDetails = centers.map(center => ({
+    ...center,
+    courseDetails: typeof center.courseDetails === 'string'
+      ? JSON.parse(center.courseDetails)
+      : center.courseDetails
+  }));
+
+  res.json({ centers: centersWithParsedDetails });
 };
 
-// ← RENAMED and updated to use slug
 export const getCenterBySlug = async (req, res) => {
-  const center = await prisma.center.findUnique({
-    where: { slug: req.params.slug } // ← Changed from id to slug
-  });
+  try {
+    const center = await prisma.center.findUnique({
+      where: { slug: req.params.slug }
+    });
 
-  if (!center) return res.status(404).json({ error: "Not Found" });
-  res.json(center);
+    if (!center) return res.status(404).json({ error: "Not Found" });
+
+    // 🔍 DEBUG - Check what we have from database
+    console.log("\n=== BACKEND DEBUG ===");
+    console.log("Slug:", req.params.slug);
+    console.log("Center found:", center.name);
+    console.log("Raw courseDetails type:", typeof center.courseDetails);
+    console.log("Raw courseDetails is array?:", Array.isArray(center.courseDetails));
+    console.log("Raw courseDetails value:", center.courseDetails);
+
+    // ✨ FIX: Parse courseDetails JSON before sending to frontend
+    const centerWithParsedDetails = {
+      ...center,
+      courseDetails: typeof center.courseDetails === 'string'
+        ? JSON.parse(center.courseDetails)
+        : (center.courseDetails || [])
+    };
+
+    console.log("\n✅ After parsing:");
+    console.log("courseDetails type:", typeof centerWithParsedDetails.courseDetails);
+    console.log("courseDetails is array?:", Array.isArray(centerWithParsedDetails.courseDetails));
+    console.log("courseDetails length:", centerWithParsedDetails.courseDetails?.length);
+    if (centerWithParsedDetails.courseDetails?.[0]) {
+      console.log("First course:", JSON.stringify(centerWithParsedDetails.courseDetails[0], null, 2));
+    }
+    console.log("===================\n");
+
+    res.json(centerWithParsedDetails);
+  } catch (error) {
+    console.error("❌ Error in getCenterBySlug:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 };
 
-// Update Center - Using slug
 export const updateCenter = async (req, res) => {
   try {
-    const { slug } = req.params; // ← Changed from id to slug
-    const updateData = req.body;
+    const { slug } = req.params;
+    const updateData = { ...req.body };
 
-    // Verify ownership - find by slug
-    const center = await prisma.center.findUnique({ where: { slug } }); // ← Changed
+    // Verify ownership
+    const center = await prisma.center.findUnique({ where: { slug } });
     if (!center) return res.status(404).json({ error: "Center not found" });
     if (center.userId !== req.userId) return res.status(403).json({ error: "Unauthorized" });
 
-    // Update center using id (slug might change if name/city updates)
+    // ✨ Handle courseDetails if provided
+    if (updateData.courses) {
+      const courseDetails = parseCourseDetails(updateData.courses);
+      updateData.courseDetails = courseDetails;
+
+      // Also update the simple courses array for backward compatibility
+      updateData.courses = courseDetails.map(c => c.name);
+    }
+
+    // Update center
     const updatedCenter = await prisma.center.update({
-      where: { id: center.id }, // ← Use id for update, not slug
+      where: { id: center.id },
       data: updateData
     });
 
-    res.json({ success: true, center: updatedCenter });
+    // Parse courseDetails before returning
+    const centerWithParsedDetails = {
+      ...updatedCenter,
+      courseDetails: typeof updatedCenter.courseDetails === 'string'
+        ? JSON.parse(updatedCenter.courseDetails)
+        : updatedCenter.courseDetails
+    };
+
+    res.json({ success: true, center: centerWithParsedDetails });
   } catch (error) {
     console.error("Update error:", error);
     res.status(500).json({ error: "Failed to update center" });
   }
 };
 
-// Upload Logo - Using slug
 export const uploadLogo = async (req, res) => {
   try {
-    const { slug } = req.params; // ← Changed from id to slug
-    const center = await prisma.center.findUnique({ where: { slug } }); // ← Changed
+    const { slug } = req.params;
+    const center = await prisma.center.findUnique({ where: { slug } });
 
     if (!center || center.userId !== req.userId) {
       return res.status(403).json({ error: "Unauthorized" });
@@ -54,7 +135,6 @@ export const uploadLogo = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Upload to Cloudinary
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         { folder: "logos" },
@@ -67,7 +147,7 @@ export const uploadLogo = async (req, res) => {
     });
 
     await prisma.center.update({
-      where: { id: center.id }, // ← Use id for update
+      where: { id: center.id },
       data: { logo: result.secure_url }
     });
 
@@ -78,11 +158,10 @@ export const uploadLogo = async (req, res) => {
   }
 };
 
-// Upload Cover - Using slug
 export const uploadCoverImage = async (req, res) => {
   try {
-    const { slug } = req.params; // ← Changed from id to slug
-    const center = await prisma.center.findUnique({ where: { slug } }); // ← Changed
+    const { slug } = req.params;
+    const center = await prisma.center.findUnique({ where: { slug } });
 
     if (!center || center.userId !== req.userId) {
       return res.status(403).json({ error: "Unauthorized" });
@@ -104,7 +183,7 @@ export const uploadCoverImage = async (req, res) => {
     });
 
     await prisma.center.update({
-      where: { id: center.id }, // ← Use id for update
+      where: { id: center.id },
       data: { image: result.secure_url }
     });
 
