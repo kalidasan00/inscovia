@@ -122,7 +122,7 @@ export default function Navbar() {
               </div>
             ) : (
               <Link
-                href="/auth-menu"
+                href="/user-menu"
                 className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
               >
                 <User className="w-4 h-4" />
