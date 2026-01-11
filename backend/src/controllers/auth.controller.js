@@ -99,7 +99,7 @@ export const verifyOTP = async (req, res) => {
   }
 };
 
-// ============= REGISTER INSTITUTE (UPDATED) =============
+// ============= REGISTER INSTITUTE (UPDATED WITH SLUG) =============
 
 // Register Institute
 export const registerInstitute = async (req, res) => {
@@ -182,10 +182,20 @@ export const registerInstitute = async (req, res) => {
         }
       });
 
+      // 🔥 Generate unique slug
+      const baseSlug = instituteName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      let slug = `${baseSlug}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      let counter = 1;
+      while (await tx.center.findUnique({ where: { slug } })) {
+        slug = `${baseSlug}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${counter}`;
+        counter++;
+      }
+
       // Create corresponding center
       const center = await tx.center.create({
         data: {
           name: instituteName,
+          slug: slug,
           primaryCategory,
           secondaryCategories,
           teachingMode,
@@ -198,6 +208,7 @@ export const registerInstitute = async (req, res) => {
           email,
           rating: 0,
           courses: [],
+          courseDetails: [],
           gallery: [],
           userId: instituteUser.id
         }
@@ -235,6 +246,7 @@ export const registerInstitute = async (req, res) => {
       },
       center: {
         id: result.center.id,
+        slug: result.center.slug,
         name: result.center.name
       }
     });
@@ -344,6 +356,7 @@ export const getCurrentUser = async (req, res) => {
         centers: {
           select: {
             id: true,
+            slug: true,
             name: true,
             primaryCategory: true,
             secondaryCategories: true,
@@ -355,6 +368,7 @@ export const getCurrentUser = async (req, res) => {
             description: true,
             rating: true,
             courses: true,
+            courseDetails: true,
             image: true,
             logo: true,
             gallery: true,
