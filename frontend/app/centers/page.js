@@ -1,323 +1,77 @@
-// app/centers/page.js
-"use client";
+// app/centers/page.js - SERVER COMPONENT with DYNAMIC SEO
+import CentersClient from './centers-client';
 
-import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
-import CenterCard from "../../components/CenterCard";
-import SmartSearch from "../../components/SmartSearch";
-import MobileFilters from "../../components/MobileFilters";
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+// 🎯 DYNAMIC SEO based on URL parameters
+export async function generateMetadata({ searchParams }) {
+  const category = searchParams?.category;
+  const city = searchParams?.city;
+  const state = searchParams?.state;
+  const q = searchParams?.q;
 
-export default function Centers() {
-  const [centers, setCenters] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  let title = 'Browse Training Centers & Coaching Institutes';
+  let description = 'Explore thousands of verified training centers across India. Filter by category, location, and rating to find the perfect institute for your goals.';
+  let keywords = ['training centers', 'coaching institutes', 'skill development'];
 
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
-  useEffect(() => {
-    async function loadCenters() {
-      try {
-        const res = await fetch(`${API_URL}/centers`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          setTimeout(loadCenters, 2000);
-          return;
-        }
-
-        const data = await res.json();
-        setCenters(data.centers || []);
-      } catch (err) {
-        console.error("Error reaching backend:", err);
-        setTimeout(loadCenters, 2000);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadCenters();
-  }, [API_URL]);
-
-  // Get filter params
-  const category = searchParams.get("category") || "";
-  const state = searchParams.get("state") || "";
-  const city = searchParams.get("city") || "";
-  const searchQuery = searchParams.get("q") || "";
-
-  // Get unique values for filters
-  const uniqueStates = Array.from(new Set(centers.map((c) => c.state).filter(Boolean))).sort();
-  const uniqueCities = Array.from(new Set(centers.map((c) => c.city).filter(Boolean))).sort();
-
-  // Apply filters
-  let filtered = centers;
-
-  if (category) {
-    filtered = filtered.filter((c) =>
-      c.primaryCategory === category ||
-      c.secondaryCategories?.includes(category)
-    );
+  // Category-specific SEO
+  if (category === 'TECHNOLOGY') {
+    title = 'Technology Training Centers & IT Courses in India';
+    description = 'Find the best technology training centers for programming, web development, data science, AI/ML, cybersecurity, and software development courses across India.';
+    keywords = ['programming courses', 'web development training', 'data science', 'AI ML courses', 'IT training India'];
+  } else if (category === 'MANAGEMENT') {
+    title = 'Management Training & MBA Coaching Institutes in India';
+    description = 'Top management training centers for MBA preparation, business management, project management, HR, and leadership development courses.';
+    keywords = ['MBA coaching', 'management courses', 'business training', 'leadership development'];
+  } else if (category === 'SKILL_DEVELOPMENT') {
+    title = 'Skill Development & Professional Training Centers';
+    description = 'Explore skill development programs in digital marketing, graphic design, communication, accounting, and professional certification courses.';
+    keywords = ['skill development', 'digital marketing courses', 'professional training', 'graphic design'];
+  } else if (category === 'EXAM_COACHING') {
+    title = 'Exam Preparation & Competitive Coaching Institutes';
+    description = 'Best coaching centers for IIT-JEE, NEET, UPSC, SSC, banking, and other competitive exam preparation with expert faculty.';
+    keywords = ['IIT JEE coaching', 'NEET preparation', 'UPSC training', 'competitive exams'];
   }
 
-  if (state) {
-    filtered = filtered.filter((c) => c.state === state);
-  }
-
+  // City-specific SEO
   if (city) {
-    filtered = filtered.filter((c) => c.city === city);
+    const cityName = city;
+    const stateName = state || '';
+    title = `Training Centers in ${cityName}${stateName ? ', ' + stateName : ''} | Coaching Institutes`;
+    description = `Find top-rated training centers and coaching institutes in ${cityName}. Browse Technology, Management, Skill Development, and Exam Preparation courses.`;
+    keywords = [`training centers ${cityName}`, `coaching ${cityName}`, `courses ${cityName}`, `institutes ${cityName}`];
   }
 
-  if (searchQuery) {
-    const query = searchQuery.toLowerCase();
-    filtered = filtered.filter((c) => {
-      // Build searchable text from all relevant fields
-      const searchableText = [
-        c.name,
-        c.primaryCategory,
-        ...(c.secondaryCategories || []),
-        c.teachingMode,
-        c.city,
-        c.district,
-        c.state,
-        c.location,
-        c.description || "",
-        ...(c.courses || [])
-      ].join(" ").toLowerCase();
-
-      // Split query into words for better matching
-      // This helps match "AI/ML" or "Artificial Intelligence Machine Learning"
-      const queryWords = query.split(/[\s\/]+/).filter(Boolean);
-
-      // Check if all query words are found in searchable text
-      // OR if the full query is found as-is
-      return queryWords.every(word => searchableText.includes(word)) ||
-             searchableText.includes(query);
-    });
+  // State-specific SEO
+  if (state && !city) {
+    title = `Training Centers in ${state} | Coaching Institutes`;
+    description = `Discover top training centers across ${state}. Compare courses, read reviews, and enroll in verified institutes.`;
+    keywords = [`training centers ${state}`, `coaching ${state}`, `courses ${state}`];
   }
 
-  const activeFiltersCount = [category, state, city, searchQuery].filter(Boolean).length;
+  // Search query SEO
+  if (q) {
+    title = `Search Results for "${q}" | Training Centers`;
+    description = `Find training centers and courses related to "${q}". Compare institutes, read reviews, and choose the best option for your career.`;
+    keywords = [q, `${q} training`, `${q} courses`, `${q} institutes`];
+  }
 
-  const formatCategory = (cat) => {
-    return cat?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
+  return {
+    title,
+    description,
+    keywords,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   };
+}
 
-  const handleFilterChange = (type, value) => {
-    const params = new URLSearchParams(searchParams);
-    if (value) {
-      params.set(type, value);
-    } else {
-      params.delete(type);
-    }
-    router.push(`/centers?${params.toString()}`);
-  };
-
-  const clearAllFilters = () => {
-    router.push('/centers');
-  };
-
-  // Handle mobile filter changes
-  const handleMobileFilterChange = (newFilters) => {
-    const params = new URLSearchParams();
-
-    if (newFilters.state) {
-      params.set('state', newFilters.state);
-    }
-
-    if (newFilters.city) {
-      params.set('city', newFilters.city);
-    }
-
-    if (newFilters.categories && newFilters.categories.length > 0) {
-      params.set('category', newFilters.categories[0]);
-    }
-
-    router.push(`/centers?${params.toString()}`);
-  };
-
-  return (
-    <>
-      <Navbar />
-
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-20 md:pb-8">
-        {/* Header */}
-        <div className="mb-3 sm:mb-4">
-          <div className="flex items-center justify-between mb-2 sm:mb-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              {category ? formatCategory(category) : searchQuery ? `Search: ${searchQuery}` : "Training Centers"}
-            </h1>
-
-            {/* Mobile Filter Toggle */}
-            <button
-              onClick={() => setShowMobileFilters(true)}
-              className="md:hidden px-3 py-1.5 bg-accent text-white rounded-lg text-xs font-medium"
-            >
-              Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
-            </button>
-          </div>
-
-          {/* Smart Search */}
-          <SmartSearch centers={centers} />
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
-          {/* Filters Sidebar - Desktop */}
-          <aside className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-56 flex-shrink-0`}>
-            <div className="bg-white rounded-lg border p-3 sticky top-20">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
-                {activeFiltersCount > 0 && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-xs text-accent hover:text-accent/80 font-medium"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              {/* State Filter */}
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  State
-                </label>
-                <select
-                  value={state}
-                  onChange={(e) => handleFilterChange('state', e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <option value="">All States</option>
-                  {uniqueStates.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* City Filter */}
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  City
-                </label>
-                <select
-                  value={city}
-                  onChange={(e) => handleFilterChange('city', e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <option value="">All Cities</option>
-                  {uniqueCities.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Active Filters Display */}
-              {activeFiltersCount > 0 && (
-                <div className="pt-3 border-t">
-                  <p className="text-[10px] font-medium text-gray-600 mb-1.5">Active:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {category && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        {formatCategory(category)}
-                        <button onClick={() => handleFilterChange('category', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                    {state && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        {state}
-                        <button onClick={() => handleFilterChange('state', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                    {city && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        {city}
-                        <button onClick={() => handleFilterChange('city', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                    {searchQuery && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        "{searchQuery}"
-                        <button onClick={() => handleFilterChange('q', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </aside>
-
-          {/* Results */}
-          <div className="flex-1 min-w-0">
-            {/* Results Count */}
-            {!loading && (
-              <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-                {filtered.length} {filtered.length === 1 ? "center" : "centers"} found
-                {searchQuery && ` for "${searchQuery}"`}
-              </p>
-            )}
-
-            {/* Centers Grid */}
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading...</p>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-lg border">
-                <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <p className="text-gray-700 font-medium mb-2">No centers found</p>
-                <p className="text-sm text-gray-500 mb-3">
-                  {searchQuery ? `No results for "${searchQuery}"` : "Try different filters"}
-                </p>
-                <button
-                  onClick={clearAllFilters}
-                  className="text-accent hover:text-accent/80 font-medium text-sm"
-                >
-                  Clear all filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
-                {filtered.map((center) => (
-                  <CenterCard key={center.id} center={center} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Mobile Filters Modal */}
-      <MobileFilters
-        isOpen={showMobileFilters}
-        onClose={() => setShowMobileFilters(false)}
-        filters={{
-          categories: category ? [category] : [],
-          teachingModes: [],
-          state: state || "",
-          city: city || ""
-        }}
-        onFilterChange={handleMobileFilterChange}
-        categories={["TECHNOLOGY", "MANAGEMENT", "SKILL_DEVELOPMENT", "EXAM_COACHING"]}
-        teachingModes={["ONLINE", "OFFLINE", "HYBRID"]}
-        states={uniqueStates}
-      />
-
-      <Footer />
-    </>
-  );
+export default function CentersPage() {
+  return <CentersClient />;
 }

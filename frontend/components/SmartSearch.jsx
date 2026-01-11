@@ -1,4 +1,3 @@
-// components/SmartSearch.jsx
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -15,7 +14,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
   const router = useRouter();
   const wrapperRef = useRef(null);
 
-  // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
@@ -26,7 +24,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Generate suggestions
   useEffect(() => {
     if (query.length < 2) {
       setSuggestions({ institutes: [], courses: [], locations: [] });
@@ -36,7 +33,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
 
     const searchTerm = query.toLowerCase().trim();
 
-    // Search institutes
     const matchingInstitutes = centers
       .filter(c => c.name.toLowerCase().includes(searchTerm))
       .slice(0, 3)
@@ -44,14 +40,12 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
         type: 'institute',
         name: c.name,
         location: `${c.city}, ${c.state}`,
-        id: c.id
+        slug: c.slug
       }));
 
-    // Search courses (extract unique courses)
     const allCourses = new Set();
     centers.forEach(c => {
       c.courses?.forEach(course => {
-        // Remove category prefix if exists
         const courseName = course.includes(':')
           ? course.split(':')[1].trim()
           : course;
@@ -62,7 +56,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
     });
     const matchingCourses = Array.from(allCourses).slice(0, 4);
 
-    // Search locations (cities)
     const allLocations = new Set();
     centers.forEach(c => {
       const cityState = `${c.city}, ${c.state}`;
@@ -90,10 +83,10 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
     router.push(`/centers?q=${encodeURIComponent(query.trim())}`);
   };
 
-  const handleInstituteClick = (id) => {
+  const handleInstituteClick = (slug) => {
     setIsOpen(false);
     setQuery("");
-    router.push(`/centers/${id}`);
+    router.push(`/centers/${slug}`);
   };
 
   const handleCourseClick = (course) => {
@@ -124,7 +117,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
 
   return (
     <div ref={wrapperRef} className="relative w-full">
-      {/* Search Input */}
       <div className="relative">
         <input
           type="text"
@@ -136,10 +128,8 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
           className="w-full px-3 sm:px-4 py-2 sm:py-2.5 pl-9 sm:pl-12 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-sm transition-all"
         />
 
-        {/* Search Icon */}
         <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
 
-        {/* Clear Button */}
         {query && (
           <button
             onClick={() => {
@@ -153,7 +143,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
         )}
       </div>
 
-      {/* Suggestions Dropdown */}
       {isOpen && query.length >= 2 && (
         <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-hidden">
           {totalResults === 0 ? (
@@ -162,7 +151,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
             </div>
           ) : (
             <div className="overflow-y-auto max-h-96">
-              {/* Institutes */}
               {suggestions.institutes.length > 0 && (
                 <div className="p-2">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -171,7 +159,7 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
                   {suggestions.institutes.map((institute, idx) => (
                     <button
                       key={idx}
-                      onClick={() => handleInstituteClick(institute.id)}
+                      onClick={() => handleInstituteClick(institute.slug)}
                       className="w-full text-left px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors flex items-start gap-3 group"
                     >
                       <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
@@ -191,7 +179,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
                 </div>
               )}
 
-              {/* Courses */}
               {suggestions.courses.length > 0 && (
                 <div className="p-2 border-t border-gray-100">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -212,7 +199,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
                 </div>
               )}
 
-              {/* Locations */}
               {suggestions.locations.length > 0 && (
                 <div className="p-2 border-t border-gray-100">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -233,7 +219,6 @@ export default function SmartSearch({ centers = [], placeholder = "Search instit
                 </div>
               )}
 
-              {/* View All Results */}
               <div className="p-2 border-t border-gray-100">
                 <button
                   onClick={handleSearch}
