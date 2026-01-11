@@ -1,4 +1,4 @@
-// app/institute/dashboard/edit/page.js
+// app/institute/dashboard/edit/page.js - FIXED WITH SLUG
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
 import { getStateNames, getDistrictsByState } from "../../../../lib/locationUtils";
 
-// Category and Teaching Mode options based on schema enums
 const CATEGORIES = [
   { value: "TECHNOLOGY", label: "Technology" },
   { value: "MANAGEMENT", label: "Management" },
@@ -27,13 +26,12 @@ export default function EditProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [centerId, setCenterId] = useState(null);
+  const [centerSlug, setCenterSlug] = useState(null); // ✅ ADDED
   const [error, setError] = useState(null);
 
-  // Location state
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
 
-  // ✅ USE ENVIRONMENT VARIABLE
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   const [formData, setFormData] = useState({
@@ -60,7 +58,6 @@ export default function EditProfile() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
 
-  // Load states on mount
   useEffect(() => {
     try {
       const stateList = getStateNames();
@@ -70,7 +67,6 @@ export default function EditProfile() {
     }
   }, []);
 
-  // Load districts when state changes
   useEffect(() => {
     if (formData.state) {
       try {
@@ -135,6 +131,7 @@ export default function EditProfile() {
 
       if (center) {
         setCenterId(center.id);
+        setCenterSlug(center.slug); // ✅ STORE SLUG
         setLogoPreview(center.logo);
         setCoverPreview(center.image);
       }
@@ -152,7 +149,6 @@ export default function EditProfile() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Reset district when state changes
     if (name === 'state') {
       setFormData(prev => ({
         ...prev,
@@ -182,7 +178,6 @@ export default function EditProfile() {
           secondaryCategories: currentSecondary.filter(c => c !== category)
         };
       } else {
-        // Maximum 3 secondary categories
         if (currentSecondary.length >= 3) {
           alert("You can select maximum 3 secondary categories");
           return prev;
@@ -236,12 +231,12 @@ export default function EditProfile() {
   };
 
   const uploadLogo = async (token) => {
-    if (!logoFile || !centerId) return null;
+    if (!logoFile || !centerSlug) return null; // ✅ Use slug check
 
     const formDataUpload = new FormData();
     formDataUpload.append("logo", logoFile);
 
-    const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${centerId}/upload-logo`, {
+    const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-logo`, { // ✅ Use slug
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formDataUpload
@@ -257,12 +252,12 @@ export default function EditProfile() {
   };
 
   const uploadCover = async (token) => {
-    if (!coverFile || !centerId) return null;
+    if (!coverFile || !centerSlug) return null; // ✅ Use slug check
 
     const formDataUpload = new FormData();
     formDataUpload.append("image", coverFile);
 
-    const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${centerId}/upload-cover`, {
+    const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-cover`, { // ✅ Use slug
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formDataUpload
@@ -289,7 +284,6 @@ export default function EditProfile() {
     }
 
     try {
-      // Upload images first if selected
       if (logoFile) {
         console.log("Uploading logo...");
         await uploadLogo(token);
@@ -299,8 +293,7 @@ export default function EditProfile() {
         await uploadCover(token);
       }
 
-      // Update center data
-      if (centerId) {
+      if (centerSlug) { // ✅ Check slug
         const centerUpdateData = {
           name: formData.instituteName,
           primaryCategory: formData.primaryCategory,
@@ -322,7 +315,7 @@ export default function EditProfile() {
 
         console.log("Updating center data:", centerUpdateData);
 
-        const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${centerId}`, {
+        const response = await fetch(`${API_URL}/centers/${centerSlug}`, { // ✅ Use slug
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -389,7 +382,6 @@ export default function EditProfile() {
     );
   }
 
-  // Get available secondary categories (exclude primary category)
   const availableSecondaryCategories = CATEGORIES.filter(
     cat => cat.value !== formData.primaryCategory
   );

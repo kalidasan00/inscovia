@@ -1,4 +1,4 @@
-// app/institute/dashboard/page.js
+// app/institute/dashboard/page.js - FIXED WITH SLUG
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import Footer from "../../../components/Footer";
 export default function InstituteDashboard() {
   const [institute, setInstitute] = useState(null);
   const [center, setCenter] = useState(null);
+  const [centerSlug, setCenterSlug] = useState(null); // ✅ ADDED
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -37,6 +38,7 @@ export default function InstituteDashboard() {
       const data = await response.json();
       setInstitute(data.user);
       setCenter(data.center);
+      setCenterSlug(data.center?.slug); // ✅ STORE SLUG
     } catch (error) {
       router.push("/institute/login");
     } finally {
@@ -48,7 +50,6 @@ export default function InstituteDashboard() {
     const files = Array.from(e.target.files);
     const currentGallery = center?.gallery || [];
 
-    // Check if adding these files would exceed 3
     if (currentGallery.length + files.length > 3) {
       alert(`You can only have maximum 3 photos. Currently you have ${currentGallery.length}.`);
       return;
@@ -64,7 +65,7 @@ export default function InstituteDashboard() {
         const formData = new FormData();
         formData.append("image", file);
 
-        const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${center.id}/upload-gallery`, {
+        const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-gallery`, { // ✅ USE SLUG
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData
@@ -75,7 +76,6 @@ export default function InstituteDashboard() {
         }
       }
 
-      // Refresh data
       await checkAuthAndFetchData();
       alert("Photos uploaded successfully!");
     } catch (error) {
@@ -91,7 +91,7 @@ export default function InstituteDashboard() {
     const token = localStorage.getItem("instituteToken");
 
     try {
-      const response = await fetch(`${API_URL.replace('/api', '')}/api/centers/${center.id}/delete-gallery`, {
+      const response = await fetch(`${API_URL}/centers/${centerSlug}/delete-gallery`, { // ✅ USE SLUG
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -111,7 +111,6 @@ export default function InstituteDashboard() {
     }
   };
 
-  // Parse courses by category
   const parseCourses = (courses) => {
     const coursesByCategory = {
       TECHNOLOGY: [],

@@ -1,23 +1,32 @@
-// app/institute/dashboard/courses/page.js
+// app/institute/dashboard/courses/page.js - FIXED SAVE FUNCTIONALITY
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
+import { IndianRupee, Clock } from "lucide-react";
 
 export default function ManageCourses() {
   const router = useRouter();
   const [courses, setCourses] = useState([]);
-  const [newCourse, setNewCourse] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(""); // Selected category chip
+  const [newCourse, setNewCourse] = useState({
+    name: "",
+    category: "",
+    fees: "",
+    duration: ""
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [centerId, setCenterId] = useState(null);
+  const [centerSlug, setCenterSlug] = useState(null);
   const [centerCategories, setCenterCategories] = useState([]);
-  const [error, setError] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [editingValue, setEditingValue] = useState("");
-  const [editingCategory, setEditingCategory] = useState("");
+  const [editingCourse, setEditingCourse] = useState({
+    name: "",
+    category: "",
+    fees: "",
+    duration: ""
+  });
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -54,14 +63,29 @@ export default function ManageCourses() {
 
       if (center) {
         setCenterId(center.id);
-        setCourses(center.courses || []);
+        setCenterSlug(center.slug);
+
+        // Use courseDetails if available
+        if (center.courseDetails && Array.isArray(center.courseDetails)) {
+          setCourses(center.courseDetails);
+        } else if (center.courses) {
+          // Convert old format to new format
+          const convertedCourses = center.courses.map(course => {
+            if (course.includes(':')) {
+              const [category, name] = course.split(':').map(s => s.trim());
+              return { name, category, fees: null, duration: null };
+            }
+            return { name: course, category: center.primaryCategory, fees: null, duration: null };
+          });
+          setCourses(convertedCourses);
+        }
 
         const availableCategories = [
           center.primaryCategory,
           ...(center.secondaryCategories || [])
         ];
         setCenterCategories(availableCategories);
-        setSelectedCategory(availableCategories[0]); // Auto-select first category
+        setNewCourse(prev => ({ ...prev, category: availableCategories[0] }));
       }
     } catch (error) {
       console.error("Error fetching courses:", error);
@@ -72,16 +96,12 @@ export default function ManageCourses() {
   };
 
   const addCourse = async () => {
-    const trimmedCourse = newCourse.trim();
-
-    if (!trimmedCourse) {
+    if (!newCourse.name.trim()) {
       alert("Please enter a course name");
       return;
     }
 
-    const courseWithCategory = `${selectedCategory}: ${trimmedCourse}`;
-
-    if (courses.includes(courseWithCategory)) {
+    if (courses.some(c => c.name === newCourse.name.trim() && c.category === newCourse.category)) {
       alert("This course already exists");
       return;
     }
@@ -90,70 +110,84 @@ export default function ManageCourses() {
     setSaving(true);
 
     try {
-      const updatedCourses = [...courses, courseWithCategory];
+      const courseToAdd = {
+        name: newCourse.name.trim(),
+        category: newCourse.category,
+        fees: newCourse.fees ? parseInt(newCourse.fees) : null,
+        duration: newCourse.duration.trim() || null
+      };
 
-      const response = await fetch(`${API_URL}/centers/${centerId}`, {
+      const updatedCourses = [...courses, courseToAdd];
+
+      const response = await fetch(`${API_URL}/centers/${centerSlug}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ courses: updatedCourses })
+        body: JSON.stringify({
+          courses: updatedCourses // Send as array of objects
+        })
       });
 
-      if (!response.ok) throw new Error("Failed to add course");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add course");
+      }
 
       setCourses(updatedCourses);
-      setNewCourse("");
+      setNewCourse({ name: "", category: centerCategories[0], fees: "", duration: "" });
+      alert("Course added successfully!");
     } catch (error) {
-      alert("Failed to add course");
+      console.error("Add course error:", error);
+      alert(error.message || "Failed to add course");
     } finally {
       setSaving(false);
     }
   };
 
-  const parseCourse = (courseString) => {
-    if (courseString.includes(':')) {
-      const [category, courseName] = courseString.split(':').map(s => s.trim());
-      return { category, courseName };
-    }
-    return { category: null, courseName: courseString };
-  };
-
   const startEditing = (index) => {
-    const { category, courseName } = parseCourse(courses[index]);
     setEditingIndex(index);
-    setEditingValue(courseName);
-    setEditingCategory(category || centerCategories[0]);
+    setEditingCourse({ ...courses[index] });
   };
 
   const saveEdit = async (index) => {
-    const trimmedCourse = editingValue.trim();
-    if (!trimmedCourse) return;
+    if (!editingCourse.name.trim()) return;
 
-    const courseWithCategory = `${editingCategory}: ${trimmedCourse}`;
     const token = localStorage.getItem("instituteToken");
     setSaving(true);
 
     try {
       const updatedCourses = [...courses];
-      updatedCourses[index] = courseWithCategory;
+      updatedCourses[index] = {
+        name: editingCourse.name.trim(),
+        category: editingCourse.category,
+        fees: editingCourse.fees ? parseInt(editingCourse.fees) : null,
+        duration: editingCourse.duration.trim() || null
+      };
 
-      const response = await fetch(`${API_URL}/centers/${centerId}`, {
+      const response = await fetch(`${API_URL}/centers/${centerSlug}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ courses: updatedCourses })
+        body: JSON.stringify({
+          courses: updatedCourses
+        })
       });
 
-      if (!response.ok) throw new Error("Failed to update");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update");
+      }
 
       setCourses(updatedCourses);
       setEditingIndex(null);
+      alert("Course updated successfully!");
     } catch (error) {
-      alert("Failed to update course");
+      console.error("Update course error:", error);
+      alert(error.message || "Failed to update course");
     } finally {
       setSaving(false);
     }
@@ -168,20 +202,27 @@ export default function ManageCourses() {
     try {
       const updatedCourses = courses.filter((_, i) => i !== index);
 
-      const response = await fetch(`${API_URL}/centers/${centerId}`, {
+      const response = await fetch(`${API_URL}/centers/${centerSlug}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ courses: updatedCourses })
+        body: JSON.stringify({
+          courses: updatedCourses
+        })
       });
 
-      if (!response.ok) throw new Error("Failed to remove");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to remove");
+      }
 
       setCourses(updatedCourses);
+      alert("Course removed successfully!");
     } catch (error) {
-      alert("Failed to remove course");
+      console.error("Remove course error:", error);
+      alert(error.message || "Failed to remove course");
     } finally {
       setSaving(false);
     }
@@ -206,7 +247,6 @@ export default function ManageCourses() {
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Manage Courses</h1>
           <button
@@ -218,19 +258,18 @@ export default function ManageCourses() {
         </div>
 
         <div className="bg-white rounded-lg border p-6">
-          {/* Add Course Section */}
           <div className="mb-6">
             <h2 className="text-sm font-medium text-gray-900 mb-3">Add New Course</h2>
 
-            {/* Category Chips */}
             <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-700 mb-2">Category</label>
               <div className="flex flex-wrap gap-2">
                 {centerCategories.map(cat => (
                   <button
                     key={cat}
-                    onClick={() => setSelectedCategory(cat)}
+                    onClick={() => setNewCourse(prev => ({ ...prev, category: cat }))}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedCategory === cat
+                      newCourse.category === cat
                         ? 'bg-accent text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
@@ -241,27 +280,56 @@ export default function ManageCourses() {
               </div>
             </div>
 
-            {/* Input */}
-            <div className="flex gap-3">
+            <div className="mb-3">
+              <label className="block text-xs font-medium text-gray-700 mb-2">Course Name *</label>
               <input
-                className="flex-1 border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-sm"
-                placeholder="Enter course name (e.g., Python Programming)"
-                value={newCourse}
-                onChange={(e) => setNewCourse(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addCourse()}
+                className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                placeholder="e.g., Python Programming"
+                value={newCourse.name}
+                onChange={(e) => setNewCourse(prev => ({ ...prev, name: e.target.value }))}
                 disabled={saving}
               />
-              <button
-                onClick={addCourse}
-                disabled={saving || !newCourse.trim()}
-                className="px-6 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50 text-sm font-medium"
-              >
-                {saving ? 'Adding...' : 'Add'}
-              </button>
             </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  <IndianRupee className="w-3 h-3 inline mr-1" />
+                  Course Fees (Optional)
+                </label>
+                <input
+                  type="number"
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                  placeholder="e.g., 15000"
+                  value={newCourse.fees}
+                  onChange={(e) => setNewCourse(prev => ({ ...prev, fees: e.target.value }))}
+                  disabled={saving}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  <Clock className="w-3 h-3 inline mr-1" />
+                  Duration (Optional)
+                </label>
+                <input
+                  className="w-full border border-gray-300 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                  placeholder="e.g., 3 months"
+                  value={newCourse.duration}
+                  onChange={(e) => setNewCourse(prev => ({ ...prev, duration: e.target.value }))}
+                  disabled={saving}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={addCourse}
+              disabled={saving || !newCourse.name.trim()}
+              className="w-full px-6 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-50 text-sm font-medium"
+            >
+              {saving ? 'Adding...' : 'Add Course'}
+            </button>
           </div>
 
-          {/* Courses List */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-medium text-gray-900">
@@ -275,21 +343,19 @@ export default function ManageCourses() {
               </div>
             ) : (
               <div className="space-y-2">
-                {courses.map((course, idx) => {
-                  const { category, courseName } = parseCourse(course);
-
-                  return (
-                    <div key={idx} className="border rounded-lg p-3 hover:bg-gray-50">
-                      {editingIndex === idx ? (
-                        <div className="space-y-2">
-                          {/* Category chips for editing */}
+                {courses.map((course, idx) => (
+                  <div key={idx} className="border rounded-lg p-4 hover:bg-gray-50">
+                    {editingIndex === idx ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-2">Category</label>
                           <div className="flex gap-2">
                             {centerCategories.map(cat => (
                               <button
                                 key={cat}
-                                onClick={() => setEditingCategory(cat)}
+                                onClick={() => setEditingCourse(prev => ({ ...prev, category: cat }))}
                                 className={`px-3 py-1 rounded text-xs font-medium ${
-                                  editingCategory === cat
+                                  editingCourse.category === cat
                                     ? 'bg-accent text-white'
                                     : 'bg-gray-100 text-gray-700'
                                 }`}
@@ -298,77 +364,118 @@ export default function ManageCourses() {
                               </button>
                             ))}
                           </div>
+                        </div>
 
-                          <div className="flex gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-2">Course Name</label>
+                          <input
+                            type="text"
+                            value={editingCourse.name}
+                            onChange={(e) => setEditingCourse(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-accent rounded-lg text-sm focus:outline-none"
+                            autoFocus
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                              <IndianRupee className="w-3 h-3 inline mr-1" />
+                              Fees
+                            </label>
+                            <input
+                              type="number"
+                              value={editingCourse.fees || ""}
+                              onChange={(e) => setEditingCourse(prev => ({ ...prev, fees: e.target.value }))}
+                              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                              placeholder="e.g., 15000"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-2">
+                              <Clock className="w-3 h-3 inline mr-1" />
+                              Duration
+                            </label>
                             <input
                               type="text"
-                              value={editingValue}
-                              onChange={(e) => setEditingValue(e.target.value)}
-                              onKeyPress={(e) => e.key === 'Enter' && saveEdit(idx)}
-                              className="flex-1 px-3 py-1.5 border border-accent rounded-lg text-sm focus:outline-none"
-                              autoFocus
+                              value={editingCourse.duration || ""}
+                              onChange={(e) => setEditingCourse(prev => ({ ...prev, duration: e.target.value }))}
+                              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                              placeholder="e.g., 3 months"
                             />
-                            <button
-                              onClick={() => saveEdit(idx)}
-                              className="px-3 py-1.5 bg-accent text-white rounded-lg text-sm"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => setEditingIndex(null)}
-                              className="px-3 py-1.5 bg-gray-200 rounded-lg text-sm"
-                            >
-                              Cancel
-                            </button>
                           </div>
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900">{courseName}</span>
-                            {category && (
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveEdit(idx)}
+                            disabled={saving}
+                            className="flex-1 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                          >
+                            {saving ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => setEditingIndex(null)}
+                            disabled={saving}
+                            className="flex-1 px-4 py-2 bg-gray-200 rounded-lg text-sm font-medium disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-semibold text-gray-900">{course.name}</span>
                               <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
-                                {CATEGORIES[category]}
+                                {CATEGORIES[course.category]}
                               </span>
+                            </div>
+
+                            {(course.fees || course.duration) && (
+                              <div className="flex items-center gap-3 text-sm">
+                                {course.fees && (
+                                  <div className="flex items-center gap-1 text-green-700">
+                                    <IndianRupee className="w-3.5 h-3.5" />
+                                    <span className="font-semibold">₹{course.fees.toLocaleString('en-IN')}</span>
+                                  </div>
+                                )}
+                                {course.duration && (
+                                  <div className="flex items-center gap-1 text-gray-600">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>{course.duration}</span>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
+
                           <div className="flex gap-2">
                             <button
                               onClick={() => startEditing(idx)}
-                              className="text-accent hover:text-accent/80 text-sm px-3 py-1"
+                              disabled={saving}
+                              className="text-accent hover:text-accent/80 text-sm px-3 py-1 font-medium disabled:opacity-50"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => removeCourse(idx)}
-                              className="text-red-500 hover:text-red-700 text-sm px-3 py-1"
+                              disabled={saving}
+                              className="text-red-500 hover:text-red-700 text-sm px-3 py-1 font-medium disabled:opacity-50"
                             >
                               Remove
                             </button>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Save All Button */}
-          {courses.length > 0 && (
-            <div className="mt-6 pt-6 border-t flex justify-end">
-              <button
-                onClick={() => alert('All changes are saved automatically!')}
-                className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                All Saved
-              </button>
-            </div>
-          )}
         </div>
       </main>
 
