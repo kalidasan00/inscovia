@@ -5,14 +5,23 @@ import { PrismaClient } from '@prisma/client';
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// GET /api/reviews/center/:id - Get all reviews for a center
-router.get('/center/:id', async (req, res) => {
+// GET /api/reviews/center/:slug - Get all reviews for a center
+router.get('/center/:slug', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { slug } = req.params;
+
+    // Find center by slug first
+    const center = await prisma.center.findUnique({
+      where: { slug }
+    });
+
+    if (!center) {
+      return res.json({ reviews: [] });
+    }
 
     const reviews = await prisma.review.findMany({
       where: {
-        centerId: id
+        centerId: center.id
       },
       orderBy: {
         createdAt: 'desc'
@@ -26,10 +35,10 @@ router.get('/center/:id', async (req, res) => {
   }
 });
 
-// POST /api/reviews/center/:id - Add a new review
-router.post('/center/:id', async (req, res) => {
+// POST /api/reviews/center/:slug - Add a new review
+router.post('/center/:slug', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { slug } = req.params;
     const { userName, userEmail, rating, comment } = req.body;
 
     // Validation
@@ -49,9 +58,9 @@ router.post('/center/:id', async (req, res) => {
       return res.status(400).json({ error: 'Review must be at least 10 characters' });
     }
 
-    // Check if center exists
+    // Check if center exists - use slug
     const center = await prisma.center.findUnique({
-      where: { id }
+      where: { slug }
     });
 
     if (!center) {
@@ -63,7 +72,7 @@ router.post('/center/:id', async (req, res) => {
       where: {
         userEmail_centerId: {
           userEmail: userEmail.toLowerCase().trim(),
-          centerId: id
+          centerId: center.id
         }
       }
     });
@@ -79,13 +88,13 @@ router.post('/center/:id', async (req, res) => {
         userEmail: userEmail.toLowerCase().trim(),
         rating: parseInt(rating),
         comment: comment.trim(),
-        centerId: id
+        centerId: center.id
       }
     });
 
     // Calculate new average rating
     const allReviews = await prisma.review.findMany({
-      where: { centerId: id },
+      where: { centerId: center.id },
       select: { rating: true }
     });
 
@@ -93,7 +102,7 @@ router.post('/center/:id', async (req, res) => {
 
     // Update center rating
     await prisma.center.update({
-      where: { id },
+      where: { id: center.id },
       data: {
         rating: parseFloat(avgRating.toFixed(2))
       }
@@ -110,13 +119,32 @@ router.post('/center/:id', async (req, res) => {
   }
 });
 
-// GET /api/reviews/center/:id/stats - Get review statistics
-router.get('/center/:id/stats', async (req, res) => {
+// GET /api/reviews/center/:slug/stats - Get review statistics
+router.get('/center/:slug/stats', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { slug } = req.params;
+
+    // Find center by slug first
+    const center = await prisma.center.findUnique({
+      where: { slug }
+    });
+
+    if (!center) {
+      return res.json({
+        averageRating: 0,
+        totalReviews: 0,
+        ratingBreakdown: {
+          5: 0,
+          4: 0,
+          3: 0,
+          2: 0,
+          1: 0
+        }
+      });
+    }
 
     const reviews = await prisma.review.findMany({
-      where: { centerId: id },
+      where: { centerId: center.id },
       select: { rating: true }
     });
 
@@ -124,7 +152,7 @@ router.get('/center/:id/stats', async (req, res) => {
       return res.json({
         averageRating: 0,
         totalReviews: 0,
-        ratingDistribution: {
+        ratingBreakdown: {
           5: 0,
           4: 0,
           3: 0,
@@ -136,7 +164,7 @@ router.get('/center/:id/stats', async (req, res) => {
 
     const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
 
-    const distribution = {
+    const ratingBreakdown = {
       5: reviews.filter(r => r.rating === 5).length,
       4: reviews.filter(r => r.rating === 4).length,
       3: reviews.filter(r => r.rating === 3).length,
@@ -147,7 +175,7 @@ router.get('/center/:id/stats', async (req, res) => {
     res.json({
       averageRating: parseFloat(avgRating.toFixed(2)),
       totalReviews: reviews.length,
-      ratingDistribution: distribution
+      ratingBreakdown
     });
 
   } catch (error) {
