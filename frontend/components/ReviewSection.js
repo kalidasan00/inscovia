@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Star, X, Lock } from "lucide-react";
 
-export default function ReviewSection({ centerId }) {
+export default function ReviewSection({ centerSlug }) {
   const [reviews, setReviews] = useState([]);
-  const [rating, setRating] = useState(0); // ← CHANGED: Start with 0 (empty stars)
+  const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -15,7 +15,7 @@ export default function ReviewSection({ centerId }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [reviewStats, setReviewStats] = useState(null);
-  const [showLoginModal, setShowLoginModal] = useState(false); // ← NEW: Modal state
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const router = useRouter();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -36,13 +36,15 @@ export default function ReviewSection({ centerId }) {
 
   // Load reviews
   useEffect(() => {
-    loadReviews();
-    loadReviewStats();
-  }, [centerId]);
+    if (centerSlug) {
+      loadReviews();
+      loadReviewStats();
+    }
+  }, [centerSlug]);
 
   const loadReviews = async () => {
     try {
-      const res = await fetch(`${API_URL}/reviews/center/${centerId}`);
+      const res = await fetch(`${API_URL}/reviews/center/${centerSlug}`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data.reviews || []);
@@ -56,7 +58,7 @@ export default function ReviewSection({ centerId }) {
 
   const loadReviewStats = async () => {
     try {
-      const res = await fetch(`${API_URL}/reviews/center/${centerId}/stats`);
+      const res = await fetch(`${API_URL}/reviews/center/${centerSlug}/stats`);
       if (res.ok) {
         const data = await res.json();
         setReviewStats(data);
@@ -76,7 +78,6 @@ export default function ReviewSection({ centerId }) {
     const userData = localStorage.getItem("userData");
 
     if (!isLoggedIn || !userData) {
-      // Show professional modal instead of alert
       setShowLoginModal(true);
       return;
     }
@@ -103,11 +104,10 @@ export default function ReviewSection({ centerId }) {
     try {
       const user = JSON.parse(userData);
 
-      const res = await fetch(`${API_URL}/reviews`, {
+      const res = await fetch(`${API_URL}/reviews/center/${centerSlug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          centerId,
           userName: user.name,
           userEmail: user.email,
           rating,
@@ -120,7 +120,7 @@ export default function ReviewSection({ centerId }) {
       if (res.ok) {
         setSuccess(true);
         setComment("");
-        setRating(0); // Reset to empty
+        setRating(0);
         loadReviews();
         loadReviewStats();
 

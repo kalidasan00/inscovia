@@ -61,6 +61,15 @@ export const metadata = {
     title: 'Inscovia - Find Best Training Centers in India',
     description: 'Discover and compare training centers across India',
   },
+
+  icons: {
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+    shortcut: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({ children }) {
