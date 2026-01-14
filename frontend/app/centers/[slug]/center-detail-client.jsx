@@ -332,7 +332,7 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            <ReviewSection centerId={center.id} />
+            <ReviewSection centerSlug={center.slug} />
 
             <div className="pt-3 border-t mt-3">
               <Link href="/centers" className="inline-flex items-center gap-1 text-indigo-600 text-xs font-medium">
