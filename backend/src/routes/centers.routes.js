@@ -2,11 +2,12 @@ import express from "express";
 import prisma from "../lib/prisma.js";
 import {
   getCenters,
-  getCenterBySlug, // ← RENAMED from getCenterById
+  getCenterBySlug,
   updateCenter,
   uploadLogo,
   uploadCoverImage
 } from "../controllers/centers.controller.js";
+import { uploadGalleryImage, deleteGalleryImage } from "../controllers/gallery.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import upload from "../middleware/upload.js";
 
@@ -42,11 +43,15 @@ router.get("/top/list", async (req, res) => {
   }
 });
 
-// Base Routes - Changed :id to :slug
+// Base Routes
 router.get("/", getCenters);
-router.get("/:slug", getCenterBySlug); // ← CHANGED from :id to :slug
-router.put("/:slug", authenticate, updateCenter); // ← CHANGED from :id to :slug
-router.post("/:slug/upload-logo", authenticate, upload.single("logo"), uploadLogo); // ← CHANGED
-router.post("/:slug/upload-cover", authenticate, upload.single("image"), uploadCoverImage); // ← CHANGED
+router.get("/:slug", getCenterBySlug);
+router.put("/:slug", authenticate, updateCenter);
+router.post("/:slug/upload-logo", authenticate, upload.single("logo"), uploadLogo);
+router.post("/:slug/upload-cover", authenticate, upload.single("image"), uploadCoverImage);
+
+// ✅ Gallery Routes
+router.post("/:id/upload-gallery", authenticate, upload.single("image"), uploadGalleryImage);
+router.delete("/:id/delete-gallery", authenticate, deleteGalleryImage);
 
 export default router;
