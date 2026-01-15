@@ -6,17 +6,21 @@ export const uploadGalleryImage = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Your auth middleware sets req.userId
+    if (!req.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
     // Verify center belongs to this institute
     const center = await prisma.center.findUnique({
-      where: { id },
-      include: { owner: true }
+      where: { id }
     });
 
     if (!center) {
       return res.status(404).json({ message: "Center not found" });
     }
 
-    if (center.userId !== req.user.id) {
+    if (center.userId !== req.userId) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -65,6 +69,11 @@ export const deleteGalleryImage = async (req, res) => {
       return res.status(400).json({ message: "Image URL required" });
     }
 
+    // Your auth middleware sets req.userId
+    if (!req.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
     // Verify center belongs to this institute
     const center = await prisma.center.findUnique({
       where: { id }
@@ -74,7 +83,7 @@ export const deleteGalleryImage = async (req, res) => {
       return res.status(404).json({ message: "Center not found" });
     }
 
-    if (center.userId !== req.user.id) {
+    if (center.userId !== req.userId) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
