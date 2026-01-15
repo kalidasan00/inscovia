@@ -9,7 +9,7 @@ import {
 } from "../controllers/centers.controller.js";
 import { uploadGalleryImage, deleteGalleryImage } from "../controllers/gallery.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import upload from "../middleware/upload.js";
+import upload, { uploadGallery } from "../middleware/upload.js"; // Import both
 
 const router = express.Router();
 
@@ -50,8 +50,8 @@ router.put("/:slug", authenticate, updateCenter);
 router.post("/:slug/upload-logo", authenticate, upload.single("logo"), uploadLogo);
 router.post("/:slug/upload-cover", authenticate, upload.single("image"), uploadCoverImage);
 
-// ✅ Gallery Routes
-router.post("/:id/upload-gallery", authenticate, upload.single("image"), uploadGalleryImage);
+// ✅ Gallery Routes - Use uploadGallery middleware for Cloudinary
+router.post("/:id/upload-gallery", authenticate, uploadGallery.single("image"), uploadGalleryImage);
 router.delete("/:id/delete-gallery", authenticate, deleteGalleryImage);
 
 export default router;
