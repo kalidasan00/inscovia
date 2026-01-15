@@ -46,12 +46,12 @@ export default function Navbar() {
   }, [pathname]);
 
   const handleLogout = () => {
+    // Priority: Logout institute first if both logged in
     if (isInstituteLoggedIn) {
       localStorage.removeItem("instituteLoggedIn");
       localStorage.removeItem("instituteToken");
       localStorage.removeItem("instituteData");
-    }
-    if (isUserLoggedIn) {
+    } else if (isUserLoggedIn) {
       localStorage.removeItem("userLoggedIn");
       localStorage.removeItem("userData");
       localStorage.removeItem("userToken");
@@ -59,7 +59,10 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
+  // Determine which account to show (Institute has priority)
   const isLoggedIn = isInstituteLoggedIn || isUserLoggedIn;
+  const dashboardHref = isInstituteLoggedIn ? "/institute/dashboard" : "/user/dashboard";
+  const accountLabel = isInstituteLoggedIn ? "Dashboard" : "Account";
 
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
@@ -102,7 +105,7 @@ export default function Navbar() {
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
                 <Link
-                  href={isInstituteLoggedIn ? "/institute/dashboard" : "/user/dashboard"}
+                  href={dashboardHref}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                 >
                   {isInstituteLoggedIn ? (
@@ -110,7 +113,7 @@ export default function Navbar() {
                   ) : (
                     <User className="w-4 h-4" />
                   )}
-                  <span>{isInstituteLoggedIn ? "Dashboard" : "Account"}</span>
+                  <span>{accountLabel}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -174,7 +177,7 @@ export default function Navbar() {
               {isLoggedIn ? (
                 <>
                   <Link
-                    href={isInstituteLoggedIn ? "/institute/dashboard" : "/user/dashboard"}
+                    href={dashboardHref}
                     className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
                     onClick={() => setIsOpen(false)}
                   >

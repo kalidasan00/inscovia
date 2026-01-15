@@ -7,11 +7,12 @@ import Footer from "../../../components/Footer";
 import Link from "next/link";
 import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
-import { Heart, GitCompare, Search, MessageSquare } from "lucide-react";
+import { Heart, GitCompare, Search, MessageSquare, User, Mail, Phone, LogOut, X, AlertCircle } from "lucide-react";
 
 export default function UserDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const router = useRouter();
   const { favoritesCount } = useFavorites();
   const { compareCount } = useCompare();
@@ -44,6 +45,7 @@ export default function UserDashboard() {
     localStorage.removeItem("userLoggedIn");
     localStorage.removeItem("userData");
     localStorage.removeItem("userToken");
+    setShowLogoutModal(false);
     router.push("/");
   };
 
@@ -51,9 +53,9 @@ export default function UserDashboard() {
     return (
       <>
         <Navbar />
-        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8">
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-6">
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent"></div>
           </div>
         </main>
         <Footer />
@@ -65,13 +67,13 @@ export default function UserDashboard() {
     return (
       <>
         <Navbar />
-        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8">
-          <div className="text-center py-20">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-gray-600 mb-4">Please login to access your dashboard.</p>
+        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-6">
+          <div className="text-center py-16">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
+            <p className="text-sm text-gray-600 mb-4">Please login to access your dashboard.</p>
             <Link
               href="/user-menu"
-              className="inline-flex px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90"
+              className="inline-flex px-5 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm font-medium"
             >
               Go to Login
             </Link>
@@ -86,40 +88,46 @@ export default function UserDashboard() {
     <>
       <Navbar />
 
-      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-8 pb-24 md:pb-8">
-        {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6 sm:p-8 text-white mb-6">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-                Welcome back, {user.name}! 👋
-              </h1>
-              <p className="text-blue-100">
-                Explore training centers and courses to boost your career
-              </p>
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg border shadow-sm p-4 sm:p-5 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-base sm:text-lg font-bold text-gray-900">
+                  {user.name}
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  {user.email}
+                </p>
+              </div>
             </div>
             <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white font-medium transition-colors"
+              onClick={() => setShowLogoutModal(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Logout"
             >
-              Logout
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
             </button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-4">
           {/* Saved Centers */}
           <Link
             href="/user/saved"
-            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-red-200 transition-all group"
+            className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-red-200 transition-all"
           >
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
-                <Heart className="w-6 h-6 text-red-600" />
+            <div className="flex flex-col gap-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{favoritesCount}</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{favoritesCount}</p>
                 <p className="text-xs text-gray-600">Saved</p>
               </div>
             </div>
@@ -128,47 +136,46 @@ export default function UserDashboard() {
           {/* Compare */}
           <Link
             href="/user/compare"
-            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-blue-200 transition-all group"
+            className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-blue-200 transition-all"
           >
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                <GitCompare className="w-6 h-6 text-blue-600" />
+            <div className="flex flex-col gap-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <GitCompare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{compareCount}</p>
-                <p className="text-xs text-gray-600">Comparing</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{compareCount}</p>
+                <p className="text-xs text-gray-600">Compare</p>
               </div>
             </div>
           </Link>
 
-          {/* Profile Status */}
-          <div className="bg-white rounded-lg shadow-sm border p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-50 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          {/* Reviews */}
+          <Link
+            href="/user/reviews"
+            className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-purple-200 transition-all"
+          >
+            <div className="flex flex-col gap-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">
-                  {user.isVerified ? "Verified" : "Active"}
-                </p>
-                <p className="text-xs text-gray-600">Status</p>
+                <p className="text-xs text-gray-900 font-semibold">Reviews</p>
+                <p className="text-xs text-gray-600">Manage</p>
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Browse */}
           <Link
             href="/centers"
-            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-accent transition-all group"
+            className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-accent transition-all"
           >
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-accent/10 rounded-lg group-hover:bg-accent/20 transition-colors">
-                <Search className="w-6 h-6 text-accent" />
+            <div className="flex flex-col gap-2">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Browse</p>
+                <p className="text-xs text-gray-900 font-semibold">Browse</p>
                 <p className="text-xs text-gray-600">Centers</p>
               </div>
             </div>
@@ -176,62 +183,56 @@ export default function UserDashboard() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Your Profile</h2>
+        <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-5 mb-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-sm sm:text-base font-semibold text-gray-900">Profile Information</h2>
             <Link
               href="/user/profile/edit"
-              className="text-sm text-accent hover:text-accent/80 font-medium"
+              className="text-xs sm:text-sm text-accent hover:text-accent/80 font-medium"
             >
-              Edit Profile
+              Edit
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-blue-600" />
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Full Name</p>
-                <p className="font-medium text-gray-900">{user.name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Name</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-50 rounded-lg">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+            <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Mail className="w-4 h-4 text-green-600" />
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Email</p>
-                <p className="font-medium text-gray-900 truncate">{user.email}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Email</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
+            <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Phone className="w-4 h-4 text-purple-600" />
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Phone</p>
-                <p className="font-medium text-gray-900">{user.phone}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Phone</p>
+                <p className="text-sm font-medium text-gray-900">{user.phone}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-yellow-50 rounded-lg">
-                <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg">
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Status</p>
-                <p className="font-medium text-gray-900">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Status</p>
+                <p className="text-sm font-medium">
                   {user.isVerified ? (
                     <span className="text-green-600">Verified</span>
                   ) : (
@@ -244,111 +245,142 @@ export default function UserDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
           <Link
             href="/centers"
-            className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md hover:border-accent/30 transition-all group"
+            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-accent/30 transition-all"
           >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-blue-50 rounded-full group-hover:bg-blue-100 transition-colors">
-                <Search className="w-8 h-8 text-blue-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Search className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Browse Centers</h3>
-                <p className="text-sm text-gray-600">Find training centers near you</p>
+                <h3 className="text-sm font-semibold text-gray-900">Browse Centers</h3>
+                <p className="text-xs text-gray-600">Find training centers</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/user/saved"
-            className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md hover:border-accent/30 transition-all group relative"
+            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-accent/30 transition-all"
           >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-red-50 rounded-full group-hover:bg-red-100 transition-colors relative">
-                <Heart className="w-8 h-8 text-red-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0 relative">
+                <Heart className="w-5 h-5 text-red-600" />
                 {favoritesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                     {favoritesCount}
                   </span>
                 )}
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Saved Centers</h3>
-                <p className="text-sm text-gray-600">View your {favoritesCount} saved centers</p>
+                <h3 className="text-sm font-semibold text-gray-900">Saved Centers</h3>
+                <p className="text-xs text-gray-600">{favoritesCount} saved</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/user/reviews"
-            className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md hover:border-accent/30 transition-all group"
+            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-accent/30 transition-all"
           >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-purple-50 rounded-full group-hover:bg-purple-100 transition-colors">
-                <MessageSquare className="w-8 h-8 text-purple-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">My Reviews</h3>
-                <p className="text-sm text-gray-600">Manage your reviews</p>
+                <h3 className="text-sm font-semibold text-gray-900">My Reviews</h3>
+                <p className="text-xs text-gray-600">Manage reviews</p>
               </div>
             </div>
           </Link>
         </div>
-
-        {/* Info Banner */}
-        {compareCount > 0 ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                <GitCompare className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">
-                  You're comparing {compareCount} {compareCount === 1 ? 'center' : 'centers'}
-                </h3>
-                <p className="text-sm text-blue-700 mb-3">
-                  View them side-by-side to find the perfect match for your learning goals.
-                </p>
-                <Link
-                  href="/user/compare"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-                >
-                  View Comparison
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </Link>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">Start Your Learning Journey</h3>
-                <p className="text-sm text-blue-700 mb-3">
-                  Browse through hundreds of training centers and find the perfect course for your career growth.
-                </p>
-                <Link
-                  href="/centers"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-                >
-                  Explore Training Centers
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-fade-in"
+            onClick={() => setShowLogoutModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Icon */}
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+
+              {/* Content */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Logout?
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Are you sure you want to logout from your account?
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
 
       <Footer />
     </>

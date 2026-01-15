@@ -9,11 +9,11 @@ import SmartSearch from "../../components/SmartSearch";
 import MobileFilters from "../../components/MobileFilters";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { SlidersHorizontal } from "lucide-react";
 
 export default function CentersClient() {
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const searchParams = useSearchParams();
@@ -49,12 +49,16 @@ export default function CentersClient() {
   const state = searchParams.get("state") || "";
   const city = searchParams.get("city") || "";
   const searchQuery = searchParams.get("q") || "";
+  const teachingMode = searchParams.get("teachingMode") || "";
+  const minRating = searchParams.get("rating") ? parseFloat(searchParams.get("rating")) : null;
+  const priceRange = searchParams.get("priceRange") || "";
 
   const uniqueStates = Array.from(new Set(centers.map((c) => c.state).filter(Boolean))).sort();
   const uniqueCities = Array.from(new Set(centers.map((c) => c.city).filter(Boolean))).sort();
 
   let filtered = centers;
 
+  // Category filter
   if (category) {
     filtered = filtered.filter((c) =>
       c.primaryCategory === category ||
@@ -62,14 +66,58 @@ export default function CentersClient() {
     );
   }
 
+  // State filter
   if (state) {
     filtered = filtered.filter((c) => c.state === state);
   }
 
+  // City filter
   if (city) {
     filtered = filtered.filter((c) => c.city === city);
   }
 
+  // Teaching mode filter
+  if (teachingMode) {
+    filtered = filtered.filter((c) => c.teachingMode === teachingMode);
+  }
+
+  // Rating filter
+  if (minRating) {
+    filtered = filtered.filter((c) => c.rating >= minRating);
+  }
+
+  // Price range filter - FIXED for courseDetails JSON
+  if (priceRange) {
+    filtered = filtered.filter((c) => {
+      // Check if courseDetails exists and has data
+      if (!c.courseDetails || !Array.isArray(c.courseDetails) || c.courseDetails.length === 0) {
+        return false;
+      }
+
+      // Extract fees from courseDetails JSON
+      const prices = c.courseDetails
+        .map(course => {
+          const fee = parseInt(course.fees);
+          return isNaN(fee) ? 0 : fee;
+        })
+        .filter(fee => fee > 0);
+
+      if (prices.length === 0) return false;
+
+      const minPrice = Math.min(...prices);
+
+      if (priceRange === "0-5000") return minPrice < 5000;
+      if (priceRange === "5000-10000") return minPrice >= 5000 && minPrice < 10000;
+      if (priceRange === "10000-25000") return minPrice >= 10000 && minPrice < 25000;
+      if (priceRange === "25000-50000") return minPrice >= 25000 && minPrice < 50000;
+      if (priceRange === "50000-100000") return minPrice >= 50000 && minPrice < 100000;
+      if (priceRange === "100000+") return minPrice >= 100000;
+
+      return true;
+    });
+  }
+
+  // Search query filter
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
     filtered = filtered.filter((c) => {
@@ -93,24 +141,18 @@ export default function CentersClient() {
     });
   }
 
-  const activeFiltersCount = [category, state, city, searchQuery].filter(Boolean).length;
+  const activeFiltersCount = [
+    category,
+    state,
+    city,
+    searchQuery,
+    teachingMode,
+    minRating ? 'rating' : null,
+    priceRange
+  ].filter(Boolean).length;
 
   const formatCategory = (cat) => {
     return cat?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
-  };
-
-  const handleFilterChange = (type, value) => {
-    const params = new URLSearchParams(searchParams);
-    if (value) {
-      params.set(type, value);
-    } else {
-      params.delete(type);
-    }
-    router.push(`/centers?${params.toString()}`);
-  };
-
-  const clearAllFilters = () => {
-    router.push('/centers');
   };
 
   const handleMobileFilterChange = (newFilters) => {
@@ -125,10 +167,34 @@ export default function CentersClient() {
     }
 
     if (newFilters.categories && newFilters.categories.length > 0) {
-      params.set('category', newFilters.categories[0]);
+      newFilters.categories.forEach(cat => {
+        params.append('category', cat);
+      });
     }
 
-    router.push(`/centers?${params.toString()}`);
+    if (newFilters.teachingModes && newFilters.teachingModes.length > 0) {
+      newFilters.teachingModes.forEach(mode => {
+        params.append('teachingMode', mode);
+      });
+    }
+
+    if (newFilters.minRating) {
+      params.set('rating', newFilters.minRating);
+    }
+
+    if (newFilters.priceRange) {
+      params.set('priceRange', newFilters.priceRange);
+    }
+
+    if (searchQuery) {
+      params.set('q', searchQuery);
+    }
+
+    router.push(`/centers${params.toString() ? '?' + params.toString() : ''}`);
+  };
+
+  const clearAllFilters = () => {
+    router.push('/centers');
   };
 
   return (
@@ -144,141 +210,118 @@ export default function CentersClient() {
 
             <button
               onClick={() => setShowMobileFilters(true)}
-              className="md:hidden px-3 py-1.5 bg-accent text-white rounded-lg text-xs font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
             >
-              Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                  {activeFiltersCount}
+                </span>
+              )}
             </button>
           </div>
 
           <SmartSearch centers={centers} />
+
+          {/* Active Filters Display */}
+          {activeFiltersCount > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-gray-600">Active filters:</span>
+              {category && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
+                  {formatCategory(category)}
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">
+                    ×
+                  </button>
+                </span>
+              )}
+              {state && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
+                  {state}
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">
+                    ×
+                  </button>
+                </span>
+              )}
+              {city && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
+                  {city}
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">
+                    ×
+                  </button>
+                </span>
+              )}
+              {teachingMode && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
+                  {teachingMode}
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">
+                    ×
+                  </button>
+                </span>
+              )}
+              {minRating && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
+                  {minRating}★ & above
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">
+                    ×
+                  </button>
+                </span>
+              )}
+              {priceRange && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
+                  {priceRange === "100000+" ? "Above ₹1L" : `₹${priceRange.replace('-', ' - ')}`}
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">
+                    ×
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={clearAllFilters}
+                className="text-xs text-accent hover:text-accent/80 font-medium underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
-          <aside className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-56 flex-shrink-0`}>
-            <div className="bg-white rounded-lg border p-3 sticky top-20">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
-                {activeFiltersCount > 0 && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-xs text-accent hover:text-accent/80 font-medium"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
+        <div className="flex-1 min-w-0">
+          {!loading && (
+            <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+              {filtered.length} {filtered.length === 1 ? "center" : "centers"} found
+              {searchQuery && ` for "${searchQuery}"`}
+            </p>
+          )}
 
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  State
-                </label>
-                <select
-                  value={state}
-                  onChange={(e) => handleFilterChange('state', e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <option value="">All States</option>
-                  {uniqueStates.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-3">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  City
-                </label>
-                <select
-                  value={city}
-                  onChange={(e) => handleFilterChange('city', e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <option value="">All Cities</option>
-                  {uniqueCities.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-
-              {activeFiltersCount > 0 && (
-                <div className="pt-3 border-t">
-                  <p className="text-[10px] font-medium text-gray-600 mb-1.5">Active:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {category && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        {formatCategory(category)}
-                        <button onClick={() => handleFilterChange('category', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                    {state && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        {state}
-                        <button onClick={() => handleFilterChange('state', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                    {city && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        {city}
-                        <button onClick={() => handleFilterChange('city', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                    {searchQuery && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 text-accent rounded text-[10px]">
-                        "{searchQuery}"
-                        <button onClick={() => handleFilterChange('q', '')} className="hover:text-accent/80">
-                          ×
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading...</p>
             </div>
-          </aside>
-
-          <div className="flex-1 min-w-0">
-            {!loading && (
-              <p className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
-                {filtered.length} {filtered.length === 1 ? "center" : "centers"} found
-                {searchQuery && ` for "${searchQuery}"`}
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-8 bg-white rounded-lg border">
+              <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <p className="text-gray-700 font-medium mb-2">No centers found</p>
+              <p className="text-sm text-gray-500 mb-3">
+                {searchQuery ? `No results for "${searchQuery}"` : "Try different filters"}
               </p>
-            )}
-
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading...</p>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-8 bg-white rounded-lg border">
-                <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <p className="text-gray-700 font-medium mb-2">No centers found</p>
-                <p className="text-sm text-gray-500 mb-3">
-                  {searchQuery ? `No results for "${searchQuery}"` : "Try different filters"}
-                </p>
-                <button
-                  onClick={clearAllFilters}
-                  className="text-accent hover:text-accent/80 font-medium text-sm"
-                >
-                  Clear all filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
-                {filtered.map((center) => (
-                  <CenterCard key={center.id} center={center} />
-                ))}
-              </div>
-            )}
-          </div>
+              <button
+                onClick={clearAllFilters}
+                className="text-accent hover:text-accent/80 font-medium text-sm"
+              >
+                Clear all filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
+              {filtered.map((center) => (
+                <CenterCard key={center.id} center={center} />
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -287,9 +330,11 @@ export default function CentersClient() {
         onClose={() => setShowMobileFilters(false)}
         filters={{
           categories: category ? [category] : [],
-          teachingModes: [],
+          teachingModes: teachingMode ? [teachingMode] : [],
           state: state || "",
-          city: city || ""
+          city: city || "",
+          minRating: minRating || null,
+          priceRange: priceRange || ""
         }}
         onFilterChange={handleMobileFilterChange}
         categories={["TECHNOLOGY", "MANAGEMENT", "SKILL_DEVELOPMENT", "EXAM_COACHING"]}

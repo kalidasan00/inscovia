@@ -53,20 +53,17 @@ export default function BottomNav() {
         </svg>
       )
     },
-    // Show Dashboard only when institute logged in
-    ...(isInstituteLoggedIn ? [{
-      name: "Dashboard",
-      href: "/institute/dashboard",
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      )
-    }] : []),
-    // User icon always visible - goes to dashboard if logged in, user-menu if not
+    // User icon logic:
+    // - If institute logged in → goes to institute dashboard
+    // - If user logged in → goes to user dashboard
+    // - If neither → goes to user-menu (login page)
     {
       name: "User",
-      href: isUserLoggedIn ? "/user/dashboard" : "/user-menu",
+      href: isInstituteLoggedIn
+        ? "/institute/dashboard"
+        : isUserLoggedIn
+          ? "/user/dashboard"
+          : "/user-menu",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -77,7 +74,7 @@ export default function BottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-      <div className={`grid ${isInstituteLoggedIn ? 'grid-cols-4' : 'grid-cols-3'} h-16`}>
+      <div className="grid grid-cols-3 h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href ||
                           (item.href !== "/" && pathname?.startsWith(item.href));

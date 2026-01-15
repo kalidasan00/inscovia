@@ -51,6 +51,18 @@ export default function MobileFilters({
         { value: "3.5", label: "3.5 & above", count: 0 },
         { value: "3.0", label: "3.0 & above", count: 0 }
       ]
+    },
+    {
+      id: "priceRange",
+      label: "Price Range",
+      options: [
+        { value: "0-5000", label: "Under ₹5,000", count: 0 },
+        { value: "5000-10000", label: "₹5,000 - ₹10,000", count: 0 },
+        { value: "10000-25000", label: "₹10,000 - ₹25,000", count: 0 },
+        { value: "25000-50000", label: "₹25,000 - ₹50,000", count: 0 },
+        { value: "50000-100000", label: "₹50,000 - ₹1,00,000", count: 0 },
+        { value: "100000+", label: "Above ₹1,00,000", count: 0 }
+      ]
     }
   ];
 
@@ -59,7 +71,8 @@ export default function MobileFilters({
       categories: [],
       teachingModes: [],
       state: "",
-      city: ""
+      city: "",
+      priceRange: ""
     });
     setActiveSection(null);
   };
@@ -81,8 +94,10 @@ export default function MobileFilters({
       onFilterChange({ ...filters, teachingModes: newModes });
     } else if (sectionId === "state") {
       onFilterChange({ ...filters, state: value, city: "" });
+    } else if (sectionId === "priceRange") {
+      onFilterChange({ ...filters, priceRange: value });
     } else if (sectionId === "rating") {
-      // Handle rating filter
+      onFilterChange({ ...filters, minRating: parseFloat(value) });
     }
   };
 
@@ -90,7 +105,19 @@ export default function MobileFilters({
     if (sectionId === "categories") return filters.categories.includes(value);
     if (sectionId === "teachingMode") return filters.teachingModes.includes(value);
     if (sectionId === "state") return filters.state === value;
+    if (sectionId === "priceRange") return filters.priceRange === value;
+    if (sectionId === "rating") return filters.minRating === parseFloat(value);
     return false;
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    count += filters.categories?.length || 0;
+    count += filters.teachingModes?.length || 0;
+    if (filters.state) count++;
+    if (filters.priceRange) count++;
+    if (filters.minRating) count++;
+    return count;
   };
 
   if (!isOpen) return null;
@@ -103,7 +130,7 @@ export default function MobileFilters({
           <X className="w-6 h-6 text-gray-700" />
         </button>
         <h2 className="text-lg font-semibold text-gray-900">
-          Filter ({filters.categories.length + filters.teachingModes.length} applied)
+          Filter ({getActiveFilterCount()} applied)
         </h2>
         <div className="w-10"></div>
       </div>
@@ -130,17 +157,6 @@ export default function MobileFilters({
               </div>
             </button>
           ))}
-
-          <button
-            onClick={() => setActiveSection("more")}
-            className={`w-full px-4 py-4 text-left border-b border-gray-200 ${
-              activeSection === "more"
-                ? 'bg-white border-l-4 border-l-accent font-medium'
-                : 'hover:bg-gray-100'
-            }`}
-          >
-            <span className="text-sm text-gray-500">More Filters</span>
-          </button>
         </div>
 
         {/* Right Content - Filter Options */}

@@ -1,18 +1,20 @@
-// app/institute/dashboard/page.js - FIXED WITH SLUG
+// app/institute/dashboard/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
+import { X, AlertCircle, LogOut, Edit } from "lucide-react";
 
 export default function InstituteDashboard() {
   const [institute, setInstitute] = useState(null);
   const [center, setCenter] = useState(null);
-  const [centerSlug, setCenterSlug] = useState(null); // ✅ ADDED
+  const [centerSlug, setCenterSlug] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const router = useRouter();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -38,12 +40,19 @@ export default function InstituteDashboard() {
       const data = await response.json();
       setInstitute(data.user);
       setCenter(data.center);
-      setCenterSlug(data.center?.slug); // ✅ STORE SLUG
+      setCenterSlug(data.center?.slug);
     } catch (error) {
       router.push("/institute/login");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("instituteToken");
+    localStorage.removeItem("instituteData");
+    setShowLogoutModal(false);
+    router.push("/institute/login");
   };
 
   const handleGalleryUpload = async (e) => {
@@ -65,21 +74,26 @@ export default function InstituteDashboard() {
         const formData = new FormData();
         formData.append("image", file);
 
-        const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-gallery`, { // ✅ USE SLUG
+        // Try center.id first, fallback to centerSlug
+        const centerId = center?.id || centerSlug;
+        const response = await fetch(`${API_URL}/centers/${centerId}/upload-gallery`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData
         });
 
         if (!response.ok) {
-          throw new Error("Upload failed");
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Upload error:", errorData);
+          throw new Error(errorData.message || "Upload failed");
         }
       }
 
       await checkAuthAndFetchData();
       alert("Photos uploaded successfully!");
     } catch (error) {
-      alert("Failed to upload photos. Please try again.");
+      console.error("Gallery upload error:", error);
+      alert(error.message || "Failed to upload photos. Please try again.");
     } finally {
       setUploadingGallery(false);
     }
@@ -91,7 +105,9 @@ export default function InstituteDashboard() {
     const token = localStorage.getItem("instituteToken");
 
     try {
-      const response = await fetch(`${API_URL}/centers/${centerSlug}/delete-gallery`, { // ✅ USE SLUG
+      // Try center.id first, fallback to centerSlug
+      const centerId = center?.id || centerSlug;
+      const response = await fetch(`${API_URL}/centers/${centerId}/delete-gallery`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -101,13 +117,16 @@ export default function InstituteDashboard() {
       });
 
       if (!response.ok) {
-        throw new Error("Delete failed");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Delete error:", errorData);
+        throw new Error(errorData.message || "Delete failed");
       }
 
       await checkAuthAndFetchData();
       alert("Photo deleted successfully!");
     } catch (error) {
-      alert("Failed to delete photo. Please try again.");
+      console.error("Gallery delete error:", error);
+      alert(error.message || "Failed to delete photo. Please try again.");
     }
   };
 
@@ -196,28 +215,21 @@ export default function InstituteDashboard() {
     <>
       <Navbar />
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
-        {/* Edit Banner */}
-        <div className="mb-3 p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-blue-800">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Student view</span>
-          </div>
-          <Link
-            href="/institute/dashboard/edit"
-            className="px-2.5 py-1 bg-accent text-white text-xs font-medium rounded-md hover:bg-accent/90"
-          >
-            Edit Profile
-          </Link>
-        </div>
-
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
           {/* Header */}
           <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
             {center?.image && (
               <img src={center.image} alt={institute.instituteName} className="w-full h-full object-cover" />
             )}
+
+            {/* Logout Button - Top Right */}
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-lg transition-colors shadow-sm"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4 text-gray-700" />
+            </button>
 
             {/* Logo */}
             <div className="absolute -bottom-10 left-3">
@@ -493,6 +505,91 @@ export default function InstituteDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-fade-in"
+            onClick={() => setShowLogoutModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Icon */}
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+
+              {/* Content */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Logout?
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Are you sure you want to logout from your institute account?
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutModal(false)}
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
+
       <Footer />
     </>
   );
