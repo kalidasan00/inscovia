@@ -2,14 +2,21 @@
 import prisma from "../lib/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { sendOTPEmail } from "../utils/emailService.js";
+import crypto from "crypto";
+import { sendOTPEmail, sendPasswordResetEmail } from "../utils/emailService.js";
 
-// Store OTPs temporarily (in production, use Redis)
+// Store OTPs and Reset Tokens temporarily (in production, use Redis)
 const otpStore = new Map();
+const resetTokenStore = new Map();
 
 // Generate 6-digit OTP
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Generate secure reset token
+const generateResetToken = () => {
+  return crypto.randomBytes(32).toString('hex');
 };
 
 // ============= OTP FUNCTIONS =============
@@ -96,6 +103,152 @@ export const verifyOTP = async (req, res) => {
   } catch (error) {
     console.error("❌ Verify OTP error:", error);
     res.status(500).json({ error: "Verification failed" });
+  }
+};
+
+// ============= FORGOT PASSWORD FUNCTIONS =============
+
+// Forgot Password - Send Reset Email
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    // Find user
+    const user = await prisma.instituteUser.findUnique({
+      where: { email: email.toLowerCase().trim() }
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({
+        success: true,
+        message: "If an account exists with this email, you will receive a password reset link"
+      });
+    }
+
+    // Generate reset token
+    const resetToken = generateResetToken();
+    const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+
+    // Store reset token
+    resetTokenStore.set(resetToken, {
+      email: user.email,
+      expiresAt
+    });
+
+    // Send reset email
+    await sendPasswordResetEmail(user.email, resetToken, user.instituteName);
+
+    console.log(`✅ Password reset email sent to ${user.email}`);
+    console.log(`🔑 Reset token: ${resetToken}`); // For testing
+
+    res.json({
+      success: true,
+      message: "If an account exists with this email, you will receive a password reset link"
+    });
+
+  } catch (error) {
+    console.error("❌ Forgot password error:", error);
+    res.status(500).json({ error: "Failed to process request. Please try again." });
+  }
+};
+
+// Verify Reset Token
+export const verifyResetToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    // Get stored token data
+    const tokenData = resetTokenStore.get(token);
+
+    if (!tokenData) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    // Check if token expired
+    if (Date.now() > tokenData.expiresAt) {
+      resetTokenStore.delete(token);
+      return res.status(400).json({ error: "Reset token has expired" });
+    }
+
+    res.json({
+      success: true,
+      message: "Token is valid"
+    });
+
+  } catch (error) {
+    console.error("❌ Verify token error:", error);
+    res.status(500).json({ error: "Verification failed" });
+  }
+};
+
+// Reset Password
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ error: "Token and password are required" });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    // Get stored token data
+    const tokenData = resetTokenStore.get(token);
+
+    if (!tokenData) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    // Check if token expired
+    if (Date.now() > tokenData.expiresAt) {
+      resetTokenStore.delete(token);
+      return res.status(400).json({ error: "Reset token has expired" });
+    }
+
+    // Find user
+    const user = await prisma.instituteUser.findUnique({
+      where: { email: tokenData.email }
+    });
+
+    if (!user) {
+      resetTokenStore.delete(token);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update password
+    await prisma.instituteUser.update({
+      where: { id: user.id },
+      data: { password: hashedPassword }
+    });
+
+    // Remove used token
+    resetTokenStore.delete(token);
+
+    console.log(`✅ Password reset successful for ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "Password reset successful"
+    });
+
+  } catch (error) {
+    console.error("❌ Reset password error:", error);
+    res.status(500).json({ error: "Failed to reset password. Please try again." });
   }
 };
 

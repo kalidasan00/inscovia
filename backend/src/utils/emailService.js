@@ -237,3 +237,239 @@ export const sendOTPEmail = async (email, otp, instituteName) => {
     throw error;
   }
 };
+
+// NEW: Password Reset Email Function
+export const sendPasswordResetEmail = async (email, resetToken, instituteName) => {
+  try {
+    // Get frontend URL from environment or use default
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetLink = `${FRONTEND_URL}/institute/reset-password?token=${resetToken}`;
+
+    const response = await fetch(ZEPTOMAIL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': ZEPTOMAIL_TOKEN
+      },
+      body: JSON.stringify({
+        from: {
+          address: FROM_EMAIL,
+          name: FROM_NAME
+        },
+        to: [
+          {
+            email_address: {
+              address: email,
+              name: instituteName
+            }
+          }
+        ],
+        subject: 'Reset Your Password - Inscovia',
+        htmlbody: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+                background-color: #f5f5f5;
+              }
+              .email-wrapper {
+                background-color: #f5f5f5;
+                padding: 40px 20px;
+              }
+              .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #ffffff;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+              }
+              .header {
+                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+                color: white;
+                padding: 40px 30px;
+                text-align: center;
+              }
+              .logo {
+                max-width: 200px;
+                height: auto;
+                margin-bottom: 20px;
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 600;
+              }
+              .content {
+                background: #ffffff;
+                padding: 40px 30px;
+              }
+              .content h2 {
+                color: #1f2937;
+                font-size: 22px;
+                margin-top: 0;
+                margin-bottom: 20px;
+              }
+              .content p {
+                color: #4b5563;
+                margin-bottom: 16px;
+                font-size: 15px;
+              }
+              .button-box {
+                text-align: center;
+                margin: 35px 0;
+              }
+              .reset-button {
+                display: inline-block;
+                padding: 16px 40px;
+                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 16px;
+                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+              }
+              .info-box {
+                background-color: #fef3c7;
+                border-left: 4px solid #f59e0b;
+                padding: 16px;
+                margin: 25px 0;
+                border-radius: 4px;
+              }
+              .info-box p {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                color: #78350f;
+                font-weight: 600;
+              }
+              .info-box ul {
+                margin: 8px 0 0 0;
+                padding-left: 20px;
+                color: #92400e;
+              }
+              .info-box li {
+                margin-bottom: 6px;
+                font-size: 14px;
+              }
+              .link-box {
+                background-color: #f3f4f6;
+                padding: 16px;
+                border-radius: 8px;
+                margin: 20px 0;
+                word-break: break-all;
+              }
+              .link-box p {
+                margin: 0 0 8px 0;
+                font-size: 13px;
+                color: #6b7280;
+                font-weight: 600;
+              }
+              .link-box a {
+                color: #2563eb;
+                text-decoration: none;
+                font-size: 13px;
+              }
+              .footer {
+                text-align: center;
+                padding: 30px 20px;
+                background-color: #f9fafb;
+                color: #6b7280;
+                font-size: 13px;
+                border-top: 1px solid #e5e7eb;
+              }
+              .footer p {
+                margin: 5px 0;
+              }
+              .divider {
+                height: 1px;
+                background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+                margin: 30px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="email-wrapper">
+              <div class="container">
+                <div class="header">
+                  <img src="${LOGO_URL}" alt="Inscovia Logo" class="logo" />
+                  <h1>Password Reset Request 🔐</h1>
+                </div>
+                <div class="content">
+                  <h2>Hello ${instituteName},</h2>
+                  <p>We received a request to reset your password for your Inscovia account. If you didn't make this request, you can safely ignore this email.</p>
+
+                  <p>To reset your password, click the button below:</p>
+
+                  <div class="button-box">
+                    <a href="${resetLink}" class="reset-button">Reset My Password</a>
+                  </div>
+
+                  <div class="info-box">
+                    <p>⏱️ Important:</p>
+                    <ul>
+                      <li>This link will expire in <strong>1 hour</strong></li>
+                      <li>You can only use this link once</li>
+                      <li>If you didn't request this, please ignore this email</li>
+                      <li>Your password will not change until you create a new one</li>
+                    </ul>
+                  </div>
+
+                  <div class="link-box">
+                    <p>Button not working? Copy and paste this link into your browser:</p>
+                    <a href="${resetLink}">${resetLink}</a>
+                  </div>
+
+                  <div class="divider"></div>
+
+                  <p style="color: #6b7280; font-size: 14px;">
+                    <strong>Need help?</strong> Contact us at <a href="mailto:support@inscovia.com" style="color: #2563eb; text-decoration: none;">support@inscovia.com</a>
+                  </p>
+
+                  <p style="margin-top: 30px; margin-bottom: 0;">
+                    Best regards,<br>
+                    <strong style="color: #2563eb;">The Inscovia Team</strong>
+                  </p>
+                </div>
+                <div class="footer">
+                  <p><strong>© 2025 Inscovia</strong> - All rights reserved</p>
+                  <p style="margin-top: 10px; font-size: 12px;">
+                    This is an automated message. Please do not reply to this email.
+                  </p>
+                  <p style="margin-top: 10px; font-size: 12px; color: #9ca3af;">
+                    If you didn't request a password reset, please ignore this email or contact support if you have concerns.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('ZeptoMail API Error:', data);
+      throw new Error(data.message || 'Failed to send email');
+    }
+
+    console.log('✅ Password Reset Email sent successfully');
+    return { success: true, data };
+
+  } catch (error) {
+    console.error('❌ Email Service Error:', error);
+    throw error;
+  }
+};
