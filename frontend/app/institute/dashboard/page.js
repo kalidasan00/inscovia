@@ -561,34 +561,34 @@ export default function InstituteDashboard() {
               </div>
             </div>
           </div>
+
+          <style jsx>{`
+            @keyframes fade-in {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+
+            @keyframes slide-up {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+
+            .animate-fade-in {
+              animation: fade-in 0.2s ease-out;
+            }
+
+            .animate-slide-up {
+              animation: slide-up 0.3s ease-out;
+            }
+          `}</style>
         </>
       )}
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
-        }
-      `}</style>
 
       <Footer />
     </>
