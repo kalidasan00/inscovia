@@ -1,16 +1,21 @@
-// backend/src/utils/emailService.js - GOOGLE WORKSPACE VERSION
+// backend/src/utils/emailService.js - UPDATED FOR RENDER
 import nodemailer from 'nodemailer';
 
 const FROM_EMAIL = 'noreply@inscovia.com';
 const FROM_NAME = 'Inscovia';
 const LOGO_URL = 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png';
 
-// Create reusable transporter
+// Create reusable transporter with direct SMTP
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // use TLS
   auth: {
-    user: process.env.GMAIL_USER, // noreply@inscovia.com
-    pass: process.env.GMAIL_APP_PASSWORD // uzer wygh sebs ozyw
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
