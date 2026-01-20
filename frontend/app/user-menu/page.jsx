@@ -1,3 +1,4 @@
+// app/user-menu/page.jsx (UPDATED with Forgot Password link)
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -316,6 +317,23 @@ export default function UserMenuPage() {
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="••••••••"
                 />
+              </div>
+
+              {/* Forgot Password Link */}
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-600">Remember</span>
+                </label>
+                <Link
+                  href="/user/forgot-password"
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Forgot?
+                </Link>
               </div>
 
               <button

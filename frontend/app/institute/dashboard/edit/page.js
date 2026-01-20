@@ -1,34 +1,19 @@
-// app/institute/dashboard/edit/page.js - FIXED WITH SLUG
+// app/institute/dashboard/edit/page.js - SIMPLIFIED VERSION
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
 import Navbar from "../../../../components/Navbar";
 import Footer from "../../../../components/Footer";
 import { getStateNames, getDistrictsByState } from "../../../../lib/locationUtils";
-
-const CATEGORIES = [
-  { value: "TECHNOLOGY", label: "Technology" },
-  { value: "MANAGEMENT", label: "Management" },
-  { value: "SKILL_DEVELOPMENT", label: "Skill Development" },
-  { value: "EXAM_COACHING", label: "Exam Coaching" }
-];
-
-const TEACHING_MODES = [
-  { value: "ONLINE", label: "Online" },
-  { value: "OFFLINE", label: "Offline" },
-  { value: "HYBRID", label: "Hybrid" }
-];
+import ImageUploadSection from "./ImageUploadSection";
+import BasicInfoSection from "./BasicInfoSection";
 
 export default function EditProfile() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [centerId, setCenterId] = useState(null);
-  const [centerSlug, setCenterSlug] = useState(null); // ✅ ADDED
+  const [centerSlug, setCenterSlug] = useState(null);
   const [error, setError] = useState(null);
-
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
 
@@ -58,6 +43,7 @@ export default function EditProfile() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
 
+  // Load states on mount
   useEffect(() => {
     try {
       const stateList = getStateNames();
@@ -67,6 +53,7 @@ export default function EditProfile() {
     }
   }, []);
 
+  // Load districts when state changes
   useEffect(() => {
     if (formData.state) {
       try {
@@ -81,6 +68,7 @@ export default function EditProfile() {
     }
   }, [formData.state]);
 
+  // Fetch institute data on mount
   useEffect(() => {
     fetchInstituteData();
   }, []);
@@ -100,13 +88,9 @@ export default function EditProfile() {
         }
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch data");
-      }
+      if (!response.ok) throw new Error("Failed to fetch data");
 
       const data = await response.json();
-      console.log("Edit page data:", data);
-
       const user = data.user;
       const center = data.center;
 
@@ -130,17 +114,14 @@ export default function EditProfile() {
       });
 
       if (center) {
-        setCenterId(center.id);
-        setCenterSlug(center.slug); // ✅ STORE SLUG
+        setCenterSlug(center.slug);
         setLogoPreview(center.logo);
         setCoverPreview(center.image);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       setError("Failed to load data. Please login again.");
-      setTimeout(() => {
-        router.push("/institute/login");
-      }, 2000);
+      setTimeout(() => router.push("/institute/login"), 2000);
     } finally {
       setLoading(false);
     }
@@ -161,10 +142,7 @@ export default function EditProfile() {
   };
 
   const handlePhoneChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      phone: value || ""
-    }));
+    setFormData(prev => ({ ...prev, phone: value || "" }));
   };
 
   const handleSecondaryCategoryToggle = (category) => {
@@ -231,12 +209,12 @@ export default function EditProfile() {
   };
 
   const uploadLogo = async (token) => {
-    if (!logoFile || !centerSlug) return null; // ✅ Use slug check
+    if (!logoFile || !centerSlug) return null;
 
     const formDataUpload = new FormData();
     formDataUpload.append("logo", logoFile);
 
-    const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-logo`, { // ✅ Use slug
+    const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-logo`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formDataUpload
@@ -252,12 +230,12 @@ export default function EditProfile() {
   };
 
   const uploadCover = async (token) => {
-    if (!coverFile || !centerSlug) return null; // ✅ Use slug check
+    if (!coverFile || !centerSlug) return null;
 
     const formDataUpload = new FormData();
     formDataUpload.append("image", coverFile);
 
-    const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-cover`, { // ✅ Use slug
+    const response = await fetch(`${API_URL}/centers/${centerSlug}/upload-cover`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formDataUpload
@@ -284,6 +262,7 @@ export default function EditProfile() {
     }
 
     try {
+      // Upload images if changed
       if (logoFile) {
         console.log("Uploading logo...");
         await uploadLogo(token);
@@ -293,7 +272,8 @@ export default function EditProfile() {
         await uploadCover(token);
       }
 
-      if (centerSlug) { // ✅ Check slug
+      // Update center data
+      if (centerSlug) {
         const centerUpdateData = {
           name: formData.instituteName,
           primaryCategory: formData.primaryCategory,
@@ -313,9 +293,7 @@ export default function EditProfile() {
           linkedin: formData.linkedin,
         };
 
-        console.log("Updating center data:", centerUpdateData);
-
-        const response = await fetch(`${API_URL}/centers/${centerSlug}`, { // ✅ Use slug
+        const response = await fetch(`${API_URL}/centers/${centerSlug}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -328,9 +306,6 @@ export default function EditProfile() {
           const error = await response.json();
           throw new Error(error.error || "Failed to update profile");
         }
-
-        const result = await response.json();
-        console.log("Update result:", result);
       }
 
       alert("Profile updated successfully!");
@@ -382,10 +357,6 @@ export default function EditProfile() {
     );
   }
 
-  const availableSecondaryCategories = CATEGORIES.filter(
-    cat => cat.value !== formData.primaryCategory
-  );
-
   return (
     <>
       <Navbar />
@@ -408,302 +379,23 @@ export default function EditProfile() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Cover Image Section */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-lg font-semibold mb-4">Cover Image</h2>
-            <div className="space-y-4">
-              <div className="relative h-48 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg overflow-hidden">
-                {coverPreview ? (
-                  <img
-                    src={coverPreview}
-                    alt="Cover"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <div className="text-center">
-                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <p className="text-sm">No cover image</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Cover Image
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90 file:cursor-pointer"
-                />
-                <p className="text-xs text-gray-500 mt-1">Recommended: 1200x400px, Max 5MB</p>
-              </div>
-            </div>
-          </div>
+          {/* Image Upload Section */}
+          <ImageUploadSection
+            logoPreview={logoPreview}
+            coverPreview={coverPreview}
+            onLogoChange={handleLogoChange}
+            onCoverChange={handleCoverChange}
+          />
 
-          {/* Logo Section */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-lg font-semibold mb-4">Logo</h2>
-            <div className="flex items-start gap-6">
-              <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border-2 border-gray-200">
-                {logoPreview ? (
-                  <img
-                    src={logoPreview}
-                    alt="Logo"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Logo
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-accent file:text-white hover:file:bg-accent/90 file:cursor-pointer"
-                />
-                <p className="text-xs text-gray-500 mt-1">Recommended: Square image, Max 5MB</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Basic Information */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Institute Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="instituteName"
-                  value={formData.instituteName}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone <span className="text-red-500">*</span>
-                </label>
-                <PhoneInput
-                  international
-                  defaultCountry="IN"
-                  value={formData.phone}
-                  onChange={handlePhoneChange}
-                  className="phone-input-edit"
-                  placeholder="Enter phone number"
-                  required
-                />
-                <style jsx global>{`
-                  .phone-input-edit .PhoneInputInput {
-                    width: 100%;
-                    padding: 8px 12px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 0.375rem;
-                    font-size: 14px;
-                    outline: none;
-                  }
-                  .phone-input-edit .PhoneInputInput:focus {
-                    border-color: var(--accent-color, #3b82f6);
-                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-                  }
-                  .phone-input-edit .PhoneInputCountry {
-                    margin-right: 8px;
-                  }
-                `}</style>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Primary Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="primaryCategory"
-                  value={formData.primaryCategory}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <option value="">Select Primary Category</option>
-                  {CATEGORIES.map(cat => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teaching Mode <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="teachingMode"
-                  value={formData.teachingMode}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <option value="">Select Teaching Mode</option>
-                  {TEACHING_MODES.map(mode => (
-                    <option key={mode.value} value={mode.value}>{mode.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Secondary Categories (Optional - Max 3)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {availableSecondaryCategories.map(cat => {
-                    const isSelected = formData.secondaryCategories?.includes(cat.value);
-                    return (
-                      <button
-                        key={cat.value}
-                        type="button"
-                        onClick={() => handleSecondaryCategoryToggle(cat.value)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          isSelected
-                            ? 'bg-accent text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {cat.label}
-                        {isSelected && (
-                          <span className="ml-2">✓</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Selected: {formData.secondaryCategories?.length || 0}/3
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent bg-white"
-                >
-                  <option value="">Select State</option>
-                  {states.map((state) => (
-                    <option key={state} value={state}>
-                      {state}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  District <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="district"
-                  value={formData.district}
-                  onChange={handleInputChange}
-                  disabled={!formData.state}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">
-                    {formData.state ? 'Select District' : 'Select State First'}
-                  </option>
-                  {districts.map((district) => (
-                    <option key={district} value={district}>
-                      {district}
-                    </option>
-                  ))}
-                </select>
-                {formData.state && districts.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {districts.length} districts available
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location/Area <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., MG Road, Gandhi Nagar"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="4"
-                  placeholder="Tell students about your institute, courses, facilities, achievements..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
-            </div>
-          </div>
+          {/* Basic Info Section */}
+          <BasicInfoSection
+            formData={formData}
+            states={states}
+            districts={districts}
+            onInputChange={handleInputChange}
+            onPhoneChange={handlePhoneChange}
+            onSecondaryCategoryToggle={handleSecondaryCategoryToggle}
+          />
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 bg-white rounded-lg shadow-sm border p-6">

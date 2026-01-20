@@ -1,4 +1,4 @@
-// app/centers/[slug]/center-detail-client.jsx - CLEAN PRODUCTION VERSION
+// app/centers/[slug]/center-detail-client.jsx - WITH INSTAGRAM GALLERY
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -321,12 +321,19 @@ export default function CenterDetailClient() {
 
             <CourseList center={center} />
 
+            {/* Instagram-style Square Gallery */}
             {center.gallery && center.gallery.length > 0 && (
               <div className="mb-3">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Gallery</h2>
                 <div className="grid grid-cols-3 gap-2">
                   {center.gallery.map((img, i) => (
-                    <img key={i} src={img} alt={`Gallery ${i + 1}`} className="w-full h-20 object-cover rounded-lg border" />
+                    <div key={i} className="aspect-square">
+                      <img
+                        src={img}
+                        alt={`Gallery ${i + 1}`}
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
