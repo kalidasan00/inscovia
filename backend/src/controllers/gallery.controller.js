@@ -1,5 +1,7 @@
 // backend/src/controllers/gallery.controller.js
 import prisma from "../lib/prisma.js";
+import cloudinary from "../config/cloudinary.js";
+import { getTransformations } from "../utils/cloudinaryUpload.js";
 
 // Upload gallery image
 export const uploadGalleryImage = async (req, res) => {
@@ -30,33 +32,75 @@ export const uploadGalleryImage = async (req, res) => {
       return res.status(400).json({ message: "Maximum 3 photos allowed" });
     }
 
-    // Check if file was uploaded (Cloudinary storage provides req.file.path)
-    if (!req.file || !req.file.path) {
-      return res.status(400).json({
-        message: "No image file provided",
-        debug: {
-          file: req.file ? "present" : "missing",
-          path: req.file?.path
+    // ✨ NEW: Check if using multer memory storage (req.file.buffer)
+    if (req.file && req.file.buffer) {
+      // Upload with automatic optimization using memory buffer
+      const config = getTransformations('gallery');
+
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "gallery",
+            transformation: config.transformation // ← Auto-optimize
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      const imageUrl = result.secure_url;
+
+      const updatedCenter = await prisma.center.update({
+        where: { id },
+        data: {
+          gallery: {
+            push: imageUrl
+          }
         }
+      });
+
+      console.log(`✅ Gallery image uploaded: ${imageUrl} (${(result.bytes / 1024).toFixed(2)}KB, ${updatedCenter.gallery.length}/3)`);
+
+      return res.json({
+        message: "Image uploaded successfully",
+        imageUrl: imageUrl,
+        gallery: updatedCenter.gallery
       });
     }
 
-    // Cloudinary URL is in req.file.path
-    const imageUrl = req.file.path;
+    // ✨ FALLBACK: If using Cloudinary storage (req.file.path already exists)
+    if (req.file && req.file.path) {
+      const imageUrl = req.file.path;
 
-    const updatedCenter = await prisma.center.update({
-      where: { id },
-      data: {
-        gallery: {
-          push: imageUrl
+      const updatedCenter = await prisma.center.update({
+        where: { id },
+        data: {
+          gallery: {
+            push: imageUrl
+          }
         }
-      }
-    });
+      });
 
-    res.json({
-      message: "Image uploaded successfully",
-      imageUrl: imageUrl,
-      gallery: updatedCenter.gallery
+      console.log(`✅ Gallery image uploaded: ${imageUrl} (${updatedCenter.gallery.length}/3)`);
+
+      return res.json({
+        message: "Image uploaded successfully",
+        imageUrl: imageUrl,
+        gallery: updatedCenter.gallery
+      });
+    }
+
+    // No file found
+    return res.status(400).json({
+      message: "No image file provided",
+      debug: {
+        file: req.file ? "present" : "missing",
+        buffer: req.file?.buffer ? "present" : "missing",
+        path: req.file?.path
+      }
     });
 
   } catch (error) {
@@ -103,6 +147,22 @@ export const deleteGalleryImage = async (req, res) => {
         gallery: updatedGallery
       }
     });
+
+    // ✨ NEW: Try to delete from Cloudinary (optional)
+    try {
+      // Extract public_id from URL
+      const urlParts = imageUrl.split('/');
+      const publicIdWithExtension = urlParts.slice(-2).join('/'); // folder/filename.ext
+      const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, ''); // Remove extension
+
+      await cloudinary.uploader.destroy(publicId);
+      console.log(`✅ Deleted from Cloudinary: ${publicId}`);
+    } catch (cloudError) {
+      console.log('⚠️ Could not delete from Cloudinary:', cloudError.message);
+      // Don't fail the request if Cloudinary delete fails
+    }
+
+    console.log(`✅ Gallery image deleted (${updatedCenter.gallery.length}/3)`);
 
     res.json({
       message: "Image deleted successfully",

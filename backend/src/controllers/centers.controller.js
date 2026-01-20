@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
 import cloudinary from "../config/cloudinary.js";
+import { getTransformations } from "../utils/cloudinaryUpload.js"; // ← ADD THIS LINE
 
 // ✨ Helper function to parse and validate courseDetails
 const parseCourseDetails = (coursesInput) => {
@@ -122,6 +123,7 @@ export const updateCenter = async (req, res) => {
   }
 };
 
+// ✅ UPDATED: Logo upload with automatic optimization
 export const uploadLogo = async (req, res) => {
   try {
     const { slug } = req.params;
@@ -135,9 +137,15 @@ export const uploadLogo = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    // ✨ Add automatic optimization
+    const config = getTransformations('logo');
+
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: "logos" },
+        {
+          folder: "logos",
+          transformation: config.transformation // ← ADD THIS LINE
+        },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
@@ -151,6 +159,8 @@ export const uploadLogo = async (req, res) => {
       data: { logo: result.secure_url }
     });
 
+    console.log(`✅ Logo uploaded: ${result.secure_url} (${(result.bytes / 1024).toFixed(2)}KB)`); // ← ADD THIS LINE
+
     res.json({ success: true, logoUrl: result.secure_url });
   } catch (error) {
     console.error("Upload error:", error);
@@ -158,6 +168,7 @@ export const uploadLogo = async (req, res) => {
   }
 };
 
+// ✅ UPDATED: Cover image upload with automatic optimization
 export const uploadCoverImage = async (req, res) => {
   try {
     const { slug } = req.params;
@@ -171,9 +182,15 @@ export const uploadCoverImage = async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    // ✨ Add automatic optimization
+    const config = getTransformations('banner');
+
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: "covers" },
+        {
+          folder: "covers",
+          transformation: config.transformation // ← ADD THIS LINE
+        },
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
@@ -186,6 +203,8 @@ export const uploadCoverImage = async (req, res) => {
       where: { id: center.id },
       data: { image: result.secure_url }
     });
+
+    console.log(`✅ Banner uploaded: ${result.secure_url} (${(result.bytes / 1024).toFixed(2)}KB)`); // ← ADD THIS LINE
 
     res.json({ success: true, imageUrl: result.secure_url });
   } catch (error) {

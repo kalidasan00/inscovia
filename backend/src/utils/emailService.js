@@ -1,475 +1,214 @@
-// backend/src/utils/emailService.js
-import fetch from 'node-fetch';
+// backend/src/utils/emailService.js - GOOGLE WORKSPACE VERSION
+import nodemailer from 'nodemailer';
 
-const ZEPTOMAIL_API_URL = 'https://api.zeptomail.in/v1.1/email';
-const ZEPTOMAIL_TOKEN = process.env.ZEPTOMAIL_API_TOKEN;
 const FROM_EMAIL = 'noreply@inscovia.com';
 const FROM_NAME = 'Inscovia';
 const LOGO_URL = 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png';
 
+// Create reusable transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER, // noreply@inscovia.com
+    pass: process.env.GMAIL_APP_PASSWORD // uzer wygh sebs ozyw
+  }
+});
+
+// Simple email template
+const getEmailTemplate = (content) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header {
+      background-color: #2563eb;
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .logo {
+      max-width: 180px;
+      height: auto;
+      margin-bottom: 15px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: normal;
+    }
+    .content {
+      padding: 30px;
+    }
+    .content p {
+      margin: 0 0 15px 0;
+      color: #555;
+    }
+    .code-box {
+      background-color: #f8f9fa;
+      border: 2px solid #2563eb;
+      border-radius: 6px;
+      padding: 20px;
+      text-align: center;
+      margin: 25px 0;
+    }
+    .code {
+      font-size: 32px;
+      font-weight: bold;
+      color: #2563eb;
+      letter-spacing: 8px;
+      font-family: monospace;
+    }
+    .expiry {
+      color: #666;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .button {
+      display: inline-block;
+      padding: 14px 35px;
+      background-color: #2563eb;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .note {
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      font-size: 14px;
+      color: #856404;
+    }
+    .footer {
+      background-color: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      border-top: 1px solid #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="${LOGO_URL}" alt="Inscovia" class="logo" />
+      <h1>Inscovia</h1>
+    </div>
+    ${content}
+    <div class="footer">
+      <p><strong>Inscovia</strong></p>
+      <p>This is an automated message, please do not reply.</p>
+      <p style="margin-top: 10px;">Need help? Contact us at support@inscovia.com</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+// OTP Email
 export const sendOTPEmail = async (email, otp, instituteName) => {
   try {
-    const response = await fetch(ZEPTOMAIL_API_URL, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': ZEPTOMAIL_TOKEN
-      },
-      body: JSON.stringify({
-        from: {
-          address: FROM_EMAIL,
-          name: FROM_NAME
-        },
-        to: [
-          {
-            email_address: {
-              address: email,
-              name: instituteName
-            }
-          }
-        ],
-        subject: 'Verify Your Email - Inscovia Registration',
-        htmlbody: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 0;
-                background-color: #f5f5f5;
-              }
-              .email-wrapper {
-                background-color: #f5f5f5;
-                padding: 40px 20px;
-              }
-              .container {
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #ffffff;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-              }
-              .header {
-                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-                color: white;
-                padding: 40px 30px;
-                text-align: center;
-              }
-              .logo {
-                max-width: 200px;
-                height: auto;
-                margin-bottom: 20px;
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-              }
-              .header h1 {
-                margin: 0;
-                font-size: 28px;
-                font-weight: 600;
-              }
-              .content {
-                background: #ffffff;
-                padding: 40px 30px;
-              }
-              .content h2 {
-                color: #1f2937;
-                font-size: 22px;
-                margin-top: 0;
-                margin-bottom: 20px;
-              }
-              .content p {
-                color: #4b5563;
-                margin-bottom: 16px;
-                font-size: 15px;
-              }
-              .otp-box {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border: 2px solid #2563eb;
-                border-radius: 12px;
-                padding: 30px 20px;
-                text-align: center;
-                margin: 30px 0;
-              }
-              .otp-label {
-                margin: 0;
-                color: #6b7280;
-                font-size: 14px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                font-weight: 600;
-              }
-              .otp-code {
-                font-size: 36px;
-                font-weight: 700;
-                color: #2563eb;
-                letter-spacing: 10px;
-                margin: 15px 0;
-                font-family: 'Courier New', monospace;
-              }
-              .otp-expiry {
-                margin: 10px 0 0 0;
-                color: #6b7280;
-                font-size: 13px;
-              }
-              .info-box {
-                background-color: #fef3c7;
-                border-left: 4px solid #f59e0b;
-                padding: 16px;
-                margin: 25px 0;
-                border-radius: 4px;
-              }
-              .info-box p {
-                margin: 0 0 8px 0;
-                font-size: 14px;
-                color: #78350f;
-                font-weight: 600;
-              }
-              .info-box ul {
-                margin: 8px 0 0 0;
-                padding-left: 20px;
-                color: #92400e;
-              }
-              .info-box li {
-                margin-bottom: 6px;
-                font-size: 14px;
-              }
-              .footer {
-                text-align: center;
-                padding: 30px 20px;
-                background-color: #f9fafb;
-                color: #6b7280;
-                font-size: 13px;
-                border-top: 1px solid #e5e7eb;
-              }
-              .footer p {
-                margin: 5px 0;
-              }
-              .divider {
-                height: 1px;
-                background: linear-gradient(to right, transparent, #e5e7eb, transparent);
-                margin: 30px 0;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="email-wrapper">
-              <div class="container">
-                <div class="header">
-                  <img src="${LOGO_URL}" alt="Inscovia Logo" class="logo" />
-                  <h1>Welcome to Inscovia! 🎓</h1>
-                </div>
-                <div class="content">
-                  <h2>Hello ${instituteName},</h2>
-                  <p>Thank you for registering with Inscovia! We're excited to have you join our community of educational institutions.</p>
+    const content = `
+      <div class="content">
+        <p>Hello ${instituteName},</p>
+        <p>Thank you for registering with Inscovia.</p>
+        <p>Please use the verification code below to complete your registration:</p>
 
-                  <p>To complete your registration and verify your email address, please use the verification code below:</p>
+        <div class="code-box">
+          <div class="code">${otp}</div>
+          <div class="expiry">Valid for 10 minutes</div>
+        </div>
 
-                  <div class="otp-box">
-                    <p class="otp-label">Verification Code</p>
-                    <div class="otp-code">${otp}</div>
-                    <p class="otp-expiry">⏱️ Valid for 10 minutes</p>
-                  </div>
+        <div class="note">
+          <p><strong>Important:</strong></p>
+          <p>• This code expires in 10 minutes<br/>
+          • Never share this code with anyone<br/>
+          • If you didn't request this, please ignore this email</p>
+        </div>
 
-                  <div class="info-box">
-                    <p>🔒 Important Security Information:</p>
-                    <ul>
-                      <li>This code will expire in <strong>10 minutes</strong></li>
-                      <li>Never share this code with anyone</li>
-                      <li>Our team will never ask for this code</li>
-                      <li>If you didn't request this, please ignore this email</li>
-                    </ul>
-                  </div>
+        <p>Best regards,<br/>
+        <strong>The Inscovia Team</strong></p>
+      </div>
+    `;
 
-                  <div class="divider"></div>
-
-                  <p>Once verified, you'll be able to:</p>
-                  <p style="padding-left: 20px;">
-                    ✨ Create and manage your institute profile<br/>
-                    📊 Track student engagement and inquiries<br/>
-                    🎯 Reach thousands of potential students<br/>
-                    📈 Grow your institute's visibility
-                  </p>
-
-                  <div class="divider"></div>
-
-                  <p style="color: #6b7280; font-size: 14px;">
-                    Need help? Contact us at <a href="mailto:support@inscovia.com" style="color: #2563eb; text-decoration: none;">support@inscovia.com</a>
-                  </p>
-
-                  <p style="margin-top: 30px; margin-bottom: 0;">
-                    Best regards,<br>
-                    <strong style="color: #2563eb;">The Inscovia Team</strong>
-                  </p>
-                </div>
-                <div class="footer">
-                  <p><strong>© 2025 Inscovia</strong> - All rights reserved</p>
-                  <p style="margin-top: 10px; font-size: 12px;">
-                    This is an automated message. Please do not reply to this email.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </body>
-          </html>
-        `
-      })
+    await transporter.sendMail({
+      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+      to: email,
+      subject: 'Verify Your Email - Inscovia',
+      html: getEmailTemplate(content)
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('ZeptoMail API Error:', data);
-      throw new Error(data.message || 'Failed to send email');
-    }
-
-    console.log('✅ OTP Email sent successfully');
-    return { success: true, data };
+    console.log('✅ OTP email sent successfully to:', email);
+    return { success: true };
 
   } catch (error) {
-    console.error('❌ Email Service Error:', error);
+    console.error('❌ Email sending failed:', error);
     throw error;
   }
 };
 
-// NEW: Password Reset Email Function
+// Password Reset Email
 export const sendPasswordResetEmail = async (email, resetToken, instituteName) => {
   try {
-    // Get frontend URL from environment or use default
     const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetLink = `${FRONTEND_URL}/institute/reset-password?token=${resetToken}`;
 
-    const response = await fetch(ZEPTOMAIL_API_URL, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': ZEPTOMAIL_TOKEN
-      },
-      body: JSON.stringify({
-        from: {
-          address: FROM_EMAIL,
-          name: FROM_NAME
-        },
-        to: [
-          {
-            email_address: {
-              address: email,
-              name: instituteName
-            }
-          }
-        ],
-        subject: 'Reset Your Password - Inscovia',
-        htmlbody: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 0;
-                background-color: #f5f5f5;
-              }
-              .email-wrapper {
-                background-color: #f5f5f5;
-                padding: 40px 20px;
-              }
-              .container {
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #ffffff;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-              }
-              .header {
-                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-                color: white;
-                padding: 40px 30px;
-                text-align: center;
-              }
-              .logo {
-                max-width: 200px;
-                height: auto;
-                margin-bottom: 20px;
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-              }
-              .header h1 {
-                margin: 0;
-                font-size: 28px;
-                font-weight: 600;
-              }
-              .content {
-                background: #ffffff;
-                padding: 40px 30px;
-              }
-              .content h2 {
-                color: #1f2937;
-                font-size: 22px;
-                margin-top: 0;
-                margin-bottom: 20px;
-              }
-              .content p {
-                color: #4b5563;
-                margin-bottom: 16px;
-                font-size: 15px;
-              }
-              .button-box {
-                text-align: center;
-                margin: 35px 0;
-              }
-              .reset-button {
-                display: inline-block;
-                padding: 16px 40px;
-                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-                color: white;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 16px;
-                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-              }
-              .info-box {
-                background-color: #fef3c7;
-                border-left: 4px solid #f59e0b;
-                padding: 16px;
-                margin: 25px 0;
-                border-radius: 4px;
-              }
-              .info-box p {
-                margin: 0 0 8px 0;
-                font-size: 14px;
-                color: #78350f;
-                font-weight: 600;
-              }
-              .info-box ul {
-                margin: 8px 0 0 0;
-                padding-left: 20px;
-                color: #92400e;
-              }
-              .info-box li {
-                margin-bottom: 6px;
-                font-size: 14px;
-              }
-              .link-box {
-                background-color: #f3f4f6;
-                padding: 16px;
-                border-radius: 8px;
-                margin: 20px 0;
-                word-break: break-all;
-              }
-              .link-box p {
-                margin: 0 0 8px 0;
-                font-size: 13px;
-                color: #6b7280;
-                font-weight: 600;
-              }
-              .link-box a {
-                color: #2563eb;
-                text-decoration: none;
-                font-size: 13px;
-              }
-              .footer {
-                text-align: center;
-                padding: 30px 20px;
-                background-color: #f9fafb;
-                color: #6b7280;
-                font-size: 13px;
-                border-top: 1px solid #e5e7eb;
-              }
-              .footer p {
-                margin: 5px 0;
-              }
-              .divider {
-                height: 1px;
-                background: linear-gradient(to right, transparent, #e5e7eb, transparent);
-                margin: 30px 0;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="email-wrapper">
-              <div class="container">
-                <div class="header">
-                  <img src="${LOGO_URL}" alt="Inscovia Logo" class="logo" />
-                  <h1>Password Reset Request 🔐</h1>
-                </div>
-                <div class="content">
-                  <h2>Hello ${instituteName},</h2>
-                  <p>We received a request to reset your password for your Inscovia account. If you didn't make this request, you can safely ignore this email.</p>
+    const content = `
+      <div class="content">
+        <p>Hello ${instituteName},</p>
+        <p>We received a request to reset your password.</p>
+        <p>Click the button below to create a new password:</p>
 
-                  <p>To reset your password, click the button below:</p>
+        <div style="text-align: center;">
+          <a href="${resetLink}" class="button">Reset Password</a>
+        </div>
 
-                  <div class="button-box">
-                    <a href="${resetLink}" class="reset-button">Reset My Password</a>
-                  </div>
+        <div class="note">
+          <p><strong>Important:</strong></p>
+          <p>• This link expires in 1 hour<br/>
+          • Link can only be used once<br/>
+          • If you didn't request this, please ignore this email</p>
+        </div>
 
-                  <div class="info-box">
-                    <p>⏱️ Important:</p>
-                    <ul>
-                      <li>This link will expire in <strong>1 hour</strong></li>
-                      <li>You can only use this link once</li>
-                      <li>If you didn't request this, please ignore this email</li>
-                      <li>Your password will not change until you create a new one</li>
-                    </ul>
-                  </div>
+        <p style="font-size: 13px; color: #666;">If the button doesn't work, copy and paste this link:<br/>
+        <a href="${resetLink}" style="color: #2563eb; word-break: break-all;">${resetLink}</a></p>
 
-                  <div class="link-box">
-                    <p>Button not working? Copy and paste this link into your browser:</p>
-                    <a href="${resetLink}">${resetLink}</a>
-                  </div>
+        <p>Best regards,<br/>
+        <strong>The Inscovia Team</strong></p>
+      </div>
+    `;
 
-                  <div class="divider"></div>
-
-                  <p style="color: #6b7280; font-size: 14px;">
-                    <strong>Need help?</strong> Contact us at <a href="mailto:support@inscovia.com" style="color: #2563eb; text-decoration: none;">support@inscovia.com</a>
-                  </p>
-
-                  <p style="margin-top: 30px; margin-bottom: 0;">
-                    Best regards,<br>
-                    <strong style="color: #2563eb;">The Inscovia Team</strong>
-                  </p>
-                </div>
-                <div class="footer">
-                  <p><strong>© 2025 Inscovia</strong> - All rights reserved</p>
-                  <p style="margin-top: 10px; font-size: 12px;">
-                    This is an automated message. Please do not reply to this email.
-                  </p>
-                  <p style="margin-top: 10px; font-size: 12px; color: #9ca3af;">
-                    If you didn't request a password reset, please ignore this email or contact support if you have concerns.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </body>
-          </html>
-        `
-      })
+    await transporter.sendMail({
+      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+      to: email,
+      subject: 'Reset Your Password - Inscovia',
+      html: getEmailTemplate(content)
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('ZeptoMail API Error:', data);
-      throw new Error(data.message || 'Failed to send email');
-    }
-
-    console.log('✅ Password Reset Email sent successfully');
-    return { success: true, data };
+    console.log('✅ Password reset email sent successfully to:', email);
+    return { success: true };
 
   } catch (error) {
-    console.error('❌ Email Service Error:', error);
+    console.error('❌ Email sending failed:', error);
     throw error;
   }
 };
