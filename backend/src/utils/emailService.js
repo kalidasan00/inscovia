@@ -5,6 +5,10 @@ const FROM_EMAIL = 'noreply@inscovia.com';
 const FROM_NAME = 'Inscovia';
 const LOGO_URL = 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png';
 
+console.log('📧 GMAIL_USER:', process.env.GMAIL_USER);
+console.log('🔑 GMAIL_APP_PASSWORD exists?', !!process.env.GMAIL_APP_PASSWORD);
+console.log('🔑 Password length:', process.env.GMAIL_APP_PASSWORD?.length);
+
 // Simplified Gmail configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
