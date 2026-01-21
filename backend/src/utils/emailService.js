@@ -1,25 +1,29 @@
-// backend/src/utils/emailService.js - UPDATED FOR RENDER
+// backend/src/utils/emailService.js - SIMPLIFIED GMAIL
 import nodemailer from 'nodemailer';
 
 const FROM_EMAIL = 'noreply@inscovia.com';
 const FROM_NAME = 'Inscovia';
 const LOGO_URL = 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png';
 
-// Create reusable transporter with direct SMTP
+// Simplified Gmail configuration
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // use TLS
+  service: 'gmail',
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD
-  },
-  tls: {
-    rejectUnauthorized: false
   }
 });
 
-// Simple email template
+// Test connection
+transporter.verify(function(error, success) {
+  if (error) {
+    console.log('❌ Gmail auth error:', error.message);
+  } else {
+    console.log('✅ Gmail authenticated successfully');
+  }
+});
+
+// Email template (same as before)
 const getEmailTemplate = (content) => `
 <!DOCTYPE html>
 <html>
