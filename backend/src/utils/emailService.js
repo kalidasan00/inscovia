@@ -1,4 +1,4 @@
-// backend/src/utils/emailService.js - SIMPLIFIED GMAIL
+// backend/src/utils/emailService.js - PORT 587 VERSION
 import nodemailer from 'nodemailer';
 
 const FROM_EMAIL = 'noreply@inscovia.com';
@@ -9,12 +9,17 @@ console.log('📧 GMAIL_USER:', process.env.GMAIL_USER);
 console.log('🔑 GMAIL_APP_PASSWORD exists?', !!process.env.GMAIL_APP_PASSWORD);
 console.log('🔑 Password length:', process.env.GMAIL_APP_PASSWORD?.length);
 
-// Simplified Gmail configuration
+// Use port 587 with STARTTLS instead of 465
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // false for port 587
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
@@ -27,7 +32,7 @@ transporter.verify(function(error, success) {
   }
 });
 
-// Email template (same as before)
+// Email template
 const getEmailTemplate = (content) => `
 <!DOCTYPE html>
 <html>
