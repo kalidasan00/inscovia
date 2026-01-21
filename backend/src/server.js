@@ -90,18 +90,18 @@ app.get("/api/keep-alive", async (req, res) => {
 const testSMTP = () => {
   console.log('🔍 Testing SMTP connectivity...');
 
-  const client = net.connect({ host: 'smtp.gmail.com', port: 465 }, () => {
-    console.log('✅ Port 465 is OPEN - Gmail is reachable');
+  const client = net.connect({ host: 'smtp.gmail.com', port: 587 }, () => {
+    console.log('✅ Port 587 is OPEN - Gmail is reachable');
     client.end();
   });
 
   client.on('error', (err) => {
-    console.log('❌ Port 465 ERROR:', err.message);
+    console.log('❌ Port 587 ERROR:', err.message);
   });
 
   client.setTimeout(5000);
   client.on('timeout', () => {
-    console.log('❌ Port 465 TIMEOUT - Render likely blocking SMTP');
+    console.log('❌ Port 587 TIMEOUT - Render likely blocking SMTP');
     client.destroy();
   });
 };
