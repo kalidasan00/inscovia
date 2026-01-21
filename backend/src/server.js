@@ -4,23 +4,22 @@ import cors from "cors";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { PrismaClient } from '@prisma/client';
+import net from 'net';
 import centersRouter from "./routes/centers.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import reviewsRouter from "./routes/reviews.routes.js";
 import passwordResetRouter from "./routes/password-reset.routes.js";
-import { registerSlugMiddleware } from './middleware/slugMiddleware.js'; // ← NEW
+import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
 
-// ===== REGISTER SLUG MIDDLEWARE =====
-// This auto-generates slugs for all Center create/update operations
-registerSlugMiddleware(prisma); // ← NEW
-console.log('✅ Slug middleware registered'); // ← NEW
+registerSlugMiddleware(prisma);
+console.log('✅ Slug middleware registered');
 
 // CORS Configuration
 app.use(cors({
@@ -39,9 +38,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// ===== RATE LIMITING =====
-
-// Strict limit for auth routes only - 10 attempts per 15 minutes
+// Rate limiting
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -50,20 +47,17 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Review submission limit - 10 per hour
 const reviewLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
   message: { error: 'Too many reviews submitted, please try again later.' },
 });
 
-// Apply strict limiting ONLY to specific auth routes
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/user/login', authLimiter);
 app.use('/api/user/register', authLimiter);
 
-// Apply review limiting only to POST requests
 app.use('/api/reviews', (req, res, next) => {
   if (req.method === 'POST') {
     return reviewLimiter(req, res, next);
@@ -71,20 +65,18 @@ app.use('/api/reviews', (req, res, next) => {
   next();
 });
 
-// ===== ROUTES (IMPORTANT ORDER) =====
+// Routes
 app.use("/api/centers", centersRouter);
-app.use("/api/auth", passwordResetRouter); // ← PASSWORD RESET FIRST
-app.use("/api/auth", authRouter);           // ← THEN REGULAR AUTH
+app.use("/api/auth", passwordResetRouter);
+app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/reviews", reviewsRouter);
 
-// Health check
 app.get("/", (req, res) => {
   res.json({ message: "Inscovia API is running" });
 });
 
-// Database keep-alive endpoint
 app.get("/api/keep-alive", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -94,11 +86,30 @@ app.get("/api/keep-alive", async (req, res) => {
   }
 });
 
+// SMTP Port Test
+const testSMTP = () => {
+  console.log('🔍 Testing SMTP connectivity...');
+
+  const client = net.connect({ host: 'smtp.gmail.com', port: 465 }, () => {
+    console.log('✅ Port 465 is OPEN - Gmail is reachable');
+    client.end();
+  });
+
+  client.on('error', (err) => {
+    console.log('❌ Port 465 ERROR:', err.message);
+  });
+
+  client.setTimeout(5000);
+  client.on('timeout', () => {
+    console.log('❌ Port 465 TIMEOUT - Render likely blocking SMTP');
+    client.destroy();
+  });
+};
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
 
-  // Don't expose internal errors in production
   if (process.env.NODE_ENV === 'production') {
     res.status(500).json({ error: 'Internal server error' });
   } else {
@@ -111,7 +122,10 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
   console.log(`🔒 Rate limiting enabled for auth routes only`);
 
-  // Start keep-alive pinger
+  // Test SMTP after 3 seconds
+  setTimeout(testSMTP, 3000);
+
+  // Keep-alive pinger
   setInterval(async () => {
     try {
       await prisma.$queryRaw`SELECT 1`;
