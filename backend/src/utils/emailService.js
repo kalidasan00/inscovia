@@ -1,35 +1,23 @@
-// backend/src/utils/emailService.js - ZEPTOMAIL VERSION
-import nodemailer from 'nodemailer';
+// backend/src/utils/emailService.js - ZEPTOMAIL API VERSION (More Reliable!)
+import axios from 'axios';
 
 const FROM_EMAIL = 'noreply@inscovia.com';
 const FROM_NAME = 'Inscovia';
 const LOGO_URL = 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png';
+const ZEPTO_API_URL = 'https://api.zeptomail.in/v1.1/email';
 
-console.log('📧 ZEPTO_USER:', process.env.ZEPTO_USER);
-console.log('🔑 ZEPTO_PASSWORD exists?', !!process.env.ZEPTO_PASSWORD);
-console.log('🔑 Password length:', process.env.ZEPTO_PASSWORD?.length);
+console.log('📧 Using ZeptoMail API (not SMTP)');
+console.log('🔑 ZEPTO_API_TOKEN exists?', !!process.env.ZEPTO_API_TOKEN);
 
-// ZeptoMail SMTP configuration
-const transporter = nodemailer.createTransport({
-  host: 'smtp.zeptomail.in',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.ZEPTO_USER,
-    pass: process.env.ZEPTO_PASSWORD
-  }
-});
+// Validate API token on startup
+if (!process.env.ZEPTO_API_TOKEN) {
+  console.error('❌ ZEPTO_API_TOKEN not found in environment variables!');
+  console.error('Get it from: ZeptoMail Console → SMTP/API → API tab → Generate Token');
+} else {
+  console.log('✅ ZeptoMail API token configured');
+}
 
-// Test connection
-transporter.verify(function(error, success) {
-  if (error) {
-    console.log('❌ ZeptoMail error:', error.message);
-  } else {
-    console.log('✅ ZeptoMail ready to send emails');
-  }
-});
-
-// Email template
+// Email template function
 const getEmailTemplate = (content) => `
 <!DOCTYPE html>
 <html>
@@ -139,9 +127,60 @@ const getEmailTemplate = (content) => `
 </html>
 `;
 
+// Send email via ZeptoMail API
+const sendEmailViaAPI = async (to, subject, htmlBody) => {
+  if (!process.env.ZEPTO_API_TOKEN) {
+    throw new Error('ZEPTO_API_TOKEN is not configured');
+  }
+
+  try {
+    const response = await axios.post(
+      ZEPTO_API_URL,
+      {
+        from: {
+          address: FROM_EMAIL,
+          name: FROM_NAME
+        },
+        to: [
+          {
+            email_address: {
+              address: to,
+              name: to.split('@')[0]
+            }
+          }
+        ],
+        subject: subject,
+        htmlbody: htmlBody
+      },
+      {
+        headers: {
+          'Authorization': process.env.ZEPTO_API_TOKEN,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      console.error('❌ ZeptoMail API Error:', {
+        status: error.response.status,
+        data: error.response.data
+      });
+      throw new Error(`ZeptoMail API error: ${JSON.stringify(error.response.data)}`);
+    } else {
+      console.error('❌ Network Error:', error.message);
+      throw new Error(`Network error: ${error.message}`);
+    }
+  }
+};
+
 // OTP Email
 export const sendOTPEmail = async (email, otp, instituteName) => {
   try {
+    console.log(`📤 Sending OTP email to: ${email} via ZeptoMail API`);
+
     const content = `
       <div class="content">
         <p>Hello ${instituteName},</p>
@@ -165,18 +204,17 @@ export const sendOTPEmail = async (email, otp, instituteName) => {
       </div>
     `;
 
-    await transporter.sendMail({
-      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-      to: email,
-      subject: 'Verify Your Email - Inscovia',
-      html: getEmailTemplate(content)
-    });
+    const result = await sendEmailViaAPI(
+      email,
+      'Verify Your Email - Inscovia',
+      getEmailTemplate(content)
+    );
 
-    console.log('✅ OTP email sent successfully to:', email);
+    console.log('✅ OTP email sent successfully via API:', result);
     return { success: true };
 
   } catch (error) {
-    console.error('❌ Email sending failed:', error);
+    console.error('❌ Failed to send OTP email:', error.message);
     throw error;
   }
 };
@@ -184,6 +222,8 @@ export const sendOTPEmail = async (email, otp, instituteName) => {
 // Password Reset Email
 export const sendPasswordResetEmail = async (email, resetToken, instituteName) => {
   try {
+    console.log(`📤 Sending password reset email to: ${email} via ZeptoMail API`);
+
     const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetLink = `${FRONTEND_URL}/institute/reset-password?token=${resetToken}`;
 
@@ -212,18 +252,17 @@ export const sendPasswordResetEmail = async (email, resetToken, instituteName) =
       </div>
     `;
 
-    await transporter.sendMail({
-      from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-      to: email,
-      subject: 'Reset Your Password - Inscovia',
-      html: getEmailTemplate(content)
-    });
+    const result = await sendEmailViaAPI(
+      email,
+      'Reset Your Password - Inscovia',
+      getEmailTemplate(content)
+    );
 
-    console.log('✅ Password reset email sent successfully to:', email);
+    console.log('✅ Password reset email sent successfully via API:', result);
     return { success: true };
 
   } catch (error) {
-    console.error('❌ Email sending failed:', error);
+    console.error('❌ Failed to send password reset email:', error.message);
     throw error;
   }
 };
