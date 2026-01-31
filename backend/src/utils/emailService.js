@@ -1,34 +1,31 @@
-// backend/src/utils/emailService.js - PORT 587 VERSION
+// backend/src/utils/emailService.js - ZEPTOMAIL VERSION
 import nodemailer from 'nodemailer';
 
 const FROM_EMAIL = 'noreply@inscovia.com';
 const FROM_NAME = 'Inscovia';
 const LOGO_URL = 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png';
 
-console.log('📧 GMAIL_USER:', process.env.GMAIL_USER);
-console.log('🔑 GMAIL_APP_PASSWORD exists?', !!process.env.GMAIL_APP_PASSWORD);
-console.log('🔑 Password length:', process.env.GMAIL_APP_PASSWORD?.length);
+console.log('📧 ZEPTO_USER:', process.env.ZEPTO_USER);
+console.log('🔑 ZEPTO_PASSWORD exists?', !!process.env.ZEPTO_PASSWORD);
+console.log('🔑 Password length:', process.env.ZEPTO_PASSWORD?.length);
 
-// Use port 587 with STARTTLS instead of 465
+// ZeptoMail SMTP configuration
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: 'smtp.zeptomail.in',
   port: 587,
-  secure: false, // false for port 587
+  secure: false,
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD
-  },
-  tls: {
-    rejectUnauthorized: false
+    user: process.env.ZEPTO_USER,
+    pass: process.env.ZEPTO_PASSWORD
   }
 });
 
 // Test connection
 transporter.verify(function(error, success) {
   if (error) {
-    console.log('❌ Gmail auth error:', error.message);
+    console.log('❌ ZeptoMail error:', error.message);
   } else {
-    console.log('✅ Gmail authenticated successfully');
+    console.log('✅ ZeptoMail ready to send emails');
   }
 });
 

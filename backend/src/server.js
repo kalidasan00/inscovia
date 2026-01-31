@@ -86,22 +86,22 @@ app.get("/api/keep-alive", async (req, res) => {
   }
 });
 
-// SMTP Port Test
+// ZeptoMail SMTP Port Test
 const testSMTP = () => {
-  console.log('🔍 Testing SMTP connectivity...');
+  console.log('🔍 Testing ZeptoMail SMTP connectivity...');
 
-  const client = net.connect({ host: 'smtp.gmail.com', port: 587 }, () => {
-    console.log('✅ Port 587 is OPEN - Gmail is reachable');
+  const client = net.connect({ host: 'smtp.zeptomail.in', port: 587 }, () => {
+    console.log('✅ Port 587 is OPEN - ZeptoMail is reachable');
     client.end();
   });
 
   client.on('error', (err) => {
-    console.log('❌ Port 587 ERROR:', err.message);
+    console.log('❌ ZeptoMail Port 587 ERROR:', err.message);
   });
 
   client.setTimeout(5000);
   client.on('timeout', () => {
-    console.log('❌ Port 587 TIMEOUT - Render likely blocking SMTP');
+    console.log('❌ ZeptoMail Port 587 TIMEOUT');
     client.destroy();
   });
 };
