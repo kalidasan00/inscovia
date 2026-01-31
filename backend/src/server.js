@@ -4,7 +4,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { PrismaClient } from '@prisma/client';
-import net from 'net';
 import centersRouter from "./routes/centers.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
@@ -86,26 +85,6 @@ app.get("/api/keep-alive", async (req, res) => {
   }
 });
 
-// ZeptoMail SMTP Port Test
-const testSMTP = () => {
-  console.log('🔍 Testing ZeptoMail SMTP connectivity...');
-
-  const client = net.connect({ host: 'smtp.zeptomail.in', port: 587 }, () => {
-    console.log('✅ Port 587 is OPEN - ZeptoMail is reachable');
-    client.end();
-  });
-
-  client.on('error', (err) => {
-    console.log('❌ ZeptoMail Port 587 ERROR:', err.message);
-  });
-
-  client.setTimeout(5000);
-  client.on('timeout', () => {
-    console.log('❌ ZeptoMail Port 587 TIMEOUT');
-    client.destroy();
-  });
-};
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -122,8 +101,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
   console.log(`🔒 Rate limiting enabled for auth routes only`);
 
-  // Test SMTP after 3 seconds
-  setTimeout(testSMTP, 3000);
+  // Verify email service is configured
+  if (process.env.ZEPTO_API_TOKEN) {
+    console.log('✅ ZeptoMail API configured and ready');
+  } else {
+    console.warn('⚠️  Warning: ZEPTO_API_TOKEN not configured - email sending will fail');
+  }
 
   // Keep-alive pinger
   setInterval(async () => {
