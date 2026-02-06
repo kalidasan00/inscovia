@@ -154,7 +154,7 @@ const sendEmailViaAPI = async (to, subject, htmlBody) => {
       },
       {
         headers: {
-          'Authorization': process.env.ZEPTO_API_TOKEN,
+          'Authorization': `Zoho-enczapikey ${process.env.ZEPTO_API_TOKEN}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         }
