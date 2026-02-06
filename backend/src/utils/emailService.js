@@ -1,4 +1,4 @@
-// backend/src/utils/emailService.js - ZEPTOMAIL API VERSION (More Reliable!)
+// backend/src/utils/emailService.js - ZEPTOMAIL API VERSION (Fixed!)
 import axios from 'axios';
 
 const FROM_EMAIL = 'noreply@inscovia.com';
@@ -134,44 +134,78 @@ const sendEmailViaAPI = async (to, subject, htmlBody) => {
   }
 
   try {
+    // Log request for debugging
+    console.log('📧 Preparing ZeptoMail request:', {
+      to,
+      subject,
+      from: FROM_EMAIL
+    });
+
+    const payload = {
+      from: {
+        address: FROM_EMAIL,
+        name: FROM_NAME
+      },
+      to: [
+        {
+          email_address: {
+            address: to,
+            name: to.split('@')[0]
+          }
+        }
+      ],
+      subject: subject,
+      htmlbody: htmlBody,
+      // Add bounce address (required by some ZeptoMail configurations)
+      bounce_address: FROM_EMAIL
+    };
+
+    console.log('📦 Payload structure:', JSON.stringify(payload, null, 2).substring(0, 500));
+
     const response = await axios.post(
       ZEPTO_API_URL,
-      {
-        from: {
-          address: FROM_EMAIL,
-          name: FROM_NAME
-        },
-        to: [
-          {
-            email_address: {
-              address: to,
-              name: to.split('@')[0]
-            }
-          }
-        ],
-        subject: subject,
-        htmlbody: htmlBody
-      },
+      payload,
       {
         headers: {
-          'Authorization': `Zoho-enczapikey ${process.env.ZEPTO_API_TOKEN}`,
+          'Authorization': process.env.ZEPTO_API_TOKEN, // Try without 'Zoho-enczapikey' prefix first
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       }
     );
 
+    console.log('✅ ZeptoMail Response:', response.status, response.data);
     return response.data;
+
   } catch (error) {
     if (error.response) {
       console.error('❌ ZeptoMail API Error:', {
         status: error.response.status,
-        data: error.response.data
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
       });
-      throw new Error(`ZeptoMail API error: ${JSON.stringify(error.response.data)}`);
+
+      // More detailed error message
+      const errorData = error.response.data;
+      let errorMessage = 'ZeptoMail API error';
+
+      if (typeof errorData === 'string' && errorData.trim() === '') {
+        errorMessage = 'ZeptoMail returned empty response - check API token format and permissions';
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      } else if (errorData?.error) {
+        errorMessage = errorData.error;
+      }
+
+      throw new Error(`${errorMessage} (Status: ${error.response.status})`);
+    } else if (error.request) {
+      console.error('❌ No response from ZeptoMail:', error.message);
+      throw new Error(`No response from ZeptoMail: ${error.message}`);
     } else {
-      console.error('❌ Network Error:', error.message);
-      throw new Error(`Network error: ${error.message}`);
+      console.error('❌ Request setup error:', error.message);
+      throw new Error(`Request error: ${error.message}`);
     }
   }
 };
