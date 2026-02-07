@@ -1,4 +1,4 @@
-// app/institute/reset-password/page.js
+// app/institute/reset-password/page.js - UPDATED FOR OTP FLOW
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,37 +10,27 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [tokenValid, setTokenValid] = useState(null);
+  const [email, setEmail] = useState("");
+  const [otp, setOTP] = useState("");
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-  // Verify token on load
   useEffect(() => {
-    if (!token) {
-      setTokenValid(false);
+    const emailParam = searchParams.get("email");
+    const otpParam = searchParams.get("otp");
+
+    if (!emailParam || !otpParam) {
+      // Missing params, redirect to forgot password
+      router.push("/institute/forgot-password");
       return;
     }
 
-    verifyToken();
-  }, [token]);
-
-  const verifyToken = async () => {
-    try {
-      const response = await fetch(`${API_URL}/auth/verify-reset-token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-
-      setTokenValid(response.ok);
-    } catch (err) {
-      setTokenValid(false);
-    }
-  };
+    setEmail(emailParam);
+    setOTP(otpParam);
+  }, [searchParams, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +53,7 @@ export default function ResetPassword() {
       const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ email, otp, password }),
       });
 
       const data = await response.json();
@@ -80,44 +70,6 @@ export default function ResetPassword() {
       setLoading(false);
     }
   };
-
-  // Invalid or expired token
-  if (tokenValid === false) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Invalid or Expired Link
-            </h2>
-            <p className="text-sm text-gray-600 mb-6">
-              This password reset link is no longer valid. Please request a new one.
-            </p>
-            <Link
-              href="/institute/forgot-password"
-              className="inline-block w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-            >
-              Request New Link
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Loading token verification
-  if (tokenValid === null) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-      </div>
-    );
-  }
 
   // Success message
   if (success) {
@@ -159,7 +111,8 @@ export default function ResetPassword() {
               Set New Password
             </h2>
             <p className="text-sm text-gray-600">
-              Enter your new password below
+              Enter your new password for<br/>
+              <strong>{email}</strong>
             </p>
           </div>
 
