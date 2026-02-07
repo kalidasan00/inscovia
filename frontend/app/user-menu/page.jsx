@@ -597,5 +597,5 @@ export default function UserMenuPage() {
         )}
       </div>
     </div>
-  );
+  )
 }
