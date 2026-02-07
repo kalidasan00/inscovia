@@ -1,36 +1,28 @@
-// backend/src/middleware/slugMiddleware.js
+// backend/src/middleware/slugMiddleware.js - OPTIMIZED & FIXED
 import { slugify, generateUniqueSlug } from '../utils/slugify.js';
 
 export function registerSlugMiddleware(prisma) {
   prisma.$use(async (params, next) => {
-    // Auto-generate slug on CREATE
+    // ✅ OPTIMIZED: Only validate slug exists, don't auto-generate
+    // (auth.controller.js already generates slugs with timestamps)
+
     if (params.model === 'Center' && params.action === 'create') {
+      // ✅ VALIDATION ONLY: Ensure slug exists
       if (!params.args.data.slug) {
+        console.warn('⚠️ WARNING: Center created without slug! This should not happen.');
+        console.warn('Slug generation should be done in auth.controller.js');
+
+        // Emergency fallback (should never be needed)
         const { name, city } = params.args.data;
-        const baseSlug = slugify(name, city);
-        params.args.data.slug = await generateUniqueSlug(baseSlug, prisma);
-        console.log(`✅ Auto-generated slug: ${params.args.data.slug}`);
+        const timestamp = Date.now().toString(36);
+        params.args.data.slug = `${slugify(name, city)}-${timestamp}`;
+        console.log(`🆘 Emergency slug generated: ${params.args.data.slug}`); // ✅ FIXED: Added parenthesis
       }
     }
 
-    // Auto-update slug on UPDATE (if name or city changes)
-    if (params.model === 'Center' && params.action === 'update') {
-      const { name, city } = params.args.data;
-      if (name || city) {
-        const center = await prisma.center.findUnique({
-          where: params.args.where,
-          select: { id: true, name: true, city: true }
-        });
-
-        if (center) {
-          const newName = name || center.name;
-          const newCity = city || center.city;
-          const baseSlug = slugify(newName, newCity);
-          params.args.data.slug = await generateUniqueSlug(baseSlug, prisma, center.id);
-          console.log(`✅ Auto-updated slug: ${params.args.data.slug}`);
-        }
-      }
-    }
+    // ✅ REMOVED: Auto-update on UPDATE
+    // Slug should be permanent once set
+    // Changing slug breaks URLs and SEO
 
     return next(params);
   });

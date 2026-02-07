@@ -1,4 +1,4 @@
-// backend/src/server.js
+// backend/src/server.js - OPTIMIZED VERSION
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -76,12 +76,13 @@ app.get("/", (req, res) => {
   res.json({ message: "Inscovia API is running" });
 });
 
+// ✅ OPTIMIZED: Faster keep-alive endpoint
 app.get("/api/keep-alive", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", message: "Database is awake" });
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
   } catch (error) {
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({ status: "error" });
   }
 });
 
@@ -97,24 +98,40 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5001;
+const BACKEND_URL = process.env.BACKEND_URL || `https://inscovia.onrender.com`;
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
   console.log(`🔒 Rate limiting enabled for auth routes only`);
 
-  // Verify email service is configured
-  if (process.env.ZEPTO_API_TOKEN) {
-    console.log('✅ ZeptoMail API configured and ready');
+  // ✅ FIXED: Check correct environment variable
+  if (process.env.RESEND_API_KEY) {
+    console.log('✅ Resend API configured and ready');
   } else {
-    console.warn('⚠️  Warning: ZEPTO_API_TOKEN not configured - email sending will fail');
+    console.warn('⚠️  Warning: RESEND_API_KEY not configured - email sending will fail');
   }
 
-  // Keep-alive pinger
+  // ✅ OPTIMIZED: Self-ping keep-alive (prevents Render sleep)
   setInterval(async () => {
     try {
-      await prisma.$queryRaw`SELECT 1`;
-      console.log('✅ Database keep-alive ping:', new Date().toISOString());
+      const response = await fetch(`${BACKEND_URL}/api/keep-alive`);
+      const data = await response.json();
+      console.log('✅ Keep-alive ping:', data.status, data.timestamp);
     } catch (error) {
       console.error('❌ Keep-alive failed:', error.message);
     }
-  }, 10 * 60 * 1000);
+  }, 14 * 60 * 1000); // Every 14 minutes (before Render's 15-min timeout)
+});
+
+// ✅ NEW: Graceful shutdown (prevents connection leaks)
+process.on('SIGTERM', async () => {
+  console.log('🛑 SIGTERM received, closing server gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🛑 SIGINT received, closing server gracefully...');
+  await prisma.$disconnect();
+  process.exit(0);
 });

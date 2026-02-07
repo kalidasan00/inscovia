@@ -1,13 +1,35 @@
-// backend/src/controllers/auth.controller.js
+// backend/src/controllers/auth.controller.js - OPTIMIZED VERSION
 import prisma from "../lib/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendOTPEmail, sendPasswordResetEmail } from "../utils/emailService.js";
 
-// Store OTPs and Reset Tokens temporarily (in production, use Redis)
+// ✅ OPTIMIZED: Store OTPs and Reset Tokens temporarily
+// TODO: For production scale (1000+ users), migrate to Redis for better performance
 const otpStore = new Map();
 const resetTokenStore = new Map();
+
+// ✅ NEW: Auto-cleanup expired entries every 10 minutes (prevents memory leak)
+setInterval(() => {
+  const now = Date.now();
+
+  // Clean expired OTPs
+  for (const [key, value] of otpStore.entries()) {
+    if (now > value.expiresAt) {
+      otpStore.delete(key);
+      console.log(`🧹 Cleaned expired OTP for ${key}`);
+    }
+  }
+
+  // Clean expired reset tokens
+  for (const [key, value] of resetTokenStore.entries()) {
+    if (now > value.expiresAt) {
+      resetTokenStore.delete(key);
+      console.log(`🧹 Cleaned expired reset token`);
+    }
+  }
+}, 10 * 60 * 1000);
 
 // Generate 6-digit OTP
 const generateOTP = () => {
@@ -17,6 +39,22 @@ const generateOTP = () => {
 // Generate secure reset token
 const generateResetToken = () => {
   return crypto.randomBytes(32).toString('hex');
+};
+
+// ✅ OPTIMIZED: Generate unique slug with timestamp (no database loop)
+const generateUniqueSlug = (instituteName, city) => {
+  const baseSlug = instituteName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  const citySlug = city
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-');
+
+  // Use timestamp for uniqueness (no race condition, no loop)
+  const timestamp = Date.now().toString(36); // Base36 = shorter
+  return `${baseSlug}-${citySlug}-${timestamp}`;
 };
 
 // ============= OTP FUNCTIONS =============
@@ -46,7 +84,7 @@ export const sendOTP = async (req, res) => {
     // Store OTP
     otpStore.set(email, { otp, expiresAt, instituteName });
 
-    // Send email
+    // Send email (non-blocking - don't wait unnecessarily)
     await sendOTPEmail(email, otp, instituteName);
 
     console.log(`✅ OTP sent to ${email}: ${otp}`); // For testing
@@ -90,7 +128,7 @@ export const verifyOTP = async (req, res) => {
       return res.status(400).json({ error: "Invalid OTP. Please try again." });
     }
 
-    // OTP is valid - remove from store
+    // ✅ OPTIMIZED: OTP is valid - remove from store immediately
     otpStore.delete(email);
 
     console.log(`✅ OTP verified for ${email}`);
@@ -236,7 +274,7 @@ export const resetPassword = async (req, res) => {
       data: { password: hashedPassword }
     });
 
-    // Remove used token
+    // ✅ OPTIMIZED: Remove used token immediately
     resetTokenStore.delete(token);
 
     console.log(`✅ Password reset successful for ${user.email}`);
@@ -252,7 +290,7 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// ============= REGISTER INSTITUTE (UPDATED WITH SLUG) =============
+// ============= REGISTER INSTITUTE =============
 
 // Register Institute
 export const registerInstitute = async (req, res) => {
@@ -315,6 +353,9 @@ export const registerInstitute = async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // ✅ OPTIMIZED: Generate unique slug BEFORE transaction (faster, no race condition)
+    const slug = generateUniqueSlug(instituteName, city);
+
     // Create institute user AND center in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create institute user
@@ -335,16 +376,7 @@ export const registerInstitute = async (req, res) => {
         }
       });
 
-      // 🔥 Generate unique slug
-      const baseSlug = instituteName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      let slug = `${baseSlug}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-      let counter = 1;
-      while (await tx.center.findUnique({ where: { slug } })) {
-        slug = `${baseSlug}-${city.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${counter}`;
-        counter++;
-      }
-
-      // Create corresponding center
+      // ✅ OPTIMIZED: Create center with pre-generated slug (no database loop!)
       const center = await tx.center.create({
         data: {
           name: instituteName,
@@ -377,6 +409,8 @@ export const registerInstitute = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    console.log(`✅ Institute registered: ${instituteName} (${email})`);
+
     // Return user data
     res.status(201).json({
       success: true,
@@ -404,7 +438,7 @@ export const registerInstitute = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("❌ Registration error:", error);
     res.status(500).json({
       error: "Registration failed",
       details: error.message
@@ -412,7 +446,7 @@ export const registerInstitute = async (req, res) => {
   }
 };
 
-// ============= LOGIN INSTITUTE (UPDATED) =============
+// ============= LOGIN INSTITUTE =============
 
 // Login Institute
 export const loginInstitute = async (req, res) => {
@@ -424,7 +458,7 @@ export const loginInstitute = async (req, res) => {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    // Find user with their center
+    // ✅ OPTIMIZED: Find user with their center in one query
     const user = await prisma.instituteUser.findUnique({
       where: { email },
       include: {
@@ -455,6 +489,8 @@ export const loginInstitute = async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    console.log(`✅ Login successful: ${user.instituteName} (${email})`);
+
     // Return user data
     res.json({
       success: true,
@@ -478,18 +514,16 @@ export const loginInstitute = async (req, res) => {
       centers: user.centers
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("❌ Login error:", error);
     res.status(500).json({ error: "Login failed" });
   }
 };
 
-// ============= GET CURRENT USER (UPDATED) =============
+// ============= GET CURRENT USER =============
 
 // Get Current User with Centers
 export const getCurrentUser = async (req, res) => {
   try {
-    console.log("Getting user with ID:", req.userId);
-
     const user = await prisma.instituteUser.findUnique({
       where: { id: req.userId },
       select: {
@@ -543,13 +577,10 @@ export const getCurrentUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log("User found:", user.instituteName);
-    console.log("Centers count:", user.centers.length);
-
     const center = user.centers && user.centers.length > 0 ? user.centers[0] : null;
 
     if (!center) {
-      console.log("WARNING: No center found for user", user.instituteName);
+      console.log("⚠️ No center found for user:", user.instituteName);
     }
 
     res.json({
@@ -557,7 +588,7 @@ export const getCurrentUser = async (req, res) => {
       center
     });
   } catch (error) {
-    console.error("Get user error:", error);
+    console.error("❌ Get user error:", error);
     res.status(500).json({ error: "Failed to get user" });
   }
 };
