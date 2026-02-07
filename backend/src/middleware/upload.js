@@ -1,51 +1,58 @@
+// backend/src/middleware/upload.js - FIXED VERSION
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// ✅ FIXED: Use memory storage for ALL uploads
+// Controllers handle Cloudinary upload with optimizations
+const storage = multer.memoryStorage();
 
-// Memory storage for existing uploads (logo, cover)
-const memoryStorage = multer.memoryStorage();
+// ✅ File filter
+const fileFilter = (req, file, cb) => {
+  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
-// Cloudinary storage for gallery uploads
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "inscovia/gallery",
-    allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
-    transformation: [{ width: 800, height: 600, crop: "limit" }]
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Invalid file type. Allowed: JPG, PNG, GIF, WebP. Got: ${file.mimetype}`), false);
   }
-});
+};
 
-// Default upload (memory storage)
-const upload = multer({
-  storage: memoryStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only images allowed"));
-    }
-  }
-});
+// ✅ Unified upload configuration
+const uploadConfig = {
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max
+    files: 1
+  },
+  fileFilter: fileFilter
+};
 
-// Gallery upload (Cloudinary storage)
-export const uploadGallery = multer({
-  storage: cloudinaryStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only images allowed"));
-    }
-  }
-});
+// ✅ Single multer instance
+const upload = multer(uploadConfig);
 
+// ✅ Named exports for different use cases
+export const uploadSingle = upload.single('image');
+export const uploadLogo = upload.single('logo');
+export const uploadCover = upload.single('cover');
+export const uploadGallery = upload.single('image'); // ✅ Now uses memory storage!
+
+// Default export
 export default upload;
+
+// ✅ Error handler middleware
+export const handleUploadError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large. Maximum size is 5MB.' });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ error: 'Unexpected field name. Use "image", "logo", or "cover".' });
+    }
+    return res.status(400).json({ error: `Upload error: ${err.message}` });
+  }
+
+  if (err && err.message && err.message.includes('Invalid file type')) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  next(err);
+};

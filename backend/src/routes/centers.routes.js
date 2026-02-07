@@ -1,3 +1,4 @@
+// backend/src/routes/centers.routes.js - FIXED
 import express from "express";
 import prisma from "../lib/prisma.js";
 import {
@@ -9,7 +10,7 @@ import {
 } from "../controllers/centers.controller.js";
 import { uploadGalleryImage, deleteGalleryImage } from "../controllers/gallery.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import upload, { uploadGallery } from "../middleware/upload.js"; // Import both
+import upload, { uploadGallery } from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -50,8 +51,8 @@ router.put("/:slug", authenticate, updateCenter);
 router.post("/:slug/upload-logo", authenticate, upload.single("logo"), uploadLogo);
 router.post("/:slug/upload-cover", authenticate, upload.single("image"), uploadCoverImage);
 
-// ✅ Gallery Routes - Use uploadGallery middleware for Cloudinary
-router.post("/:id/upload-gallery", authenticate, uploadGallery.single("image"), uploadGalleryImage);
-router.delete("/:id/delete-gallery", authenticate, deleteGalleryImage);
+// ✅ FIXED: Gallery Routes - uploadGallery is ALREADY upload.single("image")
+router.post("/:slug/upload-gallery", authenticate, uploadGallery, uploadGalleryImage);
+router.delete("/:slug/delete-gallery", authenticate, deleteGalleryImage);
 
 export default router;
