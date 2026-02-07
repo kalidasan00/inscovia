@@ -1,13 +1,15 @@
-// backend/src/utils/emailService.js - RESEND VERSION
+// backend/src/utils/emailService.js - PRODUCTION VERSION
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = 'noreply@inscovia.com';
+// ✅ Use verified domain mail.inscovia.com
+const FROM_EMAIL = 'noreply@mail.inscovia.com';
 const FROM_NAME = 'Inscovia';
 const LOGO_URL = 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png';
 
 console.log('📧 Using Resend Email Service');
+console.log('📨 From:', FROM_EMAIL);
 console.log('🔑 RESEND_API_KEY exists?', !!process.env.RESEND_API_KEY);
 
 // Validate API key on startup
