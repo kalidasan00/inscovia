@@ -1,14 +1,26 @@
-// backend/src/routes/password-reset.routes.js
+// backend/src/routes/password-reset.routes.js - FIXED VERSION
 import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
+import { sendPasswordResetEmail } from "../utils/emailService.js"; // ✅ ADD THIS
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // In-memory storage for reset tokens (for production, use Redis or database)
 const resetTokens = new Map();
+
+// ✅ OPTIMIZED: Auto-cleanup expired tokens every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, data] of resetTokens.entries()) {
+    if (now > data.expires) {
+      resetTokens.delete(token);
+      console.log(`🧹 Cleaned expired reset token`);
+    }
+  }
+}, 10 * 60 * 1000);
 
 // ===== REQUEST PASSWORD RESET =====
 router.post("/forgot-password", async (req, res) => {
@@ -25,7 +37,6 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // Always return success (security: don't reveal if email exists)
-    // But only send email if user exists
     if (user) {
       // Generate reset token
       const token = crypto.randomBytes(32).toString("hex");
@@ -37,32 +48,20 @@ router.post("/forgot-password", async (req, res) => {
         expires
       });
 
-      // Create reset link
-      const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/institute/reset-password?token=${token}`;
+      // ✅ FIXED: Actually send email using your emailService!
+      try {
+        await sendPasswordResetEmail(user.email, token, user.instituteName);
+        console.log(`✅ Password reset email sent to: ${user.email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to send reset email:', emailError);
+        // Still return success to user (security), but log the error
+      }
 
-      // TODO: Send email (for now, just log)
-      console.log("\n=================================");
-      console.log("PASSWORD RESET REQUEST");
-      console.log("=================================");
-      console.log(`Email: ${user.email}`);
-      console.log(`Reset Link: ${resetLink}`);
-      console.log(`Token expires in 1 hour`);
-      console.log("=================================\n");
-
-      // In production, use nodemailer or email service:
-      /*
-      await sendEmail({
-        to: user.email,
-        subject: "Reset Your Password - Inscovia",
-        html: `
-          <h2>Reset Your Password</h2>
-          <p>Click the link below to reset your password:</p>
-          <a href="${resetLink}">${resetLink}</a>
-          <p>This link expires in 1 hour.</p>
-          <p>If you didn't request this, ignore this email.</p>
-        `
-      });
-      */
+      // Log for debugging (remove in production or make conditional)
+      if (process.env.NODE_ENV !== 'production') {
+        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/institute/reset-password?token=${token}`;
+        console.log(`🔗 Reset link (dev): ${resetLink}`);
+      }
     }
 
     // Always return success
@@ -72,7 +71,7 @@ router.post("/forgot-password", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Forgot password error:", error);
+    console.error("❌ Forgot password error:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
@@ -100,7 +99,7 @@ router.post("/verify-reset-token", async (req, res) => {
     res.json({ success: true });
 
   } catch (error) {
-    console.error("Verify token error:", error);
+    console.error("❌ Verify token error:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
@@ -122,12 +121,22 @@ router.post("/reset-password", async (req, res) => {
     const tokenData = resetTokens.get(token);
 
     if (!tokenData) {
-      return res.status(400).json({ error: "Invalid token" });
+      return res.status(400).json({ error: "Invalid or expired token" });
     }
 
     if (Date.now() > tokenData.expires) {
       resetTokens.delete(token);
       return res.status(400).json({ error: "Token expired" });
+    }
+
+    // Find user
+    const user = await prisma.instituteUser.findUnique({
+      where: { email: tokenData.email }
+    });
+
+    if (!user) {
+      resetTokens.delete(token);
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Hash new password
@@ -142,25 +151,17 @@ router.post("/reset-password", async (req, res) => {
     // Delete used token
     resetTokens.delete(token);
 
+    console.log(`✅ Password reset successful for: ${user.email}`);
+
     res.json({
       success: true,
       message: "Password reset successful"
     });
 
   } catch (error) {
-    console.error("Reset password error:", error);
+    console.error("❌ Reset password error:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
-
-// ===== CLEANUP EXPIRED TOKENS (run periodically) =====
-setInterval(() => {
-  const now = Date.now();
-  for (const [token, data] of resetTokens.entries()) {
-    if (now > data.expires) {
-      resetTokens.delete(token);
-    }
-  }
-}, 3600000); // Clean up every hour
 
 export default router;
