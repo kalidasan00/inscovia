@@ -1,28 +1,33 @@
-// backend/src/routes/password-reset.routes.js - FIXED VERSION
+// backend/src/routes/password-reset.routes.js - OTP VERSION
 import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
-import { sendPasswordResetEmail } from "../utils/emailService.js"; // ✅ ADD THIS
+import { sendPasswordResetEmail } from "../utils/emailService.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// In-memory storage for reset tokens (for production, use Redis or database)
-const resetTokens = new Map();
+// Store OTPs: { email: { otp, expires } }
+const resetOTPs = new Map();
 
-// ✅ OPTIMIZED: Auto-cleanup expired tokens every 10 minutes
+// Generate 6-digit OTP
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// ✅ Auto-cleanup expired OTPs
 setInterval(() => {
   const now = Date.now();
-  for (const [token, data] of resetTokens.entries()) {
+  for (const [email, data] of resetOTPs.entries()) {
     if (now > data.expires) {
-      resetTokens.delete(token);
-      console.log(`🧹 Cleaned expired reset token`);
+      resetOTPs.delete(email);
+      console.log(`🧹 Cleaned expired OTP for ${email}`);
     }
   }
 }, 10 * 60 * 1000);
 
-// ===== REQUEST PASSWORD RESET =====
+// ===== STEP 1: REQUEST PASSWORD RESET (SEND OTP) =====
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -31,43 +36,32 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(400).json({ error: "Email is required" });
     }
 
-    // Find institute user
+    // Find user
     const user = await prisma.instituteUser.findUnique({
       where: { email: email.toLowerCase().trim() }
     });
 
-    // Always return success (security: don't reveal if email exists)
+    // Always return success (security)
     if (user) {
-      // Generate reset token
-      const token = crypto.randomBytes(32).toString("hex");
-      const expires = Date.now() + 3600000; // 1 hour
+      // Generate OTP
+      const otp = generateOTP();
+      const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-      // Store token
-      resetTokens.set(token, {
-        email: user.email,
-        expires
-      });
+      // Store OTP
+      resetOTPs.set(user.email, { otp, expires });
 
-      // ✅ FIXED: Actually send email using your emailService!
+      // Send OTP email
       try {
-        await sendPasswordResetEmail(user.email, token, user.instituteName);
-        console.log(`✅ Password reset email sent to: ${user.email}`);
+        await sendPasswordResetEmail(user.email, otp, user.instituteName);
+        console.log(`✅ Reset OTP sent to: ${user.email} (OTP: ${otp})`);
       } catch (emailError) {
-        console.error('❌ Failed to send reset email:', emailError);
-        // Still return success to user (security), but log the error
-      }
-
-      // Log for debugging (remove in production or make conditional)
-      if (process.env.NODE_ENV !== 'production') {
-        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/institute/reset-password?token=${token}`;
-        console.log(`🔗 Reset link (dev): ${resetLink}`);
+        console.error('❌ Failed to send OTP:', emailError);
       }
     }
 
-    // Always return success
     res.json({
       success: true,
-      message: "If that email exists, we've sent reset instructions"
+      message: "If that email exists, we've sent a verification code"
     });
 
   } catch (error) {
@@ -76,66 +70,90 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// ===== VERIFY RESET TOKEN =====
-router.post("/verify-reset-token", async (req, res) => {
+// ===== STEP 2: VERIFY OTP =====
+router.post("/verify-reset-otp", async (req, res) => {
   try {
-    const { token } = req.body;
+    const { email, otp } = req.body;
 
-    if (!token) {
-      return res.status(400).json({ error: "Token is required" });
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Email and OTP are required" });
     }
 
-    const tokenData = resetTokens.get(token);
+    // Get stored OTP
+    const storedData = resetOTPs.get(email.toLowerCase().trim());
 
-    if (!tokenData) {
-      return res.status(400).json({ error: "Invalid token" });
+    if (!storedData) {
+      return res.status(400).json({ error: "No OTP found. Please request a new one." });
     }
 
-    if (Date.now() > tokenData.expires) {
-      resetTokens.delete(token);
-      return res.status(400).json({ error: "Token expired" });
+    // Check expiry
+    if (Date.now() > storedData.expires) {
+      resetOTPs.delete(email);
+      return res.status(400).json({ error: "OTP expired. Please request a new one." });
     }
 
-    res.json({ success: true });
+    // Verify OTP
+    if (storedData.otp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    // OTP is valid - mark as verified (keep in map for password reset)
+    storedData.verified = true;
+    resetOTPs.set(email, storedData);
+
+    console.log(`✅ OTP verified for: ${email}`);
+
+    res.json({
+      success: true,
+      message: "OTP verified successfully"
+    });
 
   } catch (error) {
-    console.error("❌ Verify token error:", error);
+    console.error("❌ Verify OTP error:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-// ===== RESET PASSWORD =====
+// ===== STEP 3: RESET PASSWORD (AFTER OTP VERIFICATION) =====
 router.post("/reset-password", async (req, res) => {
   try {
-    const { token, password } = req.body;
+    const { email, otp, password } = req.body;
 
-    if (!token || !password) {
-      return res.status(400).json({ error: "Token and password are required" });
+    if (!email || !otp || !password) {
+      return res.status(400).json({ error: "Email, OTP and password are required" });
     }
 
     if (password.length < 6) {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
 
-    // Verify token
-    const tokenData = resetTokens.get(token);
+    // Verify OTP again
+    const storedData = resetOTPs.get(email.toLowerCase().trim());
 
-    if (!tokenData) {
-      return res.status(400).json({ error: "Invalid or expired token" });
+    if (!storedData) {
+      return res.status(400).json({ error: "Invalid or expired OTP" });
     }
 
-    if (Date.now() > tokenData.expires) {
-      resetTokens.delete(token);
-      return res.status(400).json({ error: "Token expired" });
+    if (Date.now() > storedData.expires) {
+      resetOTPs.delete(email);
+      return res.status(400).json({ error: "OTP expired" });
+    }
+
+    if (storedData.otp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    if (!storedData.verified) {
+      return res.status(400).json({ error: "OTP not verified" });
     }
 
     // Find user
     const user = await prisma.instituteUser.findUnique({
-      where: { email: tokenData.email }
+      where: { email: email.toLowerCase().trim() }
     });
 
     if (!user) {
-      resetTokens.delete(token);
+      resetOTPs.delete(email);
       return res.status(404).json({ error: "User not found" });
     }
 
@@ -144,12 +162,12 @@ router.post("/reset-password", async (req, res) => {
 
     // Update password
     await prisma.instituteUser.update({
-      where: { email: tokenData.email },
+      where: { email: user.email },
       data: { password: hashedPassword }
     });
 
-    // Delete used token
-    resetTokens.delete(token);
+    // Delete used OTP
+    resetOTPs.delete(email);
 
     console.log(`✅ Password reset successful for: ${user.email}`);
 
