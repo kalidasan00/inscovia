@@ -130,7 +130,7 @@ const getEmailTemplate = (content) => `
 </html>
 `;
 
-// OTP Email
+// OTP Email (Registration)
 export const sendOTPEmail = async (email, otp, instituteName) => {
   try {
     console.log(`📤 Sending OTP email to: ${email} via Resend`);
@@ -179,33 +179,28 @@ export const sendOTPEmail = async (email, otp, instituteName) => {
   }
 };
 
-// Password Reset Email
-export const sendPasswordResetEmail = async (email, resetToken, instituteName) => {
+// ✅ UPDATED: Password Reset Email with OTP (not link)
+export const sendPasswordResetEmail = async (email, otp, instituteName) => {
   try {
-    console.log(`📤 Sending password reset email to: ${email} via Resend`);
-
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const resetLink = `${FRONTEND_URL}/institute/reset-password?token=${resetToken}`;
+    console.log(`📤 Sending password reset OTP to: ${email} via Resend`);
 
     const content = `
       <div class="content">
         <p>Hello ${instituteName},</p>
-        <p>We received a request to reset your password.</p>
-        <p>Click the button below to create a new password:</p>
+        <p>We received a request to reset your password for your Inscovia account.</p>
+        <p>Please use the verification code below to reset your password:</p>
 
-        <div style="text-align: center;">
-          <a href="${resetLink}" class="button">Reset Password</a>
+        <div class="code-box">
+          <div class="code">${otp}</div>
+          <div class="expiry">Valid for 10 minutes</div>
         </div>
 
         <div class="note">
           <p><strong>Important:</strong></p>
-          <p>• This link expires in 1 hour<br/>
-          • Link can only be used once<br/>
+          <p>• This code expires in 10 minutes<br/>
+          • Never share this code with anyone<br/>
           • If you didn't request this, please ignore this email</p>
         </div>
-
-        <p style="font-size: 13px; color: #666;">If the button doesn't work, copy and paste this link:<br/>
-        <a href="${resetLink}" style="color: #2563eb; word-break: break-all;">${resetLink}</a></p>
 
         <p>Best regards,<br/>
         <strong>The Inscovia Team</strong></p>
@@ -224,7 +219,7 @@ export const sendPasswordResetEmail = async (email, resetToken, instituteName) =
       throw new Error(`Failed to send email: ${error.message}`);
     }
 
-    console.log('✅ Password reset email sent successfully via Resend:', data);
+    console.log('✅ Password reset OTP email sent successfully via Resend:', data);
     return { success: true, data };
 
   } catch (error) {
