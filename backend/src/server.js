@@ -1,4 +1,4 @@
-// backend/src/server.js - OPTIMIZED VERSION
+// backend/src/server.js - OPTIMIZED VERSION WITH SEO
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -10,6 +10,7 @@ import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import reviewsRouter from "./routes/reviews.routes.js";
 import passwordResetRouter from "./routes/password-reset.routes.js";
+import sitemapRoutes from './routes/sitemap.routes.js'; // ✅ Already added!
 import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 
 dotenv.config();
@@ -64,7 +65,10 @@ app.use('/api/reviews', (req, res, next) => {
   next();
 });
 
-// Routes
+// ✅ SEO Routes (sitemap & robots.txt) - MUST BE BEFORE OTHER ROUTES
+app.use('/', sitemapRoutes);
+
+// API Routes
 app.use("/api/centers", centersRouter);
 app.use("/api/auth", passwordResetRouter);
 app.use("/api/auth", authRouter);
@@ -73,7 +77,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/reviews", reviewsRouter);
 
 app.get("/", (req, res) => {
-  res.json({ message: "Inscovia API is running" });
+  res.json({ message: "Inscovia API is running ✅" });
 });
 
 // ✅ OPTIMIZED: Faster keep-alive endpoint
@@ -103,8 +107,10 @@ const BACKEND_URL = process.env.BACKEND_URL || `https://inscovia.onrender.com`;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
   console.log(`🔒 Rate limiting enabled for auth routes only`);
+  console.log(`🗺️  Sitemap available at: ${BACKEND_URL}/sitemap.xml`);
+  console.log(`🤖 Robots.txt available at: ${BACKEND_URL}/robots.txt`);
 
-  // ✅ FIXED: Check correct environment variable
+  // ✅ Check environment variables
   if (process.env.RESEND_API_KEY) {
     console.log('✅ Resend API configured and ready');
   } else {
