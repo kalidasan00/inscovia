@@ -1,10 +1,11 @@
-// app/admin/dashboard/page.js
+// app/admin/dashboard/page.js - IMPROVED VERSION
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Building2, Users, Clock, CheckCircle, XCircle,
   TrendingUp, Star, MessageSquare, BarChart3,
-  Home, Settings, LogOut, Menu, X
+  Home, Settings, LogOut, Menu, X, FileText, AlertCircle
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -12,22 +13,20 @@ export default function AdminDashboard() {
   const [recentCenters, setRecentCenters] = useState([]);
   const [recentReviews, setRecentReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [adminInfo, setAdminInfo] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const API_URL = "http://localhost:5001/api";
+  const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     const info = localStorage.getItem("adminInfo");
 
-    console.log("🔍 Debug - Token exists:", !!token);
-    console.log("🔍 Debug - Info exists:", !!info);
-
     if (!token) {
-      console.log("❌ No token, redirecting to login");
-      window.location.href = "/admin/login";
+      router.push("/admin/login");
       return;
     }
 
@@ -40,11 +39,11 @@ export default function AdminDashboard() {
     }
 
     fetchDashboardData(token);
-  }, []);
+  }, [router]);
 
   const fetchDashboardData = async (token) => {
     try {
-      console.log("📡 Fetching dashboard data with token:", token?.substring(0, 20) + "...");
+      setError(null);
 
       const res = await fetch(`${API_URL}/admin/dashboard/stats`, {
         headers: {
@@ -53,36 +52,40 @@ export default function AdminDashboard() {
         }
       });
 
-      console.log("📊 Response status:", res.status);
-
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
-          console.log("❌ Auth failed, clearing storage and redirecting");
           localStorage.removeItem("adminToken");
           localStorage.removeItem("adminInfo");
-          window.location.href = "/admin/login";
+          router.push("/admin/login");
           return;
         }
-        throw new Error("Failed to fetch stats");
+        throw new Error("Failed to fetch dashboard data");
       }
 
       const data = await res.json();
-      console.log("✅ Dashboard data loaded successfully");
 
       setStats(data.stats);
       setRecentCenters(data.recentCenters || []);
       setRecentReviews(data.recentReviews || []);
     } catch (error) {
-      console.error("❌ Error fetching dashboard data:", error);
+      console.error("Error fetching dashboard data:", error);
+      setError("Failed to load dashboard. Please try refreshing the page.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+
+    // Small delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminInfo");
-    window.location.href = "/admin/login";
+    router.push("/admin/login");
   };
 
   if (loading) {
@@ -98,6 +101,7 @@ export default function AdminDashboard() {
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, href: "/admin/dashboard" },
+    { id: "blog", label: "Blog Posts", icon: FileText, href: "/admin/blog" }, // ✅ NEW
     { id: "institutes", label: "Institutes", icon: Building2, href: "/admin/institutes" },
     { id: "centers", label: "Centers", icon: Building2, href: "/admin/centers" },
     { id: "users", label: "Users", icon: Users, href: "/admin/users" },
@@ -149,6 +153,14 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ✅ Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Top Navigation */}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="px-4 sm:px-6 lg:px-8">
@@ -169,20 +181,25 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg">
                 <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white font-semibold">
-                  {adminInfo?.name?.charAt(0).toUpperCase()}
+                  {adminInfo?.name?.charAt(0).toUpperCase() || 'A'}
                 </div>
                 <div className="text-sm">
-                  <p className="font-medium text-gray-900">{adminInfo?.name}</p>
+                  <p className="font-medium text-gray-900">{adminInfo?.name || 'Admin'}</p>
                   <p className="text-xs text-gray-500">Administrator</p>
                 </div>
               </div>
 
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                disabled={loggingOut}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Logout</span>
+                {loggingOut ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                ) : (
+                  <LogOut className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline">{loggingOut ? 'Logging out...' : 'Logout'}</span>
               </button>
             </div>
           </div>
@@ -193,10 +210,10 @@ export default function AdminDashboard() {
         {/* Sidebar */}
         <aside className={`
           fixed lg:sticky top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200
-          transform transition-transform duration-300 z-30
+          transform transition-transform duration-300 z-40
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
-          <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2 overflow-y-auto h-full">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.id === "dashboard";
@@ -205,6 +222,10 @@ export default function AdminDashboard() {
                 <a
                   key={item.id}
                   href={item.href}
+                  onClick={(e) => {
+                    // Close mobile sidebar on navigation
+                    setSidebarOpen(false);
+                  }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-accent text-white'
@@ -221,6 +242,25 @@ export default function AdminDashboard() {
 
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          {/* ✅ Error Alert */}
+          {error && (
+            <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-red-900">Error</p>
+                  <p className="text-sm text-red-800 mt-1">{error}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="mt-2 text-sm font-medium text-red-800 hover:text-red-900 underline"
+                  >
+                    Refresh page
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Alert for Pending */}
           {stats?.pendingInstitutes > 0 && (
             <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
@@ -370,6 +410,18 @@ export default function AdminDashboard() {
           <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* ✅ NEW: Blog Quick Action */}
+              <a
+                href="/admin/blog/create"
+                className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-accent hover:bg-accent/5 transition-colors"
+              >
+                <FileText className="w-8 h-8 text-accent" />
+                <div>
+                  <p className="font-medium text-gray-900">New Blog Post</p>
+                  <p className="text-sm text-gray-500">Create content</p>
+                </div>
+              </a>
+
               <a
                 href="/admin/institutes?status=pending"
                 className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-accent hover:bg-accent/5 transition-colors"
@@ -400,17 +452,6 @@ export default function AdminDashboard() {
                 <div>
                   <p className="font-medium text-gray-900">View Users</p>
                   <p className="text-sm text-gray-500">{stats?.totalUsers || 0} users</p>
-                </div>
-              </a>
-
-              <a
-                href="/admin/analytics"
-                className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-accent hover:bg-accent/5 transition-colors"
-              >
-                <BarChart3 className="w-8 h-8 text-accent" />
-                <div>
-                  <p className="font-medium text-gray-900">Analytics</p>
-                  <p className="text-sm text-gray-500">View reports</p>
                 </div>
               </a>
             </div>

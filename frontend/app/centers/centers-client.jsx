@@ -1,15 +1,23 @@
-// app/centers/centers-client.jsx
+// app/centers/centers-client.jsx - OPTIMIZED
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import CenterCard from "../../components/CenterCard";
-import SmartSearch from "../../components/SmartSearch";
-import MobileFilters from "../../components/MobileFilters";
+import { CenterListSkeleton } from "../../components/LoadingSkeleton";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
+
+// ✅ Lazy load components
+const CenterCard = dynamic(() => import("../../components/CenterCard"));
+const SmartSearch = dynamic(() => import("../../components/SmartSearch"), {
+  loading: () => <div className="h-12 bg-gray-100 rounded-lg animate-pulse"></div>
+});
+const MobileFilters = dynamic(() => import("../../components/MobileFilters"), {
+  ssr: false
+});
 
 export default function CentersClient() {
   const [centers, setCenters] = useState([]);
@@ -294,11 +302,9 @@ export default function CentersClient() {
             </p>
           )}
 
+          {/* ✅ CHANGED: Show skeleton instead of spinner */}
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading...</p>
-            </div>
+            <CenterListSkeleton count={8} />
           ) : filtered.length === 0 ? (
             <div className="text-center py-8 bg-white rounded-lg border">
               <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,22 +331,25 @@ export default function CentersClient() {
         </div>
       </main>
 
-      <MobileFilters
-        isOpen={showMobileFilters}
-        onClose={() => setShowMobileFilters(false)}
-        filters={{
-          categories: category ? [category] : [],
-          teachingModes: teachingMode ? [teachingMode] : [],
-          state: state || "",
-          city: city || "",
-          minRating: minRating || null,
-          priceRange: priceRange || ""
-        }}
-        onFilterChange={handleMobileFilterChange}
-        categories={["TECHNOLOGY", "MANAGEMENT", "SKILL_DEVELOPMENT", "EXAM_COACHING"]}
-        teachingModes={["ONLINE", "OFFLINE", "HYBRID"]}
-        states={uniqueStates}
-      />
+      {/* ✅ MobileFilters loads only when opened */}
+      {showMobileFilters && (
+        <MobileFilters
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          filters={{
+            categories: category ? [category] : [],
+            teachingModes: teachingMode ? [teachingMode] : [],
+            state: state || "",
+            city: city || "",
+            minRating: minRating || null,
+            priceRange: priceRange || ""
+          }}
+          onFilterChange={handleMobileFilterChange}
+          categories={["TECHNOLOGY", "MANAGEMENT", "SKILL_DEVELOPMENT", "EXAM_COACHING"]}
+          teachingModes={["ONLINE", "OFFLINE", "HYBRID"]}
+          states={uniqueStates}
+        />
+      )}
 
       <Footer />
     </>
