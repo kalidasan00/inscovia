@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const API_URL =  "http://localhost:5001/api";
+  // ✅ FIXED: Use environment variable
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -34,10 +37,11 @@ export default function AdminLogin() {
       localStorage.setItem("adminToken", data.token);
       localStorage.setItem("adminInfo", JSON.stringify(data.admin));
 
-      // Redirect to admin dashboard
-      window.location.href = "/admin/dashboard";
+      // ✅ FIXED: Use Next.js router instead of window.location
+      router.push("/admin/dashboard");
     } catch (err) {
-      setError("Failed to connect to server");
+      console.error("Login error:", err);
+      setError("Failed to connect to server. Please check your connection.");
       setLoading(false);
     }
   };
@@ -61,7 +65,7 @@ export default function AdminLogin() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email Address
@@ -70,7 +74,7 @@ export default function AdminLogin() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin(e)}
+              required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="admin@inscovia.com"
             />
@@ -84,20 +88,20 @@ export default function AdminLogin() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLogin(e)}
+              required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
 
           <button
-            onClick={handleLogin}
+            type="submit"
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {loading ? "Logging in..." : "Login to Admin Panel"}
           </button>
-        </div>
+        </form>
 
         <div className="mt-8 text-center">
           <a href="/" className="text-sm text-indigo-600 hover:text-indigo-700">
