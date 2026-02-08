@@ -1,4 +1,4 @@
-// app/centers/[slug]/page.js - SERVER COMPONENT with SEO
+// app/centers/[slug]/page.js - SERVER COMPONENT WITH COMPLETE SEO
 import CenterDetailClient from './center-detail-client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -52,13 +52,27 @@ export async function generateMetadata({ params }) {
             alt: center.name,
           }
         ],
-        type: 'article',
+        type: 'website',
+        siteName: 'Inscovia',
       },
       twitter: {
         card: 'summary_large_image',
         title: `${center.name} - ${center.city}`,
         description: shortDesc,
         images: [center.image || center.logo || '/og-image.png'],
+      },
+      alternates: {
+        canonical: `https://inscovia.com/centers/${params.slug}`,
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+        },
       },
     };
   } catch (error) {
@@ -70,6 +84,162 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default function CenterDetailPage() {
-  return <CenterDetailClient />;
+// ✅ NEW: Generate Schema.org JSON-LD for each center
+async function generateSchemas(slug) {
+  try {
+    const res = await fetch(`${API_URL}/centers/${slug}`, {
+      cache: 'no-store'
+    });
+
+    if (!res.ok) return null;
+
+    const center = await res.json();
+
+    // 1️⃣ Local Business Schema
+    const localBusinessSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'EducationalOrganization',
+      name: center.name,
+      description: center.description,
+      url: `https://inscovia.com/centers/${center.slug}`,
+      image: center.image || center.logo,
+      logo: center.logo,
+      telephone: center.phone,
+      email: center.email,
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: center.city,
+        addressRegion: center.state,
+        addressCountry: 'IN',
+      },
+      ...(center.rating > 0 && {
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: center.rating,
+          bestRating: 5,
+          worstRating: 1,
+        },
+      }),
+      ...(center.website && { sameAs: [center.website] }),
+    };
+
+    // 2️⃣ Breadcrumb Schema
+    const breadcrumbSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://inscovia.com',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Centers',
+          item: 'https://inscovia.com/centers',
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: center.city,
+          item: `https://inscovia.com/centers?city=${center.city}`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 4,
+          name: center.name,
+          item: `https://inscovia.com/centers/${center.slug}`,
+        },
+      ],
+    };
+
+    // 3️⃣ Course Schema (for each course)
+    const courseSchemas = center.courseDetails?.slice(0, 5).map((course) => ({
+      '@context': 'https://schema.org',
+      '@type': 'Course',
+      name: course.name,
+      provider: {
+        '@type': 'Organization',
+        name: center.name,
+        url: `https://inscovia.com/centers/${center.slug}`,
+      },
+      ...(course.fees && {
+        offers: {
+          '@type': 'Offer',
+          price: course.fees,
+          priceCurrency: 'INR',
+        },
+      }),
+      ...(course.duration && { duration: course.duration }),
+    })) || [];
+
+    // 4️⃣ Organization Schema
+    const organizationSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Inscovia',
+      url: 'https://inscovia.com',
+      logo: 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png',
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'Customer Support',
+        email: 'support@inscovia.com',
+      },
+    };
+
+    return {
+      localBusinessSchema,
+      breadcrumbSchema,
+      courseSchemas,
+      organizationSchema,
+    };
+  } catch (error) {
+    console.error('Error generating schemas:', error);
+    return null;
+  }
+}
+
+export default async function CenterDetailPage({ params }) {
+  const schemas = await generateSchemas(params.slug);
+
+  return (
+    <>
+      {/* ✅ Add Schema.org JSON-LD */}
+      {schemas && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(schemas.organizationSchema),
+            }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(schemas.localBusinessSchema),
+            }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(schemas.breadcrumbSchema),
+            }}
+          />
+          {schemas.courseSchemas.map((schema, index) => (
+            <script
+              key={index}
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify(schema),
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      <CenterDetailClient />
+    </>
+  );
 }

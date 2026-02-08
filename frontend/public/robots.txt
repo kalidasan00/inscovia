@@ -1,15 +1,34 @@
+# public/robots.txt - PRODUCTION VERSION
+# https://inscovia.com/robots.txt
+
 User-agent: *
 Allow: /
 
-# Sitemap location
-Sitemap: https://www.inscovia.com/sitemap.xml
-
-# Disallow admin/private pages
+# Disallow private areas
 Disallow: /api/
 Disallow: /admin/
-Disallow: */dashboard
+Disallow: /institute/login
+Disallow: /institute/register
+Disallow: /institute/dashboard
+Disallow: /institute/forgot-password
+Disallow: /institute/reset-password
 
-# Allow indexing of all public pages
-Allow: /centers
+# Allow important pages
+Allow: /centers/
 Allow: /about
 Allow: /contact
+Allow: /search
+
+# Sitemaps
+Sitemap: https://inscovia.com/sitemap.xml
+
+# Crawl-delay (be nice to servers)
+Crawl-delay: 1
+
+# Google-specific
+User-agent: Googlebot
+Crawl-delay: 0
+
+# Bing-specific
+User-agent: Bingbot
+Crawl-delay: 1

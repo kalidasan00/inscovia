@@ -1,4 +1,4 @@
-// app/centers/[slug]/center-detail-client.jsx - WITH INSTAGRAM GALLERY
+// app/centers/[slug]/center-detail-client.jsx - WITH SEO BREADCRUMBS
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -130,6 +130,39 @@ export default function CenterDetailClient() {
   return (
     <>
       <Navbar />
+
+      {/* ✅ NEW: SEO Breadcrumb Navigation */}
+      <nav className="max-w-5xl mx-auto px-3 sm:px-4 py-2 text-xs border-b bg-gray-50" aria-label="Breadcrumb">
+        <ol className="flex items-center gap-2 text-gray-600 flex-wrap">
+          <li>
+            <Link href="/" className="hover:text-indigo-600 transition-colors">
+              Home
+            </Link>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-gray-400">/</span>
+            <Link href="/centers" className="hover:text-indigo-600 transition-colors">
+              Centers
+            </Link>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-gray-400">/</span>
+            <Link
+              href={`/centers?city=${center.city}`}
+              className="hover:text-indigo-600 transition-colors"
+            >
+              {center.city}
+            </Link>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-900 font-medium truncate max-w-[150px] sm:max-w-[200px]" title={center.name}>
+              {center.name}
+            </span>
+          </li>
+        </ol>
+      </nav>
+
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
         {showToast && (
           <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
@@ -155,13 +188,13 @@ export default function CenterDetailClient() {
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
           <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
             {center.image && (
-              <img src={center.image} alt={center.name} className="w-full h-full object-cover" />
+              <img src={center.image} alt={`${center.name} cover`} className="w-full h-full object-cover" />
             )}
 
             <div className="absolute -bottom-10 left-3">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-xl border-4 border-white overflow-hidden flex items-center justify-center">
                 {center.logo ? (
-                  <img src={center.logo} className="w-full h-full object-cover" alt="Logo" />
+                  <img src={center.logo} className="w-full h-full object-cover" alt={`${center.name} logo`} />
                 ) : (
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -176,6 +209,7 @@ export default function CenterDetailClient() {
                 className={`p-2 rounded-lg backdrop-blur-md transition-all shadow-lg ${
                   isLiked ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-700'
                 }`}
+                aria-label={isLiked ? "Remove from favorites" : "Add to favorites"}
               >
                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
               </button>
@@ -186,6 +220,7 @@ export default function CenterDetailClient() {
                 className={`p-2 rounded-lg backdrop-blur-md transition-all shadow-lg ${
                   isComparing ? 'bg-blue-500 text-white' : 'bg-white/95 text-gray-700 disabled:opacity-50'
                 }`}
+                aria-label={isComparing ? "Remove from compare" : "Add to compare"}
               >
                 <GitCompare className="w-4 h-4" />
               </button>
@@ -236,6 +271,7 @@ export default function CenterDetailClient() {
                 <button
                   onClick={() => setShowFullDescription(!showFullDescription)}
                   className="mt-1 text-indigo-600 text-xs font-medium flex items-center gap-0.5"
+                  aria-label={showFullDescription ? "Show less" : "Read more"}
                 >
                   {showFullDescription ? 'Show less' : 'Read more'}
                   <ChevronDown className={`w-3 h-3 transition-transform ${showFullDescription ? 'rotate-180' : ''}`} />
@@ -248,7 +284,8 @@ export default function CenterDetailClient() {
                 <div className="flex items-center gap-2">
                   {center.facebook && (
                     <a href={center.facebook} target="_blank" rel="noopener noreferrer"
-                       className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                       className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors"
+                       aria-label="Visit Facebook page">
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                       </svg>
@@ -256,7 +293,8 @@ export default function CenterDetailClient() {
                   )}
                   {center.instagram && (
                     <a href={center.instagram} target="_blank" rel="noopener noreferrer"
-                       className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center hover:from-purple-700 hover:to-pink-600 transition-colors">
+                       className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center hover:from-purple-700 hover:to-pink-600 transition-colors"
+                       aria-label="Visit Instagram page">
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                       </svg>
@@ -264,7 +302,8 @@ export default function CenterDetailClient() {
                   )}
                   {center.linkedin && (
                     <a href={center.linkedin} target="_blank" rel="noopener noreferrer"
-                       className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
+                       className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors"
+                       aria-label="Visit LinkedIn page">
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                       </svg>
@@ -321,7 +360,7 @@ export default function CenterDetailClient() {
 
             <CourseList center={center} />
 
-            {/* Instagram-style Square Gallery */}
+            {/* ✅ Instagram-style Square Gallery with lazy loading */}
             {center.gallery && center.gallery.length > 0 && (
               <div className="mb-3">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Gallery</h2>
@@ -330,8 +369,9 @@ export default function CenterDetailClient() {
                     <div key={i} className="aspect-square">
                       <img
                         src={img}
-                        alt={`Gallery ${i + 1}`}
+                        alt={`${center.name} - Gallery image ${i + 1}`}
                         className="w-full h-full object-cover rounded-lg border"
+                        loading="lazy"
                       />
                     </div>
                   ))}
