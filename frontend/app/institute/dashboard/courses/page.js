@@ -1,4 +1,4 @@
-// app/institute/dashboard/courses/page.js - FIXED SAVE FUNCTIONALITY
+// app/institute/dashboard/courses/page.js - UPDATED CATEGORIES
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -30,11 +30,16 @@ export default function ManageCourses() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
+  // ✅ UPDATED: New 8-category system
   const CATEGORIES = {
-    TECHNOLOGY: "Technology",
-    MANAGEMENT: "Management",
-    SKILL_DEVELOPMENT: "Skill Development",
-    EXAM_COACHING: "Exam Coaching"
+    TECHNOLOGY: "Technology & IT Training",
+    COMPETITIVE_EXAMS: "Competitive Exam Coaching",
+    LANGUAGE_TRAINING: "Language & Communication",
+    MANAGEMENT: "Management & Business",
+    PROFESSIONAL_COURSES: "Professional Courses (CA/CMA/CS)",
+    DESIGN_CREATIVE: "Design & Creative Arts",
+    DIGITAL_MARKETING: "Digital Marketing",
+    SKILL_DEVELOPMENT: "Skill Development & Training"
   };
 
   useEffect(() => {
@@ -349,7 +354,7 @@ export default function ManageCourses() {
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-2">Category</label>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {centerCategories.map(cat => (
                               <button
                                 key={cat}

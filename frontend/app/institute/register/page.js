@@ -36,13 +36,18 @@ export default function RegisterInstitute() {
 
   const router = useRouter();
 
- const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
+  // ✅ UPDATED: New 8-category system
   const categories = [
-    { value: "TECHNOLOGY", label: "Technology" },
-    { value: "MANAGEMENT", label: "Management" },
-    { value: "SKILL_DEVELOPMENT", label: "Skills Development" },
-    { value: "EXAM_COACHING", label: "Exam Coaching" }
+    { value: "TECHNOLOGY", label: "Technology & IT Training" },
+    { value: "COMPETITIVE_EXAMS", label: "Competitive Exam Coaching" },
+    { value: "LANGUAGE_TRAINING", label: "Language & Communication" },
+    { value: "MANAGEMENT", label: "Management & Business" },
+    { value: "PROFESSIONAL_COURSES", label: "Professional Courses (CA/CMA/CS)" },
+    { value: "DESIGN_CREATIVE", label: "Design & Creative Arts" },
+    { value: "DIGITAL_MARKETING", label: "Digital Marketing" },
+    { value: "SKILL_DEVELOPMENT", label: "Skill Development & Training" }
   ];
 
   // Load states on mount
@@ -348,7 +353,7 @@ export default function RegisterInstitute() {
                       {formData.primaryCategory && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Secondary Categories <span className="text-gray-500 font-normal">(Optional - Select up to 2)</span>
+                            Secondary Categories <span className="text-gray-500 font-normal">(Optional - Select all that apply)</span>
                           </label>
                           <div className="grid grid-cols-2 gap-3">
                             {getAvailableSecondaryCategories().map(cat => (
@@ -356,12 +361,11 @@ export default function RegisterInstitute() {
                                 key={cat.value}
                                 type="button"
                                 onClick={() => handleSecondaryToggle(cat.value)}
-                                disabled={formData.secondaryCategories.length >= 2 && !formData.secondaryCategories.includes(cat.value)}
                                 className={`px-4 py-3 border-2 rounded-lg text-sm font-medium transition-all ${
                                   formData.secondaryCategories.includes(cat.value)
                                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                }`}
                               >
                                 <div className="flex items-center justify-between">
                                   <span>{cat.label}</span>
@@ -375,7 +379,7 @@ export default function RegisterInstitute() {
                             ))}
                           </div>
                           <p className="text-xs text-gray-500 mt-2">
-                            Selected: {formData.secondaryCategories.length}/2
+                            Selected: {formData.secondaryCategories.length}/{getAvailableSecondaryCategories().length}
                           </p>
                         </div>
                       )}
