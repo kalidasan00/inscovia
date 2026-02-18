@@ -1,4 +1,4 @@
-// backend/prisma/schema.prisma
+// backend/prisma/schema.prisma - MINIMAL UPDATE
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,19 +8,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums for categories
+// ✅ UPDATED: Enums for categories (8 categories)
 enum InstituteCategory {
   TECHNOLOGY
+  COMPETITIVE_EXAMS      // NEW (was EXAM_COACHING)
+  LANGUAGE_TRAINING      // NEW
   MANAGEMENT
+  PROFESSIONAL_COURSES   // NEW
+  DESIGN_CREATIVE        // NEW
+  DIGITAL_MARKETING      // NEW
   SKILL_DEVELOPMENT
-  EXAM_COACHING
+  EXAM_COACHING          // Keep for backward compatibility
 }
 
 enum CenterCategory {
   TECHNOLOGY
+  COMPETITIVE_EXAMS      // NEW (was EXAM_COACHING)
+  LANGUAGE_TRAINING      // NEW
   MANAGEMENT
+  PROFESSIONAL_COURSES   // NEW
+  DESIGN_CREATIVE        // NEW
+  DIGITAL_MARKETING      // NEW
   SKILL_DEVELOPMENT
-  EXAM_COACHING
+  EXAM_COACHING          // Keep for backward compatibility
 }
 
 enum UserRole {
