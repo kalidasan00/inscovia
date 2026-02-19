@@ -12,9 +12,8 @@ import reviewsRouter from "./routes/reviews.routes.js";
 import passwordResetRouter from "./routes/password-reset.routes.js";
 import papersRouter from "./routes/papers.routes.js";
 import sitemapRoutes from './routes/sitemap.routes.js';
-import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 import chatRouter from "./routes/chat.routes.js";
-app.use("/api/chat", chatRouter);
+import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 
 dotenv.config();
 
@@ -62,13 +61,11 @@ app.use('/api/user/login', authLimiter);
 app.use('/api/user/register', authLimiter);
 
 app.use('/api/reviews', (req, res, next) => {
-  if (req.method === 'POST') {
-    return reviewLimiter(req, res, next);
-  }
+  if (req.method === 'POST') return reviewLimiter(req, res, next);
   next();
 });
 
-// ✅ SEO Routes (sitemap & robots.txt) - MUST BE BEFORE OTHER ROUTES
+// ✅ SEO Routes - MUST BE BEFORE OTHER ROUTES
 app.use('/', sitemapRoutes);
 
 // API Routes
@@ -79,12 +76,12 @@ app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/papers", papersRouter);
+app.use("/api/chat", chatRouter); // ✅ FIXED: now after app is created
 
 app.get("/", (req, res) => {
   res.json({ message: "Inscovia API is running ✅" });
 });
 
-// ✅ OPTIMIZED: Faster keep-alive endpoint
 app.get("/api/keep-alive", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -112,14 +109,20 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔒 Rate limiting enabled for auth routes only`);
   console.log(`🗺️  Sitemap available at: ${BACKEND_URL}/sitemap.xml`);
   console.log(`🤖 Robots.txt available at: ${BACKEND_URL}/robots.txt`);
+  console.log(`💬 AI Chat available at: ${BACKEND_URL}/api/chat`);
 
   if (process.env.RESEND_API_KEY) {
-    console.log('✅ Resend API configured and ready');
+    console.log('✅ Resend API configured');
   } else {
-    console.warn('⚠️  Warning: RESEND_API_KEY not configured - email sending will fail');
+    console.warn('⚠️  RESEND_API_KEY not configured - email sending will fail');
   }
 
-  // ✅ Self-ping keep-alive (prevents Render sleep)
+  if (process.env.GROQ_API_KEY) {
+    console.log('✅ Groq AI configured and ready');
+  } else {
+    console.warn('⚠️  GROQ_API_KEY not configured - AI chat will fail');
+  }
+
   setInterval(async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/keep-alive`);
@@ -131,7 +134,6 @@ app.listen(PORT, '0.0.0.0', () => {
   }, 14 * 60 * 1000);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('🛑 SIGTERM received, closing server gracefully...');
   await prisma.$disconnect();
