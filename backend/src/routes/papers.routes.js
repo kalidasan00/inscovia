@@ -2,7 +2,7 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { adminOnly } from "../middleware/admin.middleware.js";
-import cloudinary from "../../config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js";
 import multer from "multer";
 
 const router = express.Router();
