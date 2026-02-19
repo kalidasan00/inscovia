@@ -270,7 +270,8 @@ export default function AIChatWidget() {
       {isOpen && !isMinimized && (
         <>
           {/* ✅ MOBILE: fullscreen so keyboard doesn't cause resize issues */}
-          <div className="md:hidden fixed inset-0 z-50 bg-white flex flex-col">
+          {/* z-[60] ensures it sits ABOVE the bottom nav (z-50) */}
+          <div className="md:hidden fixed inset-0 z-[60] bg-white flex flex-col">
             <ChatContent />
           </div>
 
