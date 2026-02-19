@@ -13,6 +13,8 @@ import passwordResetRouter from "./routes/password-reset.routes.js";
 import papersRouter from "./routes/papers.routes.js";
 import sitemapRoutes from './routes/sitemap.routes.js';
 import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
+import chatRouter from "./routes/chat.routes.js";
+app.use("/api/chat", chatRouter);
 
 dotenv.config();
 
