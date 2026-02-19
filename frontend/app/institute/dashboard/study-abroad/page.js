@@ -304,4 +304,4 @@ export default function StudyAbroadManage() {
       <Footer />
     </>
   );
-}ys
+}
