@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { CenterListSkeleton } from "../../components/LoadingSkeleton";
 import { useSearchParams } from "next/navigation";
@@ -66,7 +65,6 @@ export default function CentersClient() {
 
   let filtered = centers;
 
-  // Category filter
   if (category) {
     filtered = filtered.filter((c) =>
       c.primaryCategory === category ||
@@ -74,35 +72,28 @@ export default function CentersClient() {
     );
   }
 
-  // State filter
   if (state) {
     filtered = filtered.filter((c) => c.state === state);
   }
 
-  // City filter
   if (city) {
     filtered = filtered.filter((c) => c.city === city);
   }
 
-  // Teaching mode filter
   if (teachingMode) {
     filtered = filtered.filter((c) => c.teachingMode === teachingMode);
   }
 
-  // Rating filter
   if (minRating) {
     filtered = filtered.filter((c) => c.rating >= minRating);
   }
 
-  // Price range filter - FIXED for courseDetails JSON
   if (priceRange) {
     filtered = filtered.filter((c) => {
-      // Check if courseDetails exists and has data
       if (!c.courseDetails || !Array.isArray(c.courseDetails) || c.courseDetails.length === 0) {
         return false;
       }
 
-      // Extract fees from courseDetails JSON
       const prices = c.courseDetails
         .map(course => {
           const fee = parseInt(course.fees);
@@ -125,7 +116,6 @@ export default function CentersClient() {
     });
   }
 
-  // Search query filter
   if (searchQuery) {
     const query = searchQuery.toLowerCase();
     filtered = filtered.filter((c) => {
@@ -166,37 +156,17 @@ export default function CentersClient() {
   const handleMobileFilterChange = (newFilters) => {
     const params = new URLSearchParams();
 
-    if (newFilters.state) {
-      params.set('state', newFilters.state);
-    }
-
-    if (newFilters.city) {
-      params.set('city', newFilters.city);
-    }
-
+    if (newFilters.state) params.set('state', newFilters.state);
+    if (newFilters.city) params.set('city', newFilters.city);
     if (newFilters.categories && newFilters.categories.length > 0) {
-      newFilters.categories.forEach(cat => {
-        params.append('category', cat);
-      });
+      newFilters.categories.forEach(cat => params.append('category', cat));
     }
-
     if (newFilters.teachingModes && newFilters.teachingModes.length > 0) {
-      newFilters.teachingModes.forEach(mode => {
-        params.append('teachingMode', mode);
-      });
+      newFilters.teachingModes.forEach(mode => params.append('teachingMode', mode));
     }
-
-    if (newFilters.minRating) {
-      params.set('rating', newFilters.minRating);
-    }
-
-    if (newFilters.priceRange) {
-      params.set('priceRange', newFilters.priceRange);
-    }
-
-    if (searchQuery) {
-      params.set('q', searchQuery);
-    }
+    if (newFilters.minRating) params.set('rating', newFilters.minRating);
+    if (newFilters.priceRange) params.set('priceRange', newFilters.priceRange);
+    if (searchQuery) params.set('q', searchQuery);
 
     router.push(`/centers${params.toString() ? '?' + params.toString() : ''}`);
   };
@@ -207,8 +177,6 @@ export default function CentersClient() {
 
   return (
     <>
-      <Navbar />
-
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-20 md:pb-8">
         <div className="mb-3 sm:mb-4">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -232,62 +200,46 @@ export default function CentersClient() {
 
           <SmartSearch centers={centers} />
 
-          {/* Active Filters Display */}
           {activeFiltersCount > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-gray-600">Active filters:</span>
               {category && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
                   {formatCategory(category)}
-                  <button onClick={clearAllFilters} className="hover:text-accent/80">
-                    ×
-                  </button>
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">×</button>
                 </span>
               )}
               {state && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
                   {state}
-                  <button onClick={clearAllFilters} className="hover:text-accent/80">
-                    ×
-                  </button>
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">×</button>
                 </span>
               )}
               {city && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
                   {city}
-                  <button onClick={clearAllFilters} className="hover:text-accent/80">
-                    ×
-                  </button>
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">×</button>
                 </span>
               )}
               {teachingMode && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
                   {teachingMode}
-                  <button onClick={clearAllFilters} className="hover:text-accent/80">
-                    ×
-                  </button>
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">×</button>
                 </span>
               )}
               {minRating && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
                   {minRating}★ & above
-                  <button onClick={clearAllFilters} className="hover:text-accent/80">
-                    ×
-                  </button>
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">×</button>
                 </span>
               )}
               {priceRange && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 text-accent rounded-full text-xs font-medium">
                   {priceRange === "100000+" ? "Above ₹1L" : `₹${priceRange.replace('-', ' - ')}`}
-                  <button onClick={clearAllFilters} className="hover:text-accent/80">
-                    ×
-                  </button>
+                  <button onClick={clearAllFilters} className="hover:text-accent/80">×</button>
                 </span>
               )}
-              <button
-                onClick={clearAllFilters}
-                className="text-xs text-accent hover:text-accent/80 font-medium underline"
-              >
+              <button onClick={clearAllFilters} className="text-xs text-accent hover:text-accent/80 font-medium underline">
                 Clear all
               </button>
             </div>
@@ -302,7 +254,6 @@ export default function CentersClient() {
             </p>
           )}
 
-          {/* ✅ CHANGED: Show skeleton instead of spinner */}
           {loading ? (
             <CenterListSkeleton count={8} />
           ) : filtered.length === 0 ? (
@@ -314,10 +265,7 @@ export default function CentersClient() {
               <p className="text-sm text-gray-500 mb-3">
                 {searchQuery ? `No results for "${searchQuery}"` : "Try different filters"}
               </p>
-              <button
-                onClick={clearAllFilters}
-                className="text-accent hover:text-accent/80 font-medium text-sm"
-              >
+              <button onClick={clearAllFilters} className="text-accent hover:text-accent/80 font-medium text-sm">
                 Clear all filters
               </button>
             </div>
@@ -331,7 +279,6 @@ export default function CentersClient() {
         </div>
       </main>
 
-      {/* ✅ MobileFilters loads only when opened */}
       {showMobileFilters && (
         <MobileFilters
           isOpen={showMobileFilters}

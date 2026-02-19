@@ -1,5 +1,6 @@
 // app/layout.js
 import "./globals.css";
+import Navbar from "../components/Navbar";
 import BottomNav from "../components/BottomNav";
 import { FavoritesProvider } from "../contexts/FavoritesContext";
 import { CompareProvider } from "../contexts/CompareContext";
@@ -79,6 +80,7 @@ export default function RootLayout({ children }) {
       <body className="bg-gray-50 text-gray-900">
         <FavoritesProvider>
           <CompareProvider>
+            <Navbar />
             {children}
             <BottomNav />
           </CompareProvider>

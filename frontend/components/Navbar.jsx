@@ -9,7 +9,8 @@ import {
   User,
   LogOut,
   LayoutDashboard,
-  Search
+  Search,
+  FileText
 } from "lucide-react";
 
 export default function Navbar() {
@@ -99,6 +100,15 @@ export default function Navbar() {
                 <Search className="w-4 h-4" />
                 <span>Browse</span>
               </Link>
+              <Link
+                href="/previous-year-papers"
+                className={`flex items-center gap-1.5 text-sm transition-colors hover:text-blue-600 ${
+                  pathname === '/previous-year-papers' ? 'text-blue-600' : 'text-gray-700'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>Prev Year Papers</span>
+              </Link>
             </div>
 
             {/* Auth Section */}
@@ -171,6 +181,20 @@ export default function Navbar() {
               >
                 <Search className="w-5 h-5 text-gray-600" />
                 <span>Browse Centers</span>
+              </Link>
+
+              {/* Previous Year Papers */}
+              <Link
+                href="/previous-year-papers"
+                className={`flex items-center gap-3 px-4 py-3 text-sm border-b border-gray-100 ${
+                  pathname === '/previous-year-papers'
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                <FileText className="w-5 h-5 text-gray-600" />
+                <span>Previous Year Papers</span>
               </Link>
 
               {/* Auth Section */}

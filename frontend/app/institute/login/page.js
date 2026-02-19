@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
 
 export default function InstituteLogin() {
@@ -51,7 +50,6 @@ export default function InstituteLogin() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-white flex items-center justify-center px-4 py-8 pb-20">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -111,10 +109,7 @@ export default function InstituteLogin() {
                     />
                     <span className="text-gray-600">Remember</span>
                   </label>
-                  <Link
-                    href="/institute/forgot-password"
-                    className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
+                  <Link href="/institute/forgot-password" className="text-blue-600 hover:text-blue-700 font-medium">
                     Forgot?
                   </Link>
                 </div>
@@ -131,10 +126,7 @@ export default function InstituteLogin() {
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{" "}
-                  <Link
-                    href="/institute/register"
-                    className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
+                  <Link href="/institute/register" className="text-blue-600 hover:text-blue-700 font-medium">
                     Register
                   </Link>
                 </p>
