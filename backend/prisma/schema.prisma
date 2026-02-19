@@ -1,4 +1,4 @@
-// backend/prisma/schema.prisma - MINIMAL UPDATE
+// backend/prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,29 +8,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ✅ UPDATED: Enums for categories (8 categories)
 enum InstituteCategory {
   TECHNOLOGY
-  COMPETITIVE_EXAMS      // NEW (was EXAM_COACHING)
-  LANGUAGE_TRAINING      // NEW
+  COMPETITIVE_EXAMS
+  LANGUAGE_TRAINING
   MANAGEMENT
-  PROFESSIONAL_COURSES   // NEW
-  DESIGN_CREATIVE        // NEW
-  DIGITAL_MARKETING      // NEW
+  PROFESSIONAL_COURSES
+  DESIGN_CREATIVE
+  DIGITAL_MARKETING
   SKILL_DEVELOPMENT
-  EXAM_COACHING          // Keep for backward compatibility
+  EXAM_COACHING
 }
 
 enum CenterCategory {
   TECHNOLOGY
-  COMPETITIVE_EXAMS      // NEW (was EXAM_COACHING)
-  LANGUAGE_TRAINING      // NEW
+  COMPETITIVE_EXAMS
+  LANGUAGE_TRAINING
   MANAGEMENT
-  PROFESSIONAL_COURSES   // NEW
-  DESIGN_CREATIVE        // NEW
-  DIGITAL_MARKETING      // NEW
+  PROFESSIONAL_COURSES
+  DESIGN_CREATIVE
+  DIGITAL_MARKETING
   SKILL_DEVELOPMENT
-  EXAM_COACHING          // Keep for backward compatibility
+  EXAM_COACHING
 }
 
 enum UserRole {
@@ -45,7 +44,6 @@ enum TeachingMode {
   HYBRID
 }
 
-// Institute User for Authentication
 model InstituteUser {
   id       String   @id @default(cuid())
   email    String   @unique
@@ -53,9 +51,9 @@ model InstituteUser {
 
   instituteName       String
   phone               String
-  primaryCategory     InstituteCategory              // Primary category (required)
-  secondaryCategories InstituteCategory[] @default([]) // Secondary categories (optional)
-  teachingMode        TeachingMode                   // Online, Offline, or Hybrid
+  primaryCategory     InstituteCategory
+  secondaryCategories InstituteCategory[] @default([])
+  teachingMode        TeachingMode
 
   state    String
   district String
@@ -96,7 +94,6 @@ model Center {
   rating  Float    @default(0)
   courses String[]
 
-  // ✨ NEW: Course details with fees and duration (optional)
   courseDetails Json? @default("[]")
 
   image   String?
@@ -152,7 +149,6 @@ model Review {
   @@index([createdAt])
 }
 
-// Student/Regular User for Authentication
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -168,4 +164,32 @@ model User {
   updatedAt DateTime @updatedAt
 
   @@index([email])
+}
+
+// ✅ Previous Year Question Papers
+model PreviousYearPaper {
+  id           String   @id @default(cuid())
+  slug         String   @unique  // e.g. "jee-main-2024-shift-1"
+
+  examName     String   // e.g. "JEE Main"
+  examCategory String   // e.g. "Engineering"
+  subject      String?  // e.g. "Physics" (optional)
+  year         Int      // e.g. 2024
+  shift        String?  // e.g. "Shift 1" (optional)
+  language     String   @default("English")
+
+  pdfUrl       String   // Cloudinary URL
+  fileSize     String?  // e.g. "2.4 MB"
+
+  downloads    Int      @default(0)
+  isActive     Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([slug])
+  @@index([examName])
+  @@index([examCategory])
+  @@index([year])
+  @@index([isActive])
 }
