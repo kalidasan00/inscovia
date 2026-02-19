@@ -232,8 +232,8 @@ export default function AIChatWidget() {
             placeholder="Ask about courses, coaching, study abroad..."
             rows={1}
             disabled={loading}
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 disabled:opacity-50"
-            style={{ maxHeight: "60px" }}
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 disabled:opacity-50"
+            style={{ maxHeight: "60px", fontSize: "16px" }}
           />
           <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
             className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
