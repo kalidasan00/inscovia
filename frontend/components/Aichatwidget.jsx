@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { X, Send, Bot, Loader2, RotateCcw, Minimize2 } from "lucide-react";
+import { X, Send, Bot, Loader2 } from "lucide-react";
 
 const SUGGESTED_QUESTIONS = [
   "I want to crack JEE, which coaching should I join?",
@@ -10,47 +10,38 @@ const SUGGESTED_QUESTIONS = [
   "Suggest a good Python course near me",
 ];
 
-const INITIAL_MESSAGE = {
-  role: "assistant",
-  content: "Hi! 👋 I'm your AI Course Counsellor.\n\nTell me your **goal** and **location** and I'll recommend the best institutes for you!\n\nWhat are you looking for?"
-};
-
 export default function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content: "Hi! 👋 I'm your AI Course Counsellor. Tell me your goal and I'll recommend the best institutes for you!\n\nWhat are you looking for?"
+    }
+  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [centerCards, setCenterCards] = useState([]);
-  const [error, setError] = useState(null);
-  const [retryMsg, setRetryMsg] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [isOpen, isMinimized]);
+  }, [isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, centerCards]);
+  }, [messages, loading]);
 
-  const sendMessage = async (text, isRetry = false) => {
+  const sendMessage = async (text) => {
     const userText = text || input.trim();
     if (!userText || loading) return;
 
-    setError(null);
-    setRetryMsg(null);
-
-    const newMessages = isRetry
-      ? messages
-      : [...messages, { role: "user", content: userText }];
-
-    if (!isRetry) setMessages(newMessages);
+    const newMessages = [...messages, { role: "user", content: userText }];
+    setMessages(newMessages);
     setInput("");
     setLoading(true);
     setCenterCards([]);
@@ -63,30 +54,21 @@ export default function AIChatWidget() {
       });
 
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.error || "Failed");
 
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
-      if (data.centers?.length > 0) setCenterCards(data.centers);
-
+      if (data.centers?.length > 0) {
+        setCenterCards(data.centers);
+      }
     } catch (err) {
-      console.error("Chat error:", err);
-      setError("Couldn't get a response.");
-      setRetryMsg(userText);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "Sorry, I'm having trouble right now. Please try again! 🙏"
+      }]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleRetry = () => {
-    if (retryMsg) sendMessage(retryMsg, true);
-  };
-
-  const handleClearChat = () => {
-    setMessages([INITIAL_MESSAGE]);
-    setCenterCards([]);
-    setError(null);
-    setRetryMsg(null);
-    setInput("");
   };
 
   const handleKeyDown = (e) => {
@@ -97,6 +79,7 @@ export default function AIChatWidget() {
   };
 
   const formatMessage = (text) => {
+    // Bold text between **
     return text.split("\n").map((line, i) => (
       <span key={i}>
         {line.split(/\*\*(.*?)\*\*/g).map((part, j) =>
@@ -107,34 +90,24 @@ export default function AIChatWidget() {
     ));
   };
 
-  const unreadCount = messages.filter(m => m.role === "assistant").length - 1;
-
   return (
     <>
       {/* Floating Button */}
       {!isOpen && (
-        <button onClick={() => { setIsOpen(true); setIsMinimized(false); }}
+        <button
+          onClick={() => setIsOpen(true)}
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
           aria-label="Open AI Counsellor">
           <Bot className="w-6 h-6" />
+          {/* Pulse animation */}
           <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white animate-pulse"></span>
         </button>
       )}
 
-      {/* Minimized bar */}
-      {isOpen && isMinimized && (
-        <button onClick={() => setIsMinimized(false)}
-          className="fixed bottom-20 right-3 md:bottom-6 md:right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all">
-          <Bot className="w-4 h-4" />
-          <span className="text-sm font-medium">AI Counsellor</span>
-          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-        </button>
-      )}
-
       {/* Chat Window */}
-      {isOpen && !isMinimized && (
+      {isOpen && (
         <div className="fixed bottom-20 right-3 md:bottom-6 md:right-6 z-50 w-[calc(100vw-24px)] max-w-sm bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden"
-          style={{ height: "540px" }}>
+          style={{ height: "520px" }}>
 
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -146,27 +119,14 @@ export default function AIChatWidget() {
                 <p className="text-white font-semibold text-sm">AI Course Counsellor</p>
                 <div className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                  <span className="text-blue-200 text-[10px]">Online · Powered by Llama AI</span>
+                  <span className="text-blue-200 text-[10px]">Online · Powered by Claude AI</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              {/* Clear chat */}
-              <button onClick={handleClearChat} title="Clear chat"
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <RotateCcw className="w-3.5 h-3.5 text-white/80" />
-              </button>
-              {/* Minimize */}
-              <button onClick={() => setIsMinimized(true)} title="Minimize"
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <Minimize2 className="w-3.5 h-3.5 text-white/80" />
-              </button>
-              {/* Close */}
-              <button onClick={() => setIsOpen(false)} title="Close"
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <X className="w-4 h-4 text-white" />
-              </button>
-            </div>
+            <button onClick={() => setIsOpen(false)}
+              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+              <X className="w-4 h-4 text-white" />
+            </button>
           </div>
 
           {/* Messages */}
@@ -201,35 +161,19 @@ export default function AIChatWidget() {
               </div>
             )}
 
-            {/* Error + Retry */}
-            {error && !loading && (
-              <div className="flex justify-start">
-                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
-                  <Bot className="w-3.5 h-3.5 text-red-500" />
-                </div>
-                <div className="bg-red-50 border border-red-100 px-3 py-2 rounded-2xl rounded-tl-sm">
-                  <p className="text-xs text-red-600 mb-1.5">{error}</p>
-                  <button onClick={handleRetry}
-                    className="flex items-center gap-1 text-[10px] font-medium text-red-600 bg-red-100 px-2 py-1 rounded-lg hover:bg-red-200 transition-colors">
-                    <RotateCcw className="w-3 h-3" /> Try again
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Center Cards */}
             {centerCards.length > 0 && !loading && (
               <div className="space-y-2">
-                <p className="text-[10px] text-gray-400 font-medium px-1">📍 Recommended for you:</p>
+                <p className="text-[10px] text-gray-400 font-medium px-1">📍 Recommended Centers:</p>
                 {centerCards.map((c) => (
                   <Link key={c.id} href={`/centers/${c.slug}`} onClick={() => setIsOpen(false)}
-                    className="block bg-white border rounded-xl p-2.5 hover:shadow-md hover:border-blue-200 transition-all">
+                    className="block bg-white border rounded-xl p-2.5 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 truncate">{c.name}</p>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-900">{c.name}</p>
                         <p className="text-[10px] text-gray-500">{c.city}, {c.state}</p>
                         {c.primaryCategory === "STUDY_ABROAD" && c.countries?.length > 0 && (
-                          <p className="text-[10px] text-blue-600 mt-0.5 truncate">{c.countries.slice(0, 3).join(" · ")}</p>
+                          <p className="text-[10px] text-blue-600 mt-0.5">{c.countries.slice(0, 3).join(" · ")}</p>
                         )}
                         {c.primaryCategory !== "STUDY_ABROAD" && c.courses?.length > 0 && (
                           <p className="text-[10px] text-gray-400 mt-0.5 truncate">{c.courses.slice(0, 2).join(" · ")}</p>
@@ -241,7 +185,7 @@ export default function AIChatWidget() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] text-accent font-medium mt-1.5 block">View Profile →</span>
+                    <span className="text-[10px] text-accent font-medium mt-1 block">View Profile →</span>
                   </Link>
                 ))}
               </div>
@@ -251,13 +195,13 @@ export default function AIChatWidget() {
           </div>
 
           {/* Suggested questions — only on first message */}
-          {messages.length === 1 && !loading && (
+          {messages.length === 1 && (
             <div className="px-3 py-2 border-t bg-white flex-shrink-0">
-              <p className="text-[10px] text-gray-400 mb-1.5">💡 Try asking:</p>
+              <p className="text-[10px] text-gray-400 mb-1.5">Try asking:</p>
               <div className="flex flex-col gap-1">
                 {SUGGESTED_QUESTIONS.slice(0, 2).map((q, i) => (
                   <button key={i} onClick={() => sendMessage(q)}
-                    className="text-left text-[10px] text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors truncate border border-blue-100">
+                    className="text-left text-[10px] text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors truncate">
                     {q}
                   </button>
                 ))}
@@ -275,16 +219,14 @@ export default function AIChatWidget() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about courses, coaching, study abroad..."
                 rows={1}
-                disabled={loading}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                 style={{ maxHeight: "80px" }}
               />
               <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
                 className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
-                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                <Send className="w-3.5 h-3.5" />
               </button>
             </div>
-            <p className="text-[9px] text-gray-300 mt-1 text-center">AI may make mistakes · Always verify with institutes</p>
           </div>
         </div>
       )}
