@@ -96,6 +96,155 @@ export default function AIChatWidget() {
     ));
   };
 
+  const ChatContent = () => (
+    <>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+            <Bot className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <p className="text-white font-semibold text-sm">AI Course Counsellor</p>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+              <span className="text-blue-200 text-[10px]">Online · Powered by Llama AI</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={handleClearChat} title="Clear chat"
+            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+            <RotateCcw className="w-3.5 h-3.5 text-white/80" />
+          </button>
+          <button onClick={() => setIsMinimized(true)} title="Minimize"
+            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+            <Minimize2 className="w-3.5 h-3.5 text-white/80" />
+          </button>
+          <button onClick={() => setIsOpen(false)} title="Close"
+            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50 overscroll-contain">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            {msg.role === "assistant" && (
+              <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
+                <Bot className="w-3.5 h-3.5 text-indigo-600" />
+              </div>
+            )}
+            <div className={`max-w-[82%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
+              msg.role === "user"
+                ? "bg-blue-600 text-white rounded-tr-sm"
+                : "bg-white text-gray-800 shadow-sm border rounded-tl-sm"
+            }`}>
+              {formatMessage(msg.content)}
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex justify-start">
+            <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
+              <Bot className="w-3.5 h-3.5 text-indigo-600" />
+            </div>
+            <div className="bg-white border shadow-sm px-3 py-2 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
+              <span className="text-xs text-gray-500">Finding best options...</span>
+            </div>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="flex justify-start">
+            <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
+              <Bot className="w-3.5 h-3.5 text-red-500" />
+            </div>
+            <div className="bg-red-50 border border-red-100 px-3 py-2 rounded-2xl rounded-tl-sm">
+              <p className="text-xs text-red-600 mb-1.5">{error}</p>
+              <button onClick={() => retryMsg && sendMessage(retryMsg, true)}
+                className="flex items-center gap-1 text-[10px] font-medium text-red-600 bg-red-100 px-2 py-1 rounded-lg hover:bg-red-200 transition-colors">
+                <RotateCcw className="w-3 h-3" /> Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {centerCards.length > 0 && !loading && (
+          <div className="space-y-2">
+            <p className="text-[10px] text-gray-400 font-medium px-1">📍 Recommended for you:</p>
+            {centerCards.map((c) => (
+              <Link key={c.id} href={`/centers/${c.slug}`} onClick={() => setIsOpen(false)}
+                className="block bg-white border rounded-xl p-2.5 hover:shadow-md hover:border-blue-200 transition-all">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 truncate">{c.name}</p>
+                    <p className="text-[10px] text-gray-500">{c.city}, {c.state}</p>
+                    {c.primaryCategory === "STUDY_ABROAD" && c.countries?.length > 0 && (
+                      <p className="text-[10px] text-blue-600 mt-0.5 truncate">{c.countries.slice(0, 3).join(" · ")}</p>
+                    )}
+                    {c.primaryCategory !== "STUDY_ABROAD" && c.courses?.length > 0 && (
+                      <p className="text-[10px] text-gray-400 mt-0.5 truncate">{c.courses.slice(0, 2).join(" · ")}</p>
+                    )}
+                  </div>
+                  {c.rating > 0 && (
+                    <span className="text-[10px] font-semibold text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded flex-shrink-0">
+                      ★ {c.rating}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-accent font-medium mt-1.5 block">View Profile →</span>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Suggested questions */}
+      {messages.length === 1 && !loading && (
+        <div className="px-3 py-2 border-t bg-white flex-shrink-0">
+          <p className="text-[10px] text-gray-400 mb-1.5">💡 Try asking:</p>
+          <div className="flex flex-col gap-1">
+            {SUGGESTED_QUESTIONS.slice(0, 2).map((q, i) => (
+              <button key={i} onClick={() => sendMessage(q)}
+                className="text-left text-[10px] text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors truncate border border-blue-100">
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="px-3 py-2.5 border-t bg-white flex-shrink-0">
+        <div className="flex gap-2 items-end">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about courses, coaching, study abroad..."
+            rows={1}
+            disabled={loading}
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 disabled:opacity-50"
+            style={{ maxHeight: "60px" }}
+          />
+          <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
+            className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+        <p className="text-[9px] text-gray-300 mt-1 text-center">AI may make mistakes · Always verify with institutes</p>
+      </div>
+    </>
+  );
+
   return (
     <>
       {/* Floating Button */}
@@ -118,161 +267,19 @@ export default function AIChatWidget() {
         </button>
       )}
 
-      {/* ✅ Chat Window - dvh fixes mobile keyboard issue */}
       {isOpen && !isMinimized && (
-        <div
-          className="fixed right-3 md:right-6 z-50 w-[calc(100vw-24px)] max-w-sm bg-white rounded-2xl shadow-2xl border flex flex-col overflow-hidden"
-          style={{
-            // ✅ dvh = dynamic viewport height, shrinks when keyboard opens on mobile
-            height: "min(520px, calc(100dvh - 110px))",
-            bottom: "80px",
-          }}>
-
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-white font-semibold text-sm">AI Course Counsellor</p>
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                  <span className="text-blue-200 text-[10px]">Online · Powered by Llama AI</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <button onClick={handleClearChat} title="Clear chat"
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <RotateCcw className="w-3.5 h-3.5 text-white/80" />
-              </button>
-              <button onClick={() => setIsMinimized(true)} title="Minimize"
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <Minimize2 className="w-3.5 h-3.5 text-white/80" />
-              </button>
-              <button onClick={() => setIsOpen(false)} title="Close"
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
-                <X className="w-4 h-4 text-white" />
-              </button>
-            </div>
+        <>
+          {/* ✅ MOBILE: fullscreen so keyboard doesn't cause resize issues */}
+          <div className="md:hidden fixed inset-0 z-50 bg-white flex flex-col">
+            <ChatContent />
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50 overscroll-contain">
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                {msg.role === "assistant" && (
-                  <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
-                    <Bot className="w-3.5 h-3.5 text-indigo-600" />
-                  </div>
-                )}
-                <div className={`max-w-[82%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-blue-600 text-white rounded-tr-sm"
-                    : "bg-white text-gray-800 shadow-sm border rounded-tl-sm"
-                }`}>
-                  {formatMessage(msg.content)}
-                </div>
-              </div>
-            ))}
-
-            {loading && (
-              <div className="flex justify-start">
-                <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
-                  <Bot className="w-3.5 h-3.5 text-indigo-600" />
-                </div>
-                <div className="bg-white border shadow-sm px-3 py-2 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
-                  <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
-                  <span className="text-xs text-gray-500">Finding best options...</span>
-                </div>
-              </div>
-            )}
-
-            {error && !loading && (
-              <div className="flex justify-start">
-                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
-                  <Bot className="w-3.5 h-3.5 text-red-500" />
-                </div>
-                <div className="bg-red-50 border border-red-100 px-3 py-2 rounded-2xl rounded-tl-sm">
-                  <p className="text-xs text-red-600 mb-1.5">{error}</p>
-                  <button onClick={() => retryMsg && sendMessage(retryMsg, true)}
-                    className="flex items-center gap-1 text-[10px] font-medium text-red-600 bg-red-100 px-2 py-1 rounded-lg hover:bg-red-200 transition-colors">
-                    <RotateCcw className="w-3 h-3" /> Try again
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {centerCards.length > 0 && !loading && (
-              <div className="space-y-2">
-                <p className="text-[10px] text-gray-400 font-medium px-1">📍 Recommended for you:</p>
-                {centerCards.map((c) => (
-                  <Link key={c.id} href={`/centers/${c.slug}`} onClick={() => setIsOpen(false)}
-                    className="block bg-white border rounded-xl p-2.5 hover:shadow-md hover:border-blue-200 transition-all">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 truncate">{c.name}</p>
-                        <p className="text-[10px] text-gray-500">{c.city}, {c.state}</p>
-                        {c.primaryCategory === "STUDY_ABROAD" && c.countries?.length > 0 && (
-                          <p className="text-[10px] text-blue-600 mt-0.5 truncate">{c.countries.slice(0, 3).join(" · ")}</p>
-                        )}
-                        {c.primaryCategory !== "STUDY_ABROAD" && c.courses?.length > 0 && (
-                          <p className="text-[10px] text-gray-400 mt-0.5 truncate">{c.courses.slice(0, 2).join(" · ")}</p>
-                        )}
-                      </div>
-                      {c.rating > 0 && (
-                        <span className="text-[10px] font-semibold text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded flex-shrink-0">
-                          ★ {c.rating}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-accent font-medium mt-1.5 block">View Profile →</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
+          {/* ✅ DESKTOP: floating window */}
+          <div className="hidden md:flex fixed bottom-6 right-6 z-50 w-96 bg-white rounded-2xl shadow-2xl border flex-col overflow-hidden"
+            style={{ height: "520px" }}>
+            <ChatContent />
           </div>
-
-          {/* Suggested questions */}
-          {messages.length === 1 && !loading && (
-            <div className="px-3 py-2 border-t bg-white flex-shrink-0">
-              <p className="text-[10px] text-gray-400 mb-1.5">💡 Try asking:</p>
-              <div className="flex flex-col gap-1">
-                {SUGGESTED_QUESTIONS.slice(0, 2).map((q, i) => (
-                  <button key={i} onClick={() => sendMessage(q)}
-                    className="text-left text-[10px] text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors truncate border border-blue-100">
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ✅ Input - stays above keyboard on mobile */}
-          <div className="px-3 py-2.5 border-t bg-white flex-shrink-0">
-            <div className="flex gap-2 items-end">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask about courses, coaching, study abroad..."
-                rows={1}
-                disabled={loading}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 disabled:opacity-50"
-                style={{ maxHeight: "60px" }}
-              />
-              <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
-                className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
-                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-            <p className="text-[9px] text-gray-300 mt-1 text-center">AI may make mistakes · Always verify with institutes</p>
-          </div>
-        </div>
+        </>
       )}
     </>
   );
