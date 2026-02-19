@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Footer from "../components/Footer";
 import HeroSection from "../components/HeroSection";
+import AIChatWidget from "../components/AIChatWidget";
 import Link from "next/link";
 import {
   MonitorSmartphone,
@@ -13,7 +14,6 @@ import {
   BarChart3,
   Globe,
   TrendingUp,
-  Table,
   Palette,
   GraduationCap,
   MapPin
@@ -27,15 +27,8 @@ export default function HomeClient() {
   useEffect(() => {
     async function loadCenters() {
       try {
-        const res = await fetch(`${API_URL}/centers`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          setTimeout(loadCenters, 2000);
-          return;
-        }
-
+        const res = await fetch(`${API_URL}/centers`, { cache: "no-store" });
+        if (!res.ok) { setTimeout(loadCenters, 2000); return; }
         const data = await res.json();
         setCenters(data.centers || []);
       } catch (err) {
@@ -45,7 +38,6 @@ export default function HomeClient() {
         setLoading(false);
       }
     }
-
     loadCenters();
   }, [API_URL]);
 
@@ -53,7 +45,7 @@ export default function HomeClient() {
   const managementCount = centers.filter(c => c.primaryCategory === "MANAGEMENT").length;
   const skillDevCount = centers.filter(c => c.primaryCategory === "SKILL_DEVELOPMENT").length;
   const examCoachingCount = centers.filter(c => c.primaryCategory === "EXAM_COACHING").length;
-  const totalCount = centers.length;
+  const totalCount = centers.filter(c => c.primaryCategory !== "STUDY_ABROAD").length;
 
   const cities = [...new Set(centers.map(c => c.city))].filter(Boolean).sort();
 
@@ -226,6 +218,9 @@ export default function HomeClient() {
       </main>
 
       <Footer />
+
+      {/* ✅ AI Chat Widget - homepage only */}
+      <AIChatWidget />
     </>
   );
 }

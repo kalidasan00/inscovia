@@ -2,7 +2,6 @@
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import BottomNav from "../components/BottomNav";
-import AIChatWidget from "../components/AIChatWidget";
 import { FavoritesProvider } from "../contexts/FavoritesContext";
 import { CompareProvider } from "../contexts/CompareContext";
 
@@ -83,7 +82,6 @@ export default function RootLayout({ children }) {
             <Navbar />
             {children}
             <BottomNav />
-            <AIChatWidget /> {/* ✅ AI Course Counsellor - shows on every page */}
           </CompareProvider>
         </FavoritesProvider>
       </body>
