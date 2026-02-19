@@ -18,6 +18,7 @@ enum InstituteCategory {
   DIGITAL_MARKETING
   SKILL_DEVELOPMENT
   EXAM_COACHING
+  STUDY_ABROAD        // ✅ NEW
 }
 
 enum CenterCategory {
@@ -30,6 +31,7 @@ enum CenterCategory {
   DIGITAL_MARKETING
   SKILL_DEVELOPMENT
   EXAM_COACHING
+  STUDY_ABROAD        // ✅ NEW
 }
 
 enum UserRole {
@@ -111,6 +113,14 @@ model Center {
   instagram String?
   linkedin  String?
 
+  // ✅ NEW: Study Abroad specific fields (null for non-study-abroad centers)
+  countries        String[]  @default([])  // e.g. ["USA", "UK", "Canada"]
+  services         String[]  @default([])  // e.g. ["Visa Assistance", "IELTS Coaching"]
+  topUniversities  String[]  @default([])  // e.g. ["Harvard", "Oxford"]
+  avgScholarship   String?                 // e.g. "50% - 100%"
+  successRate      String?                 // e.g. "95%"
+  studentsPlaced   Int?                    // e.g. 500
+
   userId String?
   owner  InstituteUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -169,17 +179,17 @@ model User {
 // ✅ Previous Year Question Papers
 model PreviousYearPaper {
   id           String   @id @default(cuid())
-  slug         String   @unique  // e.g. "jee-main-2024-shift-1"
+  slug         String   @unique
 
-  examName     String   // e.g. "JEE Main"
-  examCategory String   // e.g. "Engineering"
-  subject      String?  // e.g. "Physics" (optional)
-  year         Int      // e.g. 2024
-  shift        String?  // e.g. "Shift 1" (optional)
+  examName     String
+  examCategory String
+  subject      String?
+  year         Int
+  shift        String?
   language     String   @default("English")
 
-  pdfUrl       String   // Cloudinary URL
-  fileSize     String?  // e.g. "2.4 MB"
+  pdfUrl       String
+  fileSize     String?
 
   downloads    Int      @default(0)
   isActive     Boolean  @default(true)
