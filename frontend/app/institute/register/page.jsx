@@ -33,9 +33,9 @@ export default function RegisterInstitute() {
   const [districts, setDistricts] = useState([]);
 
   const router = useRouter();
-
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
+  // ✅ All categories including STUDY_ABROAD
   const categories = [
     { value: "TECHNOLOGY", label: "Technology & IT Training" },
     { value: "COMPETITIVE_EXAMS", label: "Competitive Exam Coaching" },
@@ -44,8 +44,12 @@ export default function RegisterInstitute() {
     { value: "PROFESSIONAL_COURSES", label: "Professional Courses (CA/CMA/CS)" },
     { value: "DESIGN_CREATIVE", label: "Design & Creative Arts" },
     { value: "DIGITAL_MARKETING", label: "Digital Marketing" },
-    { value: "SKILL_DEVELOPMENT", label: "Skill Development & Training" }
+    { value: "SKILL_DEVELOPMENT", label: "Skill Development & Training" },
+    { value: "STUDY_ABROAD", label: "Study Abroad Consultancy" }, // ✅ NEW
   ];
+
+  // ✅ Check if current primary category is study abroad
+  const isStudyAbroad = formData.primaryCategory === "STUDY_ABROAD";
 
   useEffect(() => {
     try {
@@ -72,14 +76,19 @@ export default function RegisterInstitute() {
 
   useEffect(() => {
     if (timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
+      const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
       return () => clearInterval(interval);
     } else {
       setCanResend(true);
     }
   }, [timer]);
+
+  // ✅ Reset teachingMode when switching to/from STUDY_ABROAD
+  useEffect(() => {
+    if (isStudyAbroad) {
+      setFormData(prev => ({ ...prev, teachingMode: "" }));
+    }
+  }, [formData.primaryCategory]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -111,10 +120,16 @@ export default function RegisterInstitute() {
     setError("");
     setLoading(true);
 
-    if (!formData.instituteName || !formData.email || !formData.phone ||
-        !formData.password || !formData.confirmPassword || !formData.primaryCategory ||
-        !formData.teachingMode || !formData.state || !formData.district ||
-        !formData.city || !formData.location) {
+    // ✅ teachingMode only required for non-study-abroad
+    const requiredFields = [
+      formData.instituteName, formData.email, formData.phone,
+      formData.password, formData.confirmPassword, formData.primaryCategory,
+      formData.state, formData.district, formData.city, formData.location
+    ];
+
+    if (!isStudyAbroad) requiredFields.push(formData.teachingMode);
+
+    if (requiredFields.some(f => !f)) {
       setError("Please fill in all required fields");
       setLoading(false);
       return;
@@ -173,7 +188,7 @@ export default function RegisterInstitute() {
       const verifyResponse = await fetch(`${API_URL}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email, otp: otp })
+        body: JSON.stringify({ email: formData.email, otp })
       });
 
       const verifyData = await verifyResponse.json();
@@ -189,7 +204,7 @@ export default function RegisterInstitute() {
           password: formData.password,
           primaryCategory: formData.primaryCategory,
           secondaryCategories: formData.secondaryCategories,
-          teachingMode: formData.teachingMode,
+          teachingMode: formData.teachingMode || "ONLINE", // default for study abroad
           state: formData.state,
           district: formData.district,
           city: formData.city,
@@ -219,17 +234,14 @@ export default function RegisterInstitute() {
   const handleResendOTP = async () => {
     setError("");
     setLoading(true);
-
     try {
       const response = await fetch(`${API_URL}/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, instituteName: formData.instituteName })
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to resend OTP");
-
       setTimer(600);
       setCanResend(false);
       setOtp("");
@@ -259,28 +271,37 @@ export default function RegisterInstitute() {
             {step === 1 && (
               <>
                 <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold text-gray-900">Register Your Institute</h1>
-                  <p className="text-gray-600 mt-2">Join Inscovia and reach more students</p>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {isStudyAbroad ? "Register Your Consultancy" : "Register Your Institute"}
+                  </h1>
+                  <p className="text-gray-600 mt-2">
+                    {isStudyAbroad ? "Join Inscovia and connect with students going abroad" : "Join Inscovia and reach more students"}
+                  </p>
                 </div>
 
                 {error && (
-                  <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                    {error}
-                  </div>
+                  <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
                 )}
 
                 <form onSubmit={handleSendOTP} className="space-y-6">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-4">Institute Details</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                      {isStudyAbroad ? "Consultancy Details" : "Institute Details"}
+                    </h3>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Institute Name *</label>
-                        <input type="text" name="instituteName" value={formData.instituteName} onChange={handleChange} placeholder="TechWave Academy" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {isStudyAbroad ? "Consultancy Name *" : "Institute Name *"}
+                        </label>
+                        <input type="text" name="instituteName" value={formData.instituteName} onChange={handleChange}
+                          placeholder={isStudyAbroad ? "Global Dreams Consultancy" : "TechWave Academy"}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Primary Category * <span className="text-gray-500 font-normal">(Main focus area)</span></label>
-                        <select name="primaryCategory" value={formData.primaryCategory} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                        <select name="primaryCategory" value={formData.primaryCategory} onChange={handleChange}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                           <option value="">Select primary category</option>
                           {categories.map(cat => (
                             <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -288,42 +309,66 @@ export default function RegisterInstitute() {
                         </select>
                       </div>
 
+                      {/* ✅ Study Abroad info banner */}
+                      {isStudyAbroad && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                          🌍 As a study abroad consultancy, you can add countries, services, and top universities from your dashboard after registration.
+                        </div>
+                      )}
+
                       {formData.primaryCategory && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Categories <span className="text-gray-500 font-normal">(Optional - Select all that apply)</span></label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Categories <span className="text-gray-500 font-normal">(Optional)</span></label>
                           <div className="grid grid-cols-2 gap-3">
                             {getAvailableSecondaryCategories().map(cat => (
-                              <button key={cat.value} type="button" onClick={() => handleSecondaryToggle(cat.value)} className={`px-4 py-3 border-2 rounded-lg text-sm font-medium transition-all ${formData.secondaryCategories.includes(cat.value) ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}>
+                              <button key={cat.value} type="button" onClick={() => handleSecondaryToggle(cat.value)}
+                                className={`px-4 py-3 border-2 rounded-lg text-sm font-medium transition-all ${
+                                  formData.secondaryCategories.includes(cat.value)
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                }`}>
                                 <div className="flex items-center justify-between">
                                   <span>{cat.label}</span>
                                   {formData.secondaryCategories.includes(cat.value) && (
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
                                   )}
                                 </div>
                               </button>
                             ))}
                           </div>
-                          <p className="text-xs text-gray-500 mt-2">Selected: {formData.secondaryCategories.length}/{getAvailableSecondaryCategories().length}</p>
+                          <p className="text-xs text-gray-500 mt-2">Selected: {formData.secondaryCategories.length}</p>
                         </div>
                       )}
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Teaching Mode * <span className="text-gray-500 font-normal">(How do you teach?)</span></label>
-                        <div className="grid grid-cols-3 gap-3">
-                          {[
-                            { value: 'ONLINE', label: 'Online', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-                            { value: 'OFFLINE', label: 'Offline', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
-                            { value: 'HYBRID', label: 'Hybrid', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' }
-                          ].map(mode => (
-                            <button key={mode.value} type="button" onClick={() => setFormData({...formData, teachingMode: mode.value})} className={`px-4 py-3 border-2 rounded-lg text-sm font-medium transition-all ${formData.teachingMode === mode.value ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'}`}>
-                              <div className="flex flex-col items-center gap-2">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mode.icon} /></svg>
-                                <span>{mode.label}</span>
-                              </div>
-                            </button>
-                          ))}
+                      {/* ✅ Teaching mode hidden for STUDY_ABROAD */}
+                      {!isStudyAbroad && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Teaching Mode * <span className="text-gray-500 font-normal">(How do you teach?)</span></label>
+                          <div className="grid grid-cols-3 gap-3">
+                            {[
+                              { value: 'ONLINE', label: 'Online', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+                              { value: 'OFFLINE', label: 'Offline', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
+                              { value: 'HYBRID', label: 'Hybrid', icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4' }
+                            ].map(mode => (
+                              <button key={mode.value} type="button" onClick={() => setFormData({...formData, teachingMode: mode.value})}
+                                className={`px-4 py-3 border-2 rounded-lg text-sm font-medium transition-all ${
+                                  formData.teachingMode === mode.value
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                                }`}>
+                                <div className="flex flex-col items-center gap-2">
+                                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mode.icon} />
+                                  </svg>
+                                  <span>{mode.label}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
@@ -332,11 +377,14 @@ export default function RegisterInstitute() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                        <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="contact@institute.com" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                        <input type="email" name="email" value={formData.email} onChange={handleChange}
+                          placeholder="contact@consultancy.com"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                        <PhoneInput international defaultCountry="IN" value={formData.phone} onChange={handlePhoneChange} className="phone-input-custom" placeholder="Enter phone number" required />
+                        <PhoneInput international defaultCountry="IN" value={formData.phone} onChange={handlePhoneChange}
+                          className="phone-input-custom" placeholder="Enter phone number" required />
                         <style jsx global>{`
                           .phone-input-custom .PhoneInputInput { width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 14px; outline: none; }
                           .phone-input-custom .PhoneInputInput:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
@@ -351,25 +399,29 @@ export default function RegisterInstitute() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
-                        <select name="state" value={formData.state} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" required>
+                        <select name="state" value={formData.state} onChange={handleChange}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white" required>
                           <option value="">Select State</option>
                           {states.map((state) => (<option key={state} value={state}>{state}</option>))}
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">District *</label>
-                        <select name="district" value={formData.district} onChange={handleChange} disabled={!formData.state} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" required>
+                        <select name="district" value={formData.district} onChange={handleChange} disabled={!formData.state}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed" required>
                           <option value="">{formData.state ? 'Select District' : 'Select State First'}</option>
                           {districts.map((district) => (<option key={district} value={district}>{district}</option>))}
                         </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
-                        <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Bangalore" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                        <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Kozhikode"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
-                        <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="MG Road, Near City Center" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                        <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="MG Road, Near City Center"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                       </div>
                     </div>
                   </div>
@@ -379,11 +431,13 @@ export default function RegisterInstitute() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
-                        <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                        <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="••••••••"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
-                        <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                        <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
                       </div>
                     </div>
                   </div>
@@ -393,7 +447,8 @@ export default function RegisterInstitute() {
                     <label htmlFor="terms" className="text-sm text-gray-600">I agree to the Terms of Service and Privacy Policy</label>
                   </div>
 
-                  <button type="submit" disabled={loading} className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-50">
+                  <button type="submit" disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-50">
                     {loading ? "Sending OTP..." : "Continue →"}
                   </button>
                 </form>
@@ -419,7 +474,9 @@ export default function RegisterInstitute() {
                 <form onSubmit={handleVerifyAndRegister} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Enter OTP Code</label>
-                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" maxLength={6} className="w-full px-4 py-4 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest" required />
+                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000" maxLength={6}
+                      className="w-full px-4 py-4 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest" required />
                   </div>
 
                   {timer > 0 && (
@@ -428,12 +485,14 @@ export default function RegisterInstitute() {
                     </div>
                   )}
 
-                  <button type="submit" disabled={loading || otp.length !== 6} className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button type="submit" disabled={loading || otp.length !== 6}
+                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     {loading ? "Verifying..." : "Verify & Register"}
                   </button>
 
                   <div className="text-center">
-                    <button type="button" onClick={handleResendOTP} disabled={!canResend || loading} className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:text-gray-400 disabled:cursor-not-allowed">
+                    <button type="button" onClick={handleResendOTP} disabled={!canResend || loading}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:text-gray-400 disabled:cursor-not-allowed">
                       {canResend ? "Resend OTP" : "Resend available after timer expires"}
                     </button>
                   </div>
