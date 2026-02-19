@@ -60,7 +60,7 @@ const getRelevantCenters = async (message) => {
     if (msg.includes(loc)) { locationFilter = loc; break; }
   }
 
-  const whereClause = { isActive: true };
+  const whereClause = {};
 
   if (categoryFilter.length > 0) {
     whereClause.OR = [
