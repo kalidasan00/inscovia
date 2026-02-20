@@ -14,6 +14,7 @@ import papersRouter from "./routes/papers.routes.js";
 import sitemapRoutes from './routes/sitemap.routes.js';
 import chatRouter from "./routes/chat.routes.js";
 import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
+import aptitudeRouter from "./routes/aptitude.routes.js";
 
 dotenv.config();
 
@@ -77,6 +78,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/papers", papersRouter);
 app.use("/api/chat", chatRouter); // ✅ FIXED: now after app is created
+app.use("/api/aptitude", aptitudeRouter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Inscovia API is running ✅" });
@@ -110,6 +112,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🗺️  Sitemap available at: ${BACKEND_URL}/sitemap.xml`);
   console.log(`🤖 Robots.txt available at: ${BACKEND_URL}/robots.txt`);
   console.log(`💬 AI Chat available at: ${BACKEND_URL}/api/chat`);
+  console.log(`🧠 Aptitude API available at: ${BACKEND_URL}/api/aptitude`);
 
   if (process.env.RESEND_API_KEY) {
     console.log('✅ Resend API configured');

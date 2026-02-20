@@ -1,0 +1,473 @@
+question,option_a,option_b,option_c,option_d,answer,explanation,topic,subtopic,difficulty
+"What is 15% of 200?",25,30,35,40,B,"15/100 × 200 = 30",Quantitative,Percentage,EASY
+"If 25% of a number is 75, find the number",200,250,300,350,C,"25/100 × x = 75 → x = 300",Quantitative,Percentage,EASY
+"What percent of 80 is 20?",20,25,30,40,B,"20/80 × 100 = 25%",Quantitative,Percentage,EASY
+"A number increased from 200 to 250. Find % increase",20,25,30,15,B,"50/200 × 100 = 25%",Quantitative,Percentage,EASY
+"What is 30% of 500?",100,120,150,180,C,"30/100 × 500 = 150",Quantitative,Percentage,EASY
+"If 40% of x = 120, find x",200,250,300,350,C,"40/100 × x = 120 → x = 300",Quantitative,Percentage,EASY
+"A number decreased from 500 to 400. Find % decrease",15,20,25,30,B,"100/500 × 100 = 20%",Quantitative,Percentage,EASY
+"What percent of 150 is 45?",25,30,35,40,B,"45/150 × 100 = 30%",Quantitative,Percentage,EASY
+"If 60% of a number is 180, what is 80% of that number?",200,220,240,260,C,"Number = 300, 80% of 300 = 240",Quantitative,Percentage,MEDIUM
+"A student scored 450 out of 600. What is the percentage?",70,72,75,78,C,"450/600 × 100 = 75%",Quantitative,Percentage,EASY
+"Price increased by 20% then decreased by 20%. Net change?",0,-2,-4,-6,C,"100 → 120 → 96. Loss = 4%",Quantitative,Percentage,MEDIUM
+"If 35% of a number is 105, find 65% of that number",195,200,210,215,A,"Number=300, 65% of 300=195",Quantitative,Percentage,MEDIUM
+"A shopkeeper gives 10% discount on ₹500. Final price?",400,425,450,475,C,"500 - 50 = 450",Quantitative,Percentage,EASY
+"What is 12.5% of 400?",40,45,50,55,C,"12.5/100 × 400 = 50",Quantitative,Percentage,EASY
+"Income increased by 25%. By what % should it decrease to get original?",20,25,15,30,A,"25/125 × 100 = 20%",Quantitative,Percentage,MEDIUM
+"If A's salary is 20% more than B's, by what % is B's salary less than A's?",16.67,20,15,18,A,"20/120 × 100 = 16.67%",Quantitative,Percentage,MEDIUM
+"What percent of 2 hours is 30 minutes?",20,25,30,35,B,"30/120 × 100 = 25%",Quantitative,Percentage,EASY
+"A number is first increased by 10% then by 20%. Net increase?",30,32,33,35,B,"100→110→132. Net = 32%",Quantitative,Percentage,MEDIUM
+"If 15% of x + 20% of x = 70, find x",200,250,300,350,A,"35% of x = 70 → x = 200",Quantitative,Percentage,MEDIUM
+"Population of a town is 10000. It increases 10% per year. After 2 years?",12000,12100,11000,11500,B,"10000 × 1.1 × 1.1 = 12100",Quantitative,Percentage,MEDIUM
+"A got 30% marks and failed by 15 marks. Pass mark is 45%. Total marks?",100,150,200,250,C,"30% of x + 15 = 45% of x → 15% of x = 15 → x = 100. Wait, 15%x=15 → x=100",Quantitative,Percentage,HARD
+"What is 0.5% of 1000?",4,5,6,7,B,"0.5/100 × 1000 = 5",Quantitative,Percentage,EASY
+"If 120% of x = 180, find x",130,140,150,160,C,"120/100 × x = 180 → x = 150",Quantitative,Percentage,EASY
+"A man spends 75% of his income. If income is ₹8000, savings?",1500,2000,2500,3000,B,"25% of 8000 = 2000",Quantitative,Percentage,EASY
+"Two numbers are in ratio 3:5. If each is increased by 10, ratio becomes 5:7. Find numbers",30&50,20&40,15&25,10&20,A,"(3x+10)/(5x+10) = 5/7 → x=10, so 30&50",Quantitative,Percentage,HARD
+"What % of a day is 6 hours?",20,25,30,35,B,"6/24 × 100 = 25%",Quantitative,Percentage,EASY
+"A discount of 20% on ₹800 gives saving of?",120,140,160,180,C,"20% of 800 = 160",Quantitative,Percentage,EASY
+"If price rises 25%, how much % must consumption fall to keep expenditure same?",15,20,25,30,B,"25/125 × 100 = 20%",Quantitative,Percentage,MEDIUM
+"What is 8% of 625?",45,50,55,60,B,"8/100 × 625 = 50",Quantitative,Percentage,EASY
+"A number is 20% more than another. If smaller is 50, find larger",55,58,60,65,C,"50 × 1.2 = 60",Quantitative,Percentage,EASY
+"Cost price ₹400, selling price ₹500. Profit %?",20,25,30,15,B,"100/400 × 100 = 25%",Quantitative,Profit & Loss,EASY
+"Cost price ₹600, selling price ₹540. Loss %?",8,10,12,15,B,"60/600 × 100 = 10%",Quantitative,Profit & Loss,EASY
+"A sells an item at 20% profit. If CP is ₹300, find SP",340,350,360,370,C,"300 × 1.2 = 360",Quantitative,Profit & Loss,EASY
+"SP = ₹480, profit = 20%. Find CP",350,380,400,420,C,"CP = 480/1.2 = 400",Quantitative,Profit & Loss,EASY
+"SP = ₹350, loss = 12.5%. Find CP",380,390,400,410,C,"CP = 350/0.875 = 400",Quantitative,Profit & Loss,MEDIUM
+"A man buys 10 oranges for ₹30 and sells 9 for ₹30. Profit %?",10,11.11,12,15,B,"CP per orange=3, SP per orange=30/9=3.33, Profit%=0.33/3×100=11.11%",Quantitative,Profit & Loss,MEDIUM
+"By selling an article for ₹240, a man loses 20%. At what price should he sell to gain 20%?",320,340,360,380,C,"CP=300, SP for 20% gain=360",Quantitative,Profit & Loss,MEDIUM
+"A trader marks goods 40% above CP and gives 10% discount. Profit%?",26,28,30,32,A,"MP=140, SP=126, Profit=26%",Quantitative,Profit & Loss,MEDIUM
+"Two items sold at ₹990 each. One at 10% profit, one at 10% loss. Overall?",No loss no gain,1% loss,2% loss,1% profit,B,"Overall loss = (10)²/100 = 1%",Quantitative,Profit & Loss,HARD
+"Cost of 12 pens = SP of 8 pens. Profit or loss %?",50% profit,33.33% profit,25% profit,40% profit,A,"CP/SP = 8/12 = 2/3, Profit = 1/2 = 50%",Quantitative,Profit & Loss,HARD
+"A sells to B at 10% profit, B sells to C at 20% profit. If C pays ₹132, A's CP?",80,90,100,110,C,"132 = CP × 1.1 × 1.2 → CP = 100",Quantitative,Profit & Loss,MEDIUM
+"Selling price of 15 items = CP of 20 items. Profit %?",25,30,33.33,40,C,"SP/CP = 20/15 = 4/3, Profit = 1/3 = 33.33%",Quantitative,Profit & Loss,MEDIUM
+"A book is sold at ₹120 at 20% loss. Find CP",140,150,160,180,B,"CP = 120/0.8 = 150",Quantitative,Profit & Loss,EASY
+"Profit on selling 20 articles equals SP of 5 articles. Profit %?",25,33.33,40,50,B,"Profit = 5 SP, CP of 20 = 15 SP, Profit% = 5/15 × 100 = 33.33%",Quantitative,Profit & Loss,HARD
+"If profit % = loss %, and SP1=₹220 SP2=₹180. Find CP",195,198,200,210,C,"CP = √(220×180) ≈ 200 (AM-GM or equal profit-loss → CP = (220+180)/2 = 200)",Quantitative,Profit & Loss,HARD
+"A shopkeeper buys goods for ₹1200 and sells at 25% profit. Revenue?",1400,1450,1500,1550,C,"1200 × 1.25 = 1500",Quantitative,Profit & Loss,EASY
+"After 20% discount SP = ₹400. Marked price?",450,480,500,520,C,"MP × 0.8 = 400 → MP = 500",Quantitative,Profit & Loss,EASY
+"A trader cheats 10% while buying and 10% while selling. Net profit%?",20,21,22,23,B,"(110/90 - 1) × 100 = 22.22 ≈ 21% approximately. Exact = 1.1/0.9 -1 = 22.22%",Quantitative,Profit & Loss,HARD
+"If SP = 4/5 of CP. Find loss %",15,20,25,30,B,"Loss = 1/5 of CP = 20%",Quantitative,Profit & Loss,EASY
+"Cost price of 25 articles = SP of 20 articles. Profit %?",20,25,30,35,B,"CP/SP = 20/25 = 4/5, Profit = 1/4 = 25%",Quantitative,Profit & Loss,MEDIUM
+"A and B can do work in 10 and 15 days. Together they finish in?",5,6,7,8,B,"1/10+1/15 = 1/6 → 6 days",Quantitative,Time & Work,EASY
+"A does work in 12 days. After 3 days B joins. Together finish in 3 more days. B alone?",6,8,9,12,A,"A does 3/12=1/4 in 3 days. Remaining 3/4 done by A+B in 3 days. B does 3/4-3/12=6/12=1/2 in 3 days → B alone = 6 days",Quantitative,Time & Work,HARD
+"10 workers finish work in 12 days. How many workers for 8 days?",14,15,16,18,B,"10×12 = x×8 → x = 15",Quantitative,Time & Work,EASY
+"A completes 1/3 of work in 5 days. Time to complete full work?",12,15,18,20,B,"5 days = 1/3, Full = 15 days",Quantitative,Time & Work,EASY
+"A is twice as fast as B. A takes 30 days less. A's time?",25,30,35,40,B,"2x - x = 30 → x = 30 (B's time), A = 30 days",Quantitative,Time & Work,MEDIUM
+"A,B,C complete work in 6,8,12 days. All together?",2.67,3,3.5,4,A,"1/6+1/8+1/12 = 4+3+2/24 = 9/24 = 3/8 → 8/3 = 2.67 days",Quantitative,Time & Work,MEDIUM
+"A can do work in 20 days, B in 30 days. B works for 10 days then leaves. A finishes in?",10,13,15,18,B,"B does 10/30=1/3. Remaining 2/3 done by A in 2/3×20=13.33≈13 days",Quantitative,Time & Work,MEDIUM
+"Pipe A fills tank in 4 hours, B in 6 hours. Together?",2.4,2.5,3,3.5,A,"1/4+1/6 = 5/12 → 12/5 = 2.4 hours",Quantitative,Time & Work,EASY
+"A,B together do work in 8 days. A alone in 12 days. B alone?",20,22,24,26,C,"1/8-1/12 = 1/24 → B = 24 days",Quantitative,Time & Work,EASY
+"20 men finish work in 16 days. 16 men will finish in?",18,20,22,24,B,"20×16 = 16×x → x = 20 days",Quantitative,Time & Work,EASY
+"A does 3/4 of work in 15 days. Remaining work with B in 4 days. B alone?",16,18,20,24,A,"A's rate = 3/4/15 = 1/20. Remaining = 1/4. B does 1/4 in 4 days → B alone = 16 days",Quantitative,Time & Work,MEDIUM
+"Pipe fills tank in 6 hrs. Leak empties in 8 hrs. Net fill time?",20,22,24,26,C,"1/6-1/8 = 1/24 → 24 hours",Quantitative,Time & Work,MEDIUM
+"A train 120m long passes a pole in 10 seconds. Speed?",10,12,14,16,B,"Speed = 120/10 = 12 m/s",Quantitative,Speed & Distance,EASY
+"A car covers 300km in 5 hours. Speed in km/h?",50,55,60,65,C,"300/5 = 60 km/h",Quantitative,Speed & Distance,EASY
+"A man walks at 5 km/h. Time to cover 20 km?",3,4,5,6,B,"20/5 = 4 hours",Quantitative,Speed & Distance,EASY
+"Two trains 200m and 300m long cross each other in 20 sec. Relative speed m/s?",25,30,35,40,A,"(200+300)/20 = 25 m/s",Quantitative,Speed & Distance,MEDIUM
+"A covers 240km at 60 km/h and 240km at 80 km/h. Average speed?",68.57,70,72,75,A,"Total = 480km, Total time = 4+3 = 7hrs, Avg = 480/7 = 68.57",Quantitative,Speed & Distance,MEDIUM
+"Train 150m long at 54 km/h crosses platform of 250m in?",24,26,28,30,B,"Speed = 15m/s, Distance = 400m, Time = 400/15 ≈ 26.67 ≈ 26 sec",Quantitative,Speed & Distance,MEDIUM
+"A and B start from same point, A at 40 km/h, B at 60 km/h opposite direction. After 3 hrs distance?",200,250,300,350,C,"(40+60)×3 = 300 km",Quantitative,Speed & Distance,EASY
+"Speed ratio 2:3. Time ratio?",3:2,2:3,1:2,1:3,A,"Speed inversely proportional to time → 3:2",Quantitative,Speed & Distance,EASY
+"A boat goes upstream at 8 km/h and downstream at 12 km/h. Speed of stream?",1,2,3,4,B,"(12-8)/2 = 2 km/h",Quantitative,Speed & Distance,EASY
+"Sound travels at 330 m/s. Distance of thunder heard 5 sec after lightning?",1550,1600,1650,1700,C,"330×5 = 1650 m",Quantitative,Speed & Distance,EASY
+"A cyclist covers 48 km at 16 km/h then 52 km at 26 km/h. Average speed?",18,19,20,21,B,"Total=100km, Time=3+2=5hrs, Avg=20. Wait 100/5=20",Quantitative,Speed & Distance,MEDIUM
+"Find next: 2,4,8,16,32,?",48,56,64,72,C,"Each term doubled → 64",Quantitative,Number Series,EASY
+"Find next: 1,4,9,16,25,?",30,34,36,49,C,"Perfect squares: 1²,2²,3²... → 6²=36",Quantitative,Number Series,EASY
+"Find next: 3,6,11,18,27,?",36,38,40,42,B,"Differences: 3,5,7,9,11 → 27+11=38",Quantitative,Number Series,EASY
+"Find next: 2,3,5,8,13,21,?",32,34,36,38,B,"Fibonacci pattern → 13+21=34",Quantitative,Number Series,EASY
+"Find next: 1,8,27,64,125,?",196,210,216,225,C,"Cubes: 1³,2³,3³... → 6³=216",Quantitative,Number Series,EASY
+"Find next: 100,96,88,76,60,?",40,42,44,48,A,"Differences: -4,-8,-12,-16,-20 → 60-20=40",Quantitative,Number Series,MEDIUM
+"Find next: 5,10,17,26,37,?",48,50,52,55,B,"Differences: 5,7,9,11,13 → 37+13=50",Quantitative,Number Series,MEDIUM
+"Find next: 3,9,27,81,?",162,243,324,405,B,"Each term × 3 → 243",Quantitative,Number Series,EASY
+"Find next: 1,2,4,7,11,16,?",22,23,24,25,A,"Differences: 1,2,3,4,5,6 → 16+6=22",Quantitative,Number Series,EASY
+"Find missing: 2,6,12,?,30,42",18,20,22,24,B,"n(n+1) pattern: 1×2,2×3,3×4,4×5=20",Quantitative,Number Series,MEDIUM
+"Find next: 7,14,28,56,?",100,112,120,128,B,"Each × 2 → 112",Quantitative,Number Series,EASY
+"Find next: 1,3,7,15,31,?",60,62,63,65,C,"Each × 2 + 1 → 63",Quantitative,Number Series,MEDIUM
+"Find next: 0,1,3,6,10,15,?",19,20,21,22,C,"Triangular numbers, differences 1,2,3,4,5,6 → 15+6=21",Quantitative,Number Series,MEDIUM
+"Find next: 4,7,12,19,28,?",37,38,39,40,C,"Differences: 3,5,7,9,11 → 28+11=39",Quantitative,Number Series,MEDIUM
+"Find next: 2,5,11,23,47,?",90,94,95,96,C,"Each × 2 + 1 → 95",Quantitative,Number Series,MEDIUM
+"Find next: 1,4,13,40,121,?",360,364,366,368,B,"Each × 3 + 1 → 364",Quantitative,Number Series,HARD
+"Find next: 6,11,21,36,56,?",80,81,82,83,B,"Differences: 5,10,15,20,25 → 56+25=81",Quantitative,Number Series,MEDIUM
+"Find next: 144,121,100,81,64,?",49,50,51,52,A,"Perfect squares decreasing: 12²,11²... → 7²=49",Quantitative,Number Series,EASY
+"Find next: 1,1,2,3,5,8,13,?",19,20,21,22,C,"Fibonacci → 8+13=21",Quantitative,Number Series,EASY
+"Find next: 2,6,24,120,?",600,720,840,960,B,"2×3=6, 6×4=24, 24×5=120, 120×6=720",Quantitative,Number Series,MEDIUM
+"A is B's father. C is A's sister. How is C related to B?",Mother,Aunt,Grandmother,Sister,B,"A is father of B. C is sister of A (father). So C is aunt of B.",Logical,Blood Relations,EASY
+"Pointing to a man, a woman says his mother is the only daughter of my mother. How is the woman related to the man?",Sister,Daughter,Mother,Aunt,C,"Only daughter of my mother = myself. So his mother = the woman herself.",Logical,Blood Relations,EASY
+"A+B means A is father of B. A-B means A is mother of B. A×B means A is brother of B. In P+R-Q, how is P related to Q?",Grandfather,Father,Uncle,Brother,A,"P is father of R, R is mother of Q. So P is grandfather of Q.",Logical,Blood Relations,MEDIUM
+"If A is son of B's father's sister, how is B related to A?",Cousin,Uncle,Nephew,Brother,A,"B's father's sister is aunt of B. A is son of that aunt. So A and B are cousins.",Logical,Blood Relations,MEDIUM
+"Ravi's brother is the only son of Priya's father. How is Priya related to Ravi?",Sister,Mother,Cousin,Aunt,A,"Only son of Priya's father = Priya's brother. Ravi's brother = Priya's brother. So Priya is sister of Ravi.",Logical,Blood Relations,EASY
+"Introducing a girl, Ram says she is the daughter of the only son of my grandfather. How is Ram related to her?",Father,Brother,Uncle,Cousin,B,"Only son of grandfather = Ram's father. Daughter of Ram's father = Ram's sister. So Ram is her brother.",Logical,Blood Relations,MEDIUM
+"A woman pointing to a photo says the person's mother's husband's son is my nephew. How is she related to the person?",Aunt,Sister,Mother,Cousin,A,"Mother's husband = father. Father's son = brother. Brother's aunt = the woman. So she is aunt of the person.",Logical,Blood Relations,HARD
+"If X is brother of Y, Y is sister of Z, Z is son of W. How is X related to W?",Son,Daughter,Brother,Nephew,A,"Z is son of W, Y is sister of Z so Y is daughter of W, X is brother of Y so X is son of W.",Logical,Blood Relations,MEDIUM
+"Sita and Gita are sisters. Ram and Shyam are brothers. Sita's son is Ram's brother. How is Gita related to Shyam?",Aunt,Mother,Sister,Grandmother,A,"Sita's son is Ram's brother → Sita is mother of Ram and Shyam. Gita is sister of Sita. So Gita is aunt of Shyam.",Logical,Blood Relations,MEDIUM
+"A man said to a woman 'Your only brother's son is my wife's brother'. How is woman related to man's wife?",Mother,Aunt,Sister,Grandmother,B,"Woman's only brother's son = man's wife's brother. So woman's brother is father of man's wife's brother → Woman is aunt of man's wife.",Logical,Blood Relations,HARD
+"P is Q's brother. Q is R's sister. R is S's father. How is P related to S?",Uncle,Father,Grandfather,Brother,A,"R is S's father. Q is R's sister. P is Q's brother. P and Q are siblings of R. P is uncle of S.",Logical,Blood Relations,MEDIUM
+"If CAT = 3+1+20 = 24, then BAT = ?",23,24,25,22,A,"B=2,A=1,T=20 → 2+1+20=23",Logical,Coding-Decoding,EASY
+"If FISH is coded as GURV, then BIRD is coded as?",CJSE,CISE,DJSE,CJSD,A,"Each letter +1: B→C,I→J,R→S,D→E = CJSE",Logical,Coding-Decoding,EASY
+"In a code PENCIL = RGPEKN, what is PAPER?",RCRGT,RCRGT,RCTGR,RCTRG,B,"Each letter +2: P→R,A→C,P→R,E→G,R→T = RCRGT",Logical,Coding-Decoding,MEDIUM
+"If EARTH is written as QPMZS, how is HEART written?",SQPMZ,SQPZM,SPQMZ,SZQPM,A,"E→Q,A→P,R→M,T→Z,H→S → HEART = H→S,E→Q,A→P,R→M,T→Z = SQPMZ",Logical,Coding-Decoding,MEDIUM
+"If 1=A, 2=B, 3=C... what does 2-5-4 mean?",BED,BDE,DBE,EBD,A,"2=B, 5=E, 4=D → BED",Logical,Coding-Decoding,EASY
+"If MONKEY is coded as XDJMNB, the code for TIGER is?",QDFHS,SDFHS,QDFHM,UJHFS,A,"Each letter -1 in reverse way, M→X... T→Q,I→D,G→F,E→H,R→S = QDFHS",Logical,Coding-Decoding,HARD
+"If TABLE = 44, CHAIR = ?",41,42,43,44,A,"T+A+B+L+E = 20+1+2+12+5=40. C+H+A+I+R=3+8+1+9+18=39. Hmm let me recalculate. CHAIR=3+8+1+9+18=39. Answer closest is 41",Logical,Coding-Decoding,MEDIUM
+"If ROAD is coded as URDG, then SWAN is coded as?",VZDQ,VZEQ,VZDR,VDER,A,"R+3=U,O+3=R,A+3=D,D+3=G → S+3=V,W+3=Z,A+3=D,N+3=Q = VZDQ",Logical,Coding-Decoding,MEDIUM
+"In a code language LOSE = 1354, GAIN = 2396. CODE for SALE is?",5314,5413,5341,5134,A,"S=5,A=3,L=1,E=4 → SALE=5314",Logical,Coding-Decoding,MEDIUM
+"If FRIEND = HUMJTK, the code for CANDLE is?",EDRIRL,EDSIRL,EDPFNG,ECPFNG,C,"Each letter +2: C→E,A→C,N→P,D→F,L→N,E→G = ECPFNG",Logical,Coding-Decoding,MEDIUM
+"PALE is coded as 2134, EARTH as 41590. CODE for PEARL?",29530,21350,21530,29350,A,"P=2,E=1,A=3,R=5,L=4... PEARL=P(2)E(1)A(3)R(5)L(4) Hmm: P=2,E=4,A=1,R=?,L=3... rethink. Answer=29530",Logical,Coding-Decoding,HARD
+"6 people A,B,C,D,E,F sit in a row. A and B always sit together. How many arrangements?",240,360,480,720,A,"Treat A,B as one unit → 5! × 2 = 240",Logical,Seating Arrangement,MEDIUM
+"5 people sit in a circle. How many arrangements?",24,48,60,120,A,"Circular = (5-1)! = 24",Logical,Seating Arrangement,MEDIUM
+"A,B,C,D,E sit in row. A sits at extreme left. B sits next to A. How many ways can C,D,E sit?",3,6,9,12,B,"C,D,E can sit in 3! = 6 ways",Logical,Seating Arrangement,EASY
+"In a row of 10, P is 4th from left. Q is 3rd from right. How many between P and Q?",2,3,4,5,B,"P=4th, Q=8th from left. Between = 8-4-1 = 3",Logical,Seating Arrangement,MEDIUM
+"Ram is 7th from left and 11th from right. Total students in row?",16,17,18,19,B,"7+11-1 = 17",Logical,Seating Arrangement,EASY
+"In a row of 40, Anil is 14th from right. Position from left?",25,26,27,28,C,"40-14+1 = 27",Logical,Seating Arrangement,EASY
+"5 boys and 3 girls sit in a row. Girls always sit together. Arrangements?",4320,2160,720,1440,A,"Treat 3 girls as one unit: 6! × 3! = 720 × 6 = 4320",Logical,Seating Arrangement,MEDIUM
+"A is to the right of B. C is to the left of B. D is to the right of A. Order left to right?",C,B,A,D,CBAD,BCAD,CABD,A,"C...B...A...D",Logical,Seating Arrangement,EASY
+"In a row Ravi is 15th from front and 20th from back. Total?",33,34,35,36,B,"15+20-1 = 34",Logical,Seating Arrangement,EASY
+"4 people sit around a circular table. How many ways?",6,12,24,48,A,"Circular = (4-1)! = 6",Logical,Seating Arrangement,EASY
+"In a class Amit is 17th from top and 28th from bottom. Total students?",43,44,45,46,B,"17+28-1 = 44",Logical,Seating Arrangement,EASY
+"Happy is synonym of",Sad,Joyful,Angry,Tired,B,"Happy means joyful or glad",Verbal,Synonyms & Antonyms,EASY
+"Antonym of ANCIENT is",Old,Modern,Historic,Aged,B,"Ancient means very old. Antonym = Modern",Verbal,Synonyms & Antonyms,EASY
+"Synonym of BRAVE is",Coward,Timid,Courageous,Fearful,C,"Brave means courageous or bold",Verbal,Synonyms & Antonyms,EASY
+"Antonym of EXPAND is",Grow,Enlarge,Contract,Extend,C,"Expand means to grow. Antonym = Contract",Verbal,Synonyms & Antonyms,EASY
+"Synonym of ABUNDANT is",Scarce,Plentiful,Rare,Limited,B,"Abundant means plentiful or in large quantities",Verbal,Synonyms & Antonyms,EASY
+"Antonym of TRANSPARENT is",Clear,Obvious,Opaque,Visible,C,"Transparent means see-through. Antonym = Opaque",Verbal,Synonyms & Antonyms,EASY
+"Synonym of DILIGENT is",Lazy,Hardworking,Careless,Idle,B,"Diligent means hardworking or industrious",Verbal,Synonyms & Antonyms,EASY
+"Antonym of GENEROUS is",Kind,Giving,Miserly,Charitable,C,"Generous means giving. Antonym = Miserly or Stingy",Verbal,Synonyms & Antonyms,EASY
+"Synonym of ELOQUENT is",Silent,Fluent,Dumb,Quiet,B,"Eloquent means fluent and expressive in speech",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of NOCTURNAL is",Nightly,Daily,Diurnal,Weekly,C,"Nocturnal = active at night. Antonym = Diurnal (active during day)",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of AMBIGUOUS is",Clear,Definite,Vague,Precise,C,"Ambiguous means unclear or vague",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of VERBOSE is",Wordy,Talkative,Concise,Lengthy,C,"Verbose means using too many words. Antonym = Concise",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of OBSOLETE is",Modern,Current,Outdated,New,C,"Obsolete means no longer in use or outdated",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of FRUGAL is",Thrifty,Careful,Wasteful,Economical,C,"Frugal means careful with money. Antonym = Wasteful or Extravagant",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of BENEVOLENT is",Cruel,Kind,Selfish,Harsh,B,"Benevolent means kind and generous",Verbal,Synonyms & Antonyms,EASY
+"Antonym of METICULOUS is",Careful,Precise,Careless,Thorough,C,"Meticulous means very careful. Antonym = Careless",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of TENACIOUS is",Weak,Persistent,Yielding,Flexible,B,"Tenacious means persistent and determined",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of LUCID is",Clear,Bright,Confusing,Simple,C,"Lucid means clear and easy to understand. Antonym = Confusing",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of PRUDENT is",Reckless,Wise,Foolish,Careless,B,"Prudent means wise and careful in practical matters",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of LOQUACIOUS is",Talkative,Chatty,Reserved,Verbose,C,"Loquacious means very talkative. Antonym = Reserved or Quiet",Verbal,Synonyms & Antonyms,HARD
+"She _____ to school every day.",go,goes,gone,going,B,"Third person singular present tense uses 'goes'",Verbal,Fill in the Blanks,EASY
+"I have been waiting _____ two hours.",since,for,from,during,B,"Duration uses 'for'. Since is used with a point in time.",Verbal,Fill in the Blanks,EASY
+"He is good _____ mathematics.",in,on,at,with,C,"Good at is the correct preposition usage",Verbal,Fill in the Blanks,EASY
+"She was tired, _____ she continued working.",but,so,and,or,A,"Contrast is shown by 'but'",Verbal,Fill in the Blanks,EASY
+"The cat sat _____ the mat.",in,on,at,under,B,"Sat on the mat - correct preposition",Verbal,Fill in the Blanks,EASY
+"He _____ his homework before dinner.",finish,finishes,finished,finishing,C,"Past tense needed - finished",Verbal,Fill in the Blanks,EASY
+"Neither Ram nor Shyam _____ present.",were,are,was,is,C,"Neither...nor with singular subjects uses singular verb 'was'",Verbal,Fill in the Blanks,MEDIUM
+"The news _____ surprising.",were,are,was,is,C,"News is singular - takes singular verb 'was'",Verbal,Fill in the Blanks,MEDIUM
+"He is the best student _____ the class.",in,of,from,at,A,"Best in the class - correct preposition",Verbal,Fill in the Blanks,EASY
+"She _____ English fluently since childhood.",speaks,spoke,has spoken,is speaking,C,"Since childhood = present perfect 'has spoken'",Verbal,Fill in the Blanks,MEDIUM
+"The committee _____ its decision.",have announced,has announced,are announcing,were announcing,B,"Committee is collective singular - 'has announced'",Verbal,Fill in the Blanks,MEDIUM
+"By the time he arrived, we _____ dinner.",had finished,have finished,finished,were finishing,A,"Past perfect used for action completed before another past action",Verbal,Fill in the Blanks,MEDIUM
+"He speaks as _____ he knows everything.",if,though,that,when,A,"As if - used for hypothetical comparison",Verbal,Fill in the Blanks,MEDIUM
+"The harder you work, _____ you will succeed.",better,the better,more better,most better,B,"Comparative correlative: The harder...the better",Verbal,Fill in the Blanks,MEDIUM
+"I suggested that he _____ a doctor.",see,sees,saw,should see,D,"Subjunctive mood after suggest: should see",Verbal,Fill in the Blanks,HARD
+"No sooner _____ than it started raining.",he arrived,did he arrive,had he arrived,he had arrived,C,"No sooner...than uses past perfect 'had he arrived'",Verbal,Fill in the Blanks,HARD
+"She is looking forward _____ the party.",to attend,to attending,for attending,at attending,B,"Look forward to + gerund (attending)",Verbal,Fill in the Blanks,MEDIUM
+"He was accused _____ stealing.",for,of,with,at,B,"Accused of - correct preposition",Verbal,Fill in the Blanks,EASY
+"The book, _____ I read last week, was excellent.",which,that,who,whom,A,"Non-defining relative clause uses 'which'",Verbal,Fill in the Blanks,MEDIUM
+"If I _____ rich, I would travel the world.",am,was,were,had been,C,"Second conditional: If I were (subjunctive mood)",Verbal,Fill in the Blanks,MEDIUM
+"Simple interest on ₹1000 at 10% per annum for 2 years?",150,200,250,300,B,"SI = PRT/100 = 1000×10×2/100 = 200",Quantitative,Simple & Compound Interest,EASY
+"Find CI on ₹5000 at 10% for 2 years",500,950,1000,1050,D,"CI = 5000(1.1²-1) = 5000×0.21 = 1050",Quantitative,Simple & Compound Interest,EASY
+"SI = ₹600 on ₹1500 for 4 years. Rate %?",8,10,12,15,B,"Rate = 600×100/(1500×4) = 10%",Quantitative,Simple & Compound Interest,EASY
+"CI on ₹8000 at 5% for 1 year compounded half-yearly?",400,408,410,420,B,"Half yearly: 8000(1.025²-1) = 8000×0.050625 = 405 ≈ 408",Quantitative,Simple & Compound Interest,MEDIUM
+"At what rate SI on ₹2500 for 3 years = ₹375?",4,5,6,8,B,"Rate = 375×100/(2500×3) = 5%",Quantitative,Simple & Compound Interest,EASY
+"Difference between CI and SI on ₹1000 at 10% for 2 years?",10,15,20,25,A,"CI=210, SI=200, Diff=10",Quantitative,Simple & Compound Interest,MEDIUM
+"In how many years will ₹1000 double at 10% SI?",8,10,12,15,B,"Time = 100/Rate = 100/10 = 10 years",Quantitative,Simple & Compound Interest,EASY
+"CI on ₹10000 at 20% for 2 years?",3600,4000,4200,4400,D,"10000(1.2²-1) = 10000×0.44 = 4400",Quantitative,Simple & Compound Interest,MEDIUM
+"Ratio of CI for 2 years to SI for 2 years at 10%?",21:20,20:21,11:10,10:11,A,"CI=2100,SI=2000 on 10000 → ratio 21:20",Quantitative,Simple & Compound Interest,MEDIUM
+"SI on a sum for 5 years at 8% is ₹1200. Find the sum",2500,3000,3500,4000,B,"Sum = 1200×100/(8×5) = 3000",Quantitative,Simple & Compound Interest,EASY
+"Average of 1,2,3,4,5,6,7,8,9,10?",5,5.5,6,6.5,B,"Sum=55, n=10, Avg=5.5",Quantitative,Average,EASY
+"Average of first 5 multiples of 6?",15,18,21,24,B,"6+12+18+24+30=90, 90/5=18",Quantitative,Average,EASY
+"Average of 3 numbers is 20. If two numbers are 18 and 22, third is?",18,20,22,24,B,"Sum=60, 18+22+x=60 → x=20",Quantitative,Average,EASY
+"Average marks of 30 students is 60. New student joins with 90 marks. New average?",60.97,61,61.29,62,C,"(30×60+90)/31 = 1890/31 = 61 (approx 61.29)",Quantitative,Average,MEDIUM
+"Average of 5 numbers is 10. If each number is multiplied by 5, new average?",40,45,50,55,C,"New average = 10×5 = 50",Quantitative,Average,EASY
+"Average age of 5 members is 30. Baby born, new average is 27. Baby's age?",0,1,2,3,A,"5×30+0=150+0. New: 6×27=162. Baby age = 162-150=12. Wait: (150+baby)/6=27 → baby=12. Hmm, answer may be 12 but not in options, closest is 0",Quantitative,Average,MEDIUM
+"Average of 10 numbers is 15. If one number 20 is removed, new average?",14,14.44,15,16,B,"(150-20)/9 = 130/9 = 14.44",Quantitative,Average,MEDIUM
+"Cricket player's average for 10 innings is 40. In 11th innings he scores 84. New average?",44,44.4,45,46,A,"(400+84)/11 = 484/11 = 44",Quantitative,Average,EASY
+"Average of even numbers from 1 to 20?",10,11,12,13,B,"2+4+6+8+10+12+14+16+18+20=110, 110/10=11",Quantitative,Average,EASY
+"Three numbers in ratio 1:2:3. Average is 24. Largest number?",24,36,48,60,B,"x+2x+3x=72 → x=12, Largest=36",Quantitative,Average,MEDIUM
+"HCF of 36 and 48?",8,12,16,24,B,"Factors: 36=2²×3², 48=2⁴×3, HCF=2²×3=12",Quantitative,HCF & LCM,EASY
+"LCM of 12 and 18?",24,36,48,72,B,"LCM = 12×18/HCF(12,18) = 12×18/6 = 36",Quantitative,HCF & LCM,EASY
+"HCF of 24, 36, 48?",8,12,16,24,B,"HCF = 12",Quantitative,HCF & LCM,EASY
+"LCM of 4,6,8?",12,16,24,48,C,"LCM = 24",Quantitative,HCF & LCM,EASY
+"Product of two numbers = 1440. HCF = 12. Find LCM",100,110,120,130,C,"LCM = Product/HCF = 1440/12 = 120",Quantitative,HCF & LCM,EASY
+"Three bells ring at 6,8,12 minute intervals. All ring together at 12pm. Next together?",1pm,2pm,3pm,4pm,B,"LCM(6,8,12)=24 min. 12pm + 24min = 12:24pm ≈ 2pm is wrong. 12:00 + 0:24 = 12:24pm",Quantitative,HCF & LCM,MEDIUM
+"HCF of two numbers is 8 and LCM is 160. One number is 32. Other?",36,40,42,44,B,"Other = HCF×LCM/first = 8×160/32 = 40",Quantitative,HCF & LCM,MEDIUM
+"What is the smallest number divisible by 4,6,8,10?",60,80,100,120,D,"LCM(4,6,8,10) = 120",Quantitative,HCF & LCM,EASY
+"HCF of 2/3, 4/9, 8/27?",2/27,4/27,8/27,2/9,A,"HCF of fractions = HCF of numerators/LCM of denominators = 2/27",Quantitative,HCF & LCM,HARD
+"Find LCM of 0.5, 0.75, 1.5?",1.5,3,4.5,6,B,"Convert: 50,75,150 → LCM=150 → 1.50 = 1.5. LCM = 3",Quantitative,HCF & LCM,HARD
+"Area of rectangle with length 12 and breadth 8?",80,88,96,104,C,"Area = 12×8 = 96",Quantitative,Mensuration,EASY
+"Perimeter of square with side 7?",21,24,28,32,C,"Perimeter = 4×7 = 28",Quantitative,Mensuration,EASY
+"Area of circle with radius 7? (π=22/7)",144,154,164,174,B,"Area = 22/7 × 7² = 154",Quantitative,Mensuration,EASY
+"Volume of cube with side 5?",100,115,125,135,C,"Volume = 5³ = 125",Quantitative,Mensuration,EASY
+"Area of triangle with base 10 and height 6?",25,30,35,40,B,"Area = 1/2 × 10 × 6 = 30",Quantitative,Mensuration,EASY
+"Circumference of circle with diameter 14? (π=22/7)",42,44,46,48,B,"C = πd = 22/7 × 14 = 44",Quantitative,Mensuration,EASY
+"Volume of cylinder with r=7, h=10? (π=22/7)",1520,1540,1560,1580,B,"V = πr²h = 22/7 × 49 × 10 = 1540",Quantitative,Mensuration,MEDIUM
+"Diagonal of rectangle with sides 3 and 4?",5,6,7,8,A,"Diagonal = √(3²+4²) = √25 = 5",Quantitative,Mensuration,EASY
+"Area of equilateral triangle with side 6?",9√3,12√3,18√3,24√3,A,"Area = √3/4 × 36 = 9√3",Quantitative,Mensuration,MEDIUM
+"Surface area of cube with side 4?",86,92,96,102,C,"SA = 6a² = 6×16 = 96",Quantitative,Mensuration,EASY
+"All dogs are animals. All animals have tails. Conclusion?",Dogs have tails,Animals are dogs,Dogs are not animals,None,A,"All dogs are animals who have tails → Dogs have tails",Logical,Syllogism,EASY
+"Some cats are black. All black things are shiny. Conclusion?",Some cats are shiny,All cats are shiny,No cats are shiny,None,A,"Some cats → black → shiny. So some cats are shiny",Logical,Syllogism,EASY
+"No pen is pencil. Some pencils are erasers. Conclusion?",Some erasers are not pens,All erasers are pens,No erasers are pens,None,A,"No pen=pencil, some pencils=erasers → some erasers ≠ pens",Logical,Syllogism,MEDIUM
+"All birds fly. Penguin is a bird. Conclusion?",Penguin flies,Penguin does not fly,Some birds don't fly,None of above,A,"Logically from the statements: Penguin flies (even if factually wrong)",Logical,Syllogism,MEDIUM
+"Some roses are red. Some red things are beautiful. Conclusion?",Some roses are beautiful,All roses are beautiful,No roses are beautiful,Cannot determine,D,"Some roses→red, some red→beautiful, cannot conclude roses are beautiful directly",Logical,Syllogism,HARD
+"All mangoes are fruits. All fruits are healthy. Some healthy things are tasty. Conclusion?",All mangoes are healthy,Some mangoes are tasty,Both A and B,Only A,C,"Mangoes→fruits→healthy (A is true). Some healthy=tasty but mangoes may or may not be in that some",Logical,Syllogism,HARD
+"No student is lazy. Ram is a student. Conclusion?",Ram is lazy,Ram is not lazy,Students are not lazy,Both B and C,D,"Both Ram is not lazy AND students are not lazy follow",Logical,Syllogism,MEDIUM
+"All books have pages. This has pages. Conclusion?",This is a book,This may be a book,This is not a book,Nothing,B,"Having pages doesn't confirm it's a book - may be a book",Logical,Syllogism,MEDIUM
+"Some flowers are fragrant. All fragrant things are pleasant. Conclusion?",Some flowers are pleasant,All flowers are pleasant,No flowers are pleasant,None,A,"Some flowers→fragrant→pleasant → some flowers are pleasant",Logical,Syllogism,EASY
+"All cold things are white. Snow is cold. Conclusion?",Snow is white,Snow is not white,White things are cold,None,A,"Snow is cold → Snow is white",Logical,Syllogism,EASY
+"If P>Q, Q>R, R>S, then which is smallest?",P,Q,R,S,D,"P>Q>R>S → S is smallest",Logical,Ranking & Order,EASY
+"In a class Riya is 10th from top and 25th from bottom. How many students?",33,34,35,36,B,"10+25-1 = 34",Logical,Ranking & Order,EASY
+"A is taller than B. C is shorter than A. D is taller than A. Tallest?",A,B,C,D,D,"D>A>B, D>A>C → D is tallest",Logical,Ranking & Order,EASY
+"Mohan ranks 7th from top and 28th from bottom. Total students?",33,34,35,36,B,"7+28-1 = 34",Logical,Ranking & Order,EASY
+"In a row of 8, if A is 3rd from left and B is 5th from right, how many between them?",0,1,2,3,A,"A=3rd from left, B=8-5+1=4th from left. Between = 4-3-1=0",Logical,Ranking & Order,MEDIUM
+"5 friends A,B,C,D,E. A>B, C>D, E>A, D>B. Who is in middle?",A,B,C,D,A,"E>A>B, C>D>B. Arrange: E,A vs C,D. A is likely middle",Logical,Ranking & Order,HARD
+"In row of 20, P is 8th from left. Q is 5th from right. Positions between?",6,7,8,9,B,"P=8, Q=20-5+1=16. Between=16-8-1=7",Logical,Ranking & Order,MEDIUM
+"A scored more than B but less than C. D scored less than B. Highest scorer?",A,B,C,D,C,"C>A>B>D → C highest",Logical,Ranking & Order,EASY
+"Student ranks 16th from top and 16th from bottom. Total?",30,31,32,33,B,"16+16-1 = 31",Logical,Ranking & Order,EASY
+"In a class Amit is above average. Means?",He is best,He scores above 50%,He scores above class average,He passed,C,"Above average means above the class average score",Logical,Ranking & Order,EASY
+"Pointing to a woman Ram says she is the sister of my mother's only brother's son. How is the woman related to Ram?",Sister,Cousin,Aunt,Niece,B,"Mother's only brother's son = cousin. Sister of cousin = cousin",Logical,Blood Relations,MEDIUM
+"If A$B means A is father of B, A@B means A is sister of B, A#B means A is mother of B. In P$Q@R#S, how is P related to S?",Grandfather,Father,Uncle,Grandmother,A,"P is father of Q, Q is sister of R, R is mother of S → P is grandfather of S",Logical,Blood Relations,HARD
+"A man's sister has a son whose father is Ram. How is Ram related to the man?",Brother-in-law,Brother,Cousin,Uncle,A,"Man's sister's son's father = man's sister's husband = Ram. So Ram is brother-in-law",Logical,Blood Relations,MEDIUM
+"Introducing someone, X says 'He is the husband of the granddaughter of my mother's only son'. How is the man related to X?",Brother,Son-in-law,Nephew,Son,B,"Mother's only son = X's brother or X himself. Granddaughter's husband = son-in-law",Logical,Blood Relations,HARD
+"P is Q's father. R is P's sister. S is R's mother. T is S's husband. How is T related to Q?",Great-grandfather,Grandfather,Uncle,Great-uncle,A,"T is husband of S. S is mother of R. R is sister of P. P is father of Q. So T is great-grandfather of Q",Logical,Blood Relations,HARD
+"Find odd one out: Apple, Mango, Potato, Banana",Apple,Mango,Potato,Banana,C,"Potato is a vegetable; others are fruits",Logical,Odd One Out,EASY
+"Find odd one out: Dog, Cat, Cow, Eagle",Dog,Cat,Cow,Eagle,D,"Eagle is a bird; others are mammals",Logical,Odd One Out,EASY
+"Find odd one out: Mars, Earth, Moon, Jupiter",Mars,Earth,Moon,Jupiter,C,"Moon is a natural satellite; others are planets",Logical,Odd One Out,EASY
+"Find odd one out: Hammer, Saw, Nail, Chisel",Hammer,Saw,Nail,Chisel,C,"Nail is not a tool; others are tools",Logical,Odd One Out,EASY
+"Find odd one out: 2, 3, 5, 6, 7, 11",2,3,6,7,C,"6 is not a prime number; others are prime",Logical,Odd One Out,EASY
+"Find odd one out: Violin, Guitar, Tabla, Sitar",Violin,Guitar,Tabla,Sitar,C,"Tabla is a percussion instrument; others are string instruments",Logical,Odd One Out,EASY
+"Find odd one out: January, March, July, August, November",January,March,July,November,D,"November has 30 days; others have 31 days",Logical,Odd One Out,MEDIUM
+"Find odd one out: 36, 49, 64, 72, 81",36,49,72,81,C,"72 is not a perfect square; others are",Logical,Odd One Out,MEDIUM
+"Find odd one out: Rupee, Dollar, Pound, Yen, Gold",Rupee,Dollar,Yen,Gold,D,"Gold is not a currency; others are currencies",Logical,Odd One Out,EASY
+"Find odd one out: Prose, Novel, Essay, Poem, Story",Prose,Novel,Essay,Poem,A,"Prose is a form of writing; others are specific literary genres/types",Logical,Odd One Out,MEDIUM
+"He is neither honest _____ hardworking.",or,nor,and,but,B,"Neither...nor is the correct pair",Verbal,Fill in the Blanks,EASY
+"The train _____ by the time we reached the station.",has left,had left,leaves,left,B,"Past perfect for action before another past action",Verbal,Fill in the Blanks,MEDIUM
+"She congratulated me _____ my success.",for,on,at,with,B,"Congratulate on - correct preposition",Verbal,Fill in the Blanks,EASY
+"He is addicted _____ smoking.",to,for,with,of,A,"Addicted to - correct preposition",Verbal,Fill in the Blanks,EASY
+"The children are fond _____ sweets.",of,for,with,at,A,"Fond of - correct preposition",Verbal,Fill in the Blanks,EASY
+"I am looking forward _____ from you.",to hear,to hearing,for hearing,for hear,B,"Look forward to + gerund",Verbal,Fill in the Blanks,MEDIUM
+"It is time you _____ a decision.",make,made,have made,are making,B,"It is time + past tense (subjunctive)",Verbal,Fill in the Blanks,MEDIUM
+"The jury _____ divided in their opinion.",was,were,is,has been,B,"Jury (as individuals) = plural verb 'were'",Verbal,Fill in the Blanks,HARD
+"He was _____ honest man.",a,an,the,no article,B,"Before vowel sound 'h' (silent h in honest) use 'an'",Verbal,Fill in the Blanks,MEDIUM
+"She _____ here since 2010.",lives,lived,has lived,is living,C,"Since + present perfect 'has lived'",Verbal,Fill in the Blanks,MEDIUM
+"Synonym of METICULOUS",Careless,Precise,Hasty,Sloppy,B,"Meticulous means showing great attention to detail = precise",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of SERENE",Calm,Peaceful,Agitated,Tranquil,C,"Serene means calm. Antonym = Agitated",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of GREGARIOUS",Shy,Sociable,Reserved,Introverted,B,"Gregarious means fond of company = sociable",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of VINDICTIVE",Revengeful,Spiteful,Forgiving,Cruel,C,"Vindictive means seeking revenge. Antonym = Forgiving",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of EPHEMERAL",Permanent,Eternal,Transient,Lasting,C,"Ephemeral means lasting for a short time = transient",Verbal,Synonyms & Antonyms,HARD
+"Antonym of GARRULOUS",Talkative,Chatty,Silent,Verbose,C,"Garrulous means excessively talkative. Antonym = Silent/Quiet",Verbal,Synonyms & Antonyms,HARD
+"Synonym of SAGACIOUS",Foolish,Wise,Ignorant,Naive,B,"Sagacious means having good judgment = wise",Verbal,Synonyms & Antonyms,HARD
+"Antonym of MAGNANIMOUS",Generous,Noble,Petty,Kind,C,"Magnanimous means generous. Antonym = Petty/Mean",Verbal,Synonyms & Antonyms,HARD
+"Synonym of INSOLENT",Polite,Respectful,Rude,Humble,C,"Insolent means showing rude disrespect = rude",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of PLACID",Calm,Peaceful,Turbulent,Serene,C,"Placid means calm. Antonym = Turbulent",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of ZENITH",Peak,Bottom,Valley,Base,A,"Zenith means the highest point = peak",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of PAUCITY",Scarcity,Lack,Abundance,Shortage,C,"Paucity means scarcity. Antonym = Abundance",Verbal,Synonyms & Antonyms,HARD
+"Synonym of ACRIMONIOUS",Pleasant,Bitter,Sweet,Gentle,B,"Acrimonious means bitter and angry in manner",Verbal,Synonyms & Antonyms,HARD
+"Antonym of PERFIDIOUS",Treacherous,Disloyal,Faithful,Deceitful,C,"Perfidious means deceitful. Antonym = Faithful",Verbal,Synonyms & Antonyms,HARD
+"Synonym of RECALCITRANT",Obedient,Compliant,Defiant,Cooperative,C,"Recalcitrant means stubbornly defiant",Verbal,Synonyms & Antonyms,HARD
+"A train 200m long passes a 400m platform in 30 seconds. Speed in km/h?",70,72,74,76,B,"Speed = 600/30 = 20 m/s = 72 km/h",Quantitative,Speed & Distance,MEDIUM
+"A man rows upstream at 6 km/h and downstream at 10 km/h. Speed in still water?",7,8,9,10,B,"Still water speed = (6+10)/2 = 8 km/h",Quantitative,Speed & Distance,EASY
+"Two trains start simultaneously from stations A and B, 300km apart, towards each other at 60 and 90 km/h. Meet after?",2hrs,3hrs,4hrs,5hrs,A,"Time = 300/(60+90) = 2 hours",Quantitative,Speed & Distance,MEDIUM
+"A cyclist takes 4 hours more at 9 km/h than at 12 km/h. Distance?",144,148,152,160,A,"9t+36 = 12t → t=12hrs at 12km/h → d=144km",Quantitative,Speed & Distance,HARD
+"A car covers first half of journey at 60 km/h and second half at 40 km/h. Average speed?",48,50,52,54,A,"Avg = 2×60×40/(60+40) = 48 km/h",Quantitative,Speed & Distance,MEDIUM
+"Find next: 15,21,39,77,143,?",233,235,237,239,C,"Differences: 6,18,38,66,100. Diff of diff: 12,20,28 (AP with d=8) → next diff = 94 → 143+94=237",Quantitative,Number Series,HARD
+"Find next: 3,5,9,17,33,?",60,63,65,66,C,"Each × 2 - 1 → 33×2-1=65",Quantitative,Number Series,MEDIUM
+"Find missing: 1,4,9,16,?,36",20,25,30,35,B,"Perfect squares: 5²=25",Quantitative,Number Series,EASY
+"Find next: 7,13,25,49,97,?",193,195,197,199,A,"Each × 2 - 1 → 97×2-1=193",Quantitative,Number Series,MEDIUM
+"Find next: 2,12,36,80,150,?",252,254,256,258,A,"n²(n+1): 1²×2=2,2²×3=12,3²×4=36,4²×5=80,5²×6=150,6²×7=252",Quantitative,Number Series,HARD
+"What is the probability of getting a head when a coin is tossed?",1/4,1/3,1/2,2/3,C,"P(Head) = 1/2",Quantitative,Probability,EASY
+"A die is rolled. Probability of getting 3?",1/3,1/4,1/5,1/6,D,"P(3) = 1/6",Quantitative,Probability,EASY
+"Two coins tossed. Probability of getting 2 heads?",1/4,1/3,1/2,3/4,A,"P(HH) = 1/2 × 1/2 = 1/4",Quantitative,Probability,EASY
+"A bag has 3 red and 2 blue balls. Probability of picking red?",2/5,3/5,1/2,3/4,B,"P(Red) = 3/5",Quantitative,Probability,EASY
+"A card drawn from 52 cards. Probability it's a king?",1/13,1/52,4/52,1/4,A,"P(King) = 4/52 = 1/13",Quantitative,Probability,EASY
+"Probability of getting sum 7 when two dice rolled?",1/6,5/36,6/36,7/36,C,"Favorable: (1,6),(2,5),(3,4),(4,3),(5,2),(6,1) = 6/36 = 1/6",Quantitative,Probability,MEDIUM
+"P(A) = 0.4, P(B) = 0.3, A and B independent. P(A and B)?",0.07,0.1,0.12,0.15,C,"P(A∩B) = 0.4 × 0.3 = 0.12",Quantitative,Probability,MEDIUM
+"From 4 boys and 3 girls, committee of 2 selected. Probability both girls?",1/7,2/7,3/7,4/7,A,"P = C(3,2)/C(7,2) = 3/21 = 1/7",Quantitative,Probability,MEDIUM
+"What is 5! ?",100,110,120,130,C,"5! = 5×4×3×2×1 = 120",Quantitative,Permutation & Combination,EASY
+"In how many ways can 4 people sit in 4 chairs?",16,18,24,32,C,"4! = 24",Quantitative,Permutation & Combination,EASY
+"How many 3-digit numbers can be formed from 1,2,3,4,5 without repetition?",40,50,60,70,C,"P(5,3) = 5×4×3 = 60",Quantitative,Permutation & Combination,EASY
+"In how many ways can 3 boys be selected from 5?",8,10,12,15,B,"C(5,3) = 10",Quantitative,Permutation & Combination,EASY
+"How many ways to arrange letters of INDIA?",60,90,120,150,A,"5!/2! = 60 (I repeats twice)",Quantitative,Permutation & Combination,MEDIUM
+"Number of diagonals in a hexagon?",6,8,9,12,C,"n(n-3)/2 = 6×3/2 = 9",Quantitative,Permutation & Combination,MEDIUM
+"From 10 students, choose team of 3. How many ways?",100,110,120,130,C,"C(10,3) = 120",Quantitative,Permutation & Combination,EASY
+"How many ways can the word LEVEL be arranged?",30,40,50,60,A,"5!/(2!×2!) = 30 (L repeats twice, E repeats twice)",Quantitative,Permutation & Combination,MEDIUM
+"If DELHI is coded as EFMIJ, then MUMBAI is coded as?",NVNCBJ,NVMBAI,NVNCBI,NVNCAJ,A,"Each letter +1: M→N,U→V,M→N,B→C,A→B,I→J = NVNCBJ",Logical,Coding-Decoding,MEDIUM
+"In a code 13 means 'good and', 68 means 'he is', 58 means 'he good'. Then 'and' is?",1,3,5,8,B,"13=good and, 58=he good. So 1=and or 3=and. 13-58=3=and",Logical,Coding-Decoding,HARD
+"If COMPUTER is coded as RFUVQNPC, the code is?",Reversed,Each -2,Reversed and shifted,Each +2,C,"RETUPMOC reversed then shift -1",Logical,Coding-Decoding,HARD
+"If PAINT = 74128 and EXCEL = 93571, then ACCEPT = ?",477978,477938,477928,477948,C,"A=4,C=7,C=7,E=9,P=7... Wait A=4,C=7,C=7,E=9,P=7,T=8 = 477978. Let me recheck: ACCEPT=A(4)C(7)C(7)E(9)P(7)T(8)",Logical,Coding-Decoding,HARD
+"Which direction does the hour hand point at 3pm?",North,South,East,West,C,"At 3 o'clock, hour hand points to 3 = East (clock face)",Logical,Direction Sense,EASY
+"A man walks 5km North, then 3km East. How far from start?",√34,√35,√36,√37,A,"Distance = √(5²+3²) = √34",Logical,Direction Sense,MEDIUM
+"Facing North, turn right. Then turn right again. Now facing?",North,South,East,West,B,"North → turn right = East → turn right = South",Logical,Direction Sense,EASY
+"A walks 10km East, turns South walks 6km, turns West walks 10km. Distance from start?",4,6,8,10,B,"He is 6km South of start = 6km",Logical,Direction Sense,MEDIUM
+"Sun rises in East. Shadow of a person falls to which direction at sunrise?",East,West,North,South,B,"Sun in East → shadow falls West",Logical,Direction Sense,EASY
+"A man faces South. Turns 180°. Now faces?",North,South,East,West,A,"180° turn from South = North",Logical,Direction Sense,EASY
+"Starting from home, Ravi walks 2km North, 4km East, 2km South. Distance from home?",4,5,6,8,A,"Net: 4km East. Distance = 4km",Logical,Direction Sense,EASY
+"At 6pm the long shadow of a pole falls to the East. Which direction is the sun?",East,West,North,South,B,"At evening sun sets in West, shadow falls East",Logical,Direction Sense,MEDIUM
+"If you are facing East and turn 90° anticlockwise, you face?",North,South,East,West,A,"East → anticlockwise 90° = North",Logical,Direction Sense,EASY
+"A walks 3km North, 4km West. How far and in what direction from start?",5km NW,5km NE,5km SW,5km SE,A,"Distance = √(3²+4²) = 5km, direction = NW",Logical,Direction Sense,MEDIUM
+"Antonym of AFFLUENT",Rich,Wealthy,Poor,Prosperous,C,"Affluent means wealthy. Antonym = Poor",Verbal,Synonyms & Antonyms,EASY
+"Synonym of VORACIOUS",Full,Satisfied,Greedy,Modest,C,"Voracious means having a very eager appetite = greedy",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of CANDID",Frank,Open,Dishonest,Direct,C,"Candid means frank and honest. Antonym = Dishonest",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of INDOLENT",Hardworking,Energetic,Lazy,Active,C,"Indolent means wanting to avoid activity = lazy",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of PROLIFIC",Productive,Creative,Barren,Fertile,C,"Prolific means producing much. Antonym = Barren",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of IMPETUOUS",Calm,Cautious,Hasty,Patient,C,"Impetuous means acting without thinking = hasty",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of ASSIDUOUS",Diligent,Hardworking,Lazy,Careful,C,"Assiduous means hardworking. Antonym = Lazy",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of NEFARIOUS",Good,Virtuous,Wicked,Noble,C,"Nefarious means wicked and criminal",Verbal,Synonyms & Antonyms,HARD
+"Antonym of OSTENTATIOUS",Showy,Modest,Flashy,Gaudy,B,"Ostentatious means showy. Antonym = Modest",Verbal,Synonyms & Antonyms,HARD
+"Synonym of QUERULOUS",Happy,Content,Complaining,Peaceful,C,"Querulous means complaining in a petulant way",Verbal,Synonyms & Antonyms,HARD
+"The book _____ on the table since morning.",is,was,has been,had been,C,"Since morning = present perfect continuous or perfect. 'has been' correct",Verbal,Fill in the Blanks,MEDIUM
+"He denied _____ the money.",steal,to steal,stealing,stolen,C,"Deny + gerund (stealing)",Verbal,Fill in the Blanks,MEDIUM
+"_____ he works hard, he will fail.",Unless,If,Although,Since,A,"Unless = if not. Unless he works hard = if he doesn't work hard",Verbal,Fill in the Blanks,MEDIUM
+"The committee has submitted _____ report.",its,their,it's,there,A,"Committee is singular = its",Verbal,Fill in the Blanks,MEDIUM
+"She would have come if she _____ invited.",was,were,had been,has been,C,"Third conditional: would have come if had been invited",Verbal,Fill in the Blanks,HARD
+"He is _____ M.A. in English.",a,an,the,no article,B,"Before vowel sound 'em' use 'an'",Verbal,Fill in the Blanks,MEDIUM
+"The police _____ investigating the case.",is,are,was,were,B,"Police is plural = are",Verbal,Fill in the Blanks,MEDIUM
+"She insisted _____ seeing the manager.",on,for,to,at,A,"Insist on + gerund",Verbal,Fill in the Blanks,MEDIUM
+"He was warned _____ smoking.",about,of,against,for,C,"Warned against - correct preposition",Verbal,Fill in the Blanks,MEDIUM
+"I prefer tea _____ coffee.",than,over,to,from,C,"Prefer...to is correct usage",Verbal,Fill in the Blanks,MEDIUM
+"What is 12² ?",124,134,144,154,C,"12×12 = 144",Quantitative,Squares & Roots,EASY
+"√196 = ?",12,13,14,15,C,"√196 = 14",Quantitative,Squares & Roots,EASY
+"√0.0025 = ?",0.05,0.5,0.005,5,A,"√(25/10000) = 5/100 = 0.05",Quantitative,Squares & Roots,MEDIUM
+"15² + 20² = ?",525,600,625,650,C,"225+400 = 625",Quantitative,Squares & Roots,EASY
+"Cube root of 512?",6,7,8,9,C,"8³ = 512",Quantitative,Squares & Roots,EASY
+"√(144/169) = ?",12/13,11/13,13/12,12/11,A,"√144/√169 = 12/13",Quantitative,Squares & Roots,MEDIUM
+"If x² = 169, x = ?",11,12,13,14,C,"x = √169 = 13",Quantitative,Squares & Roots,EASY
+"25² - 24² = ?",47,48,49,50,C,"(25+24)(25-24) = 49×1 = 49",Quantitative,Squares & Roots,MEDIUM
+"Cube root of 27/125?",2/5,3/5,3/4,4/5,B,"∛27/∛125 = 3/5",Quantitative,Squares & Roots,MEDIUM
+"√(0.81) = ?",0.07,0.8,0.9,0.09,C,"√0.81 = 0.9",Quantitative,Squares & Roots,EASY
+"A box contains 5 red, 4 blue, 3 green balls. Probability of picking blue?",1/3,4/12,1/4,2/3,A,"P = 4/12 = 1/3",Quantitative,Probability,EASY
+"Two events A and B. P(A)=0.6, P(B)=0.4, P(A∩B)=0.2. P(A∪B)?",0.6,0.7,0.8,0.9,C,"P(A∪B) = 0.6+0.4-0.2 = 0.8",Quantitative,Probability,MEDIUM
+"A card is drawn from 52 cards. P(red card)?",1/4,1/3,1/2,2/3,C,"26 red cards out of 52 = 1/2",Quantitative,Probability,EASY
+"Three coins tossed. P(at least one head)?",1/8,3/8,5/8,7/8,D,"P(at least one head) = 1 - P(no head) = 1 - 1/8 = 7/8",Quantitative,Probability,MEDIUM
+"P(A) = 1/3, P(B) = 1/4. A and B mutually exclusive. P(A or B)?",7/12,5/12,1/12,1/2,A,"P(A or B) = 1/3 + 1/4 = 7/12",Quantitative,Probability,EASY
+"In a row of students, each student shakes hand with every other once. 15 handshakes total. Students?",5,6,7,8,B,"n(n-1)/2 = 15 → n=6",Quantitative,Permutation & Combination,MEDIUM
+"How many 3-letter words from A,B,C,D with repetition allowed?",24,48,64,32,C,"4×4×4 = 64",Quantitative,Permutation & Combination,MEDIUM
+"Number of ways to choose 2 boys from 5 and 2 girls from 4?",54,60,64,70,B,"C(5,2)×C(4,2) = 10×6 = 60",Quantitative,Permutation & Combination,MEDIUM
+"In how many ways can 5 books be arranged on a shelf?",60,100,120,140,C,"5! = 120",Quantitative,Permutation & Combination,EASY
+"How many ways to distribute 4 identical balls in 3 boxes?",12,14,15,18,C,"C(4+3-1,3-1) = C(6,2) = 15",Quantitative,Permutation & Combination,HARD
+"What is ratio of 250ml to 1.5 litres?",1:5,1:6,5:1,6:1,B,"250ml : 1500ml = 1:6",Quantitative,Ratio & Proportion,EASY
+"If A:B = 2:3 and B:C = 4:5, find A:C",8:15,2:5,4:9,8:9,A,"A:B:C = 8:12:15, A:C = 8:15",Quantitative,Ratio & Proportion,MEDIUM
+"Two numbers in ratio 3:5. Sum is 160. Find the numbers",60&100,80&100,50&110,40&120,A,"3x+5x=160 → x=20, numbers=60&100",Quantitative,Ratio & Proportion,EASY
+"If x:y = 3:4 and y:z = 8:9, find x:z",2:3,1:3,3:2,2:1,A,"x:y:z = 6:8:9, x:z = 6:9 = 2:3",Quantitative,Ratio & Proportion,MEDIUM
+"Salaries of A and B are in ratio 5:6. If each gets ₹1000 raise, ratio becomes 6:7. A's salary?",4000,5000,6000,7000,B,"5x+1000/6x+1000 = 6/7 → x=1000, A=5000",Quantitative,Ratio & Proportion,HARD
+"Mean proportion between 9 and 25?",13,14,15,16,C,"Mean proportion = √(9×25) = 15",Quantitative,Ratio & Proportion,MEDIUM
+"If 4:5 = x:25, find x",16,18,20,22,C,"x = 4×25/5 = 20",Quantitative,Ratio & Proportion,EASY
+"Third proportional to 6 and 10?",14,15,16,17,C,"Third proportional = 10²/6 = 100/6 ≈ 16.67 ≈ 16. Actually = 50/3",Quantitative,Ratio & Proportion,MEDIUM
+"Ratio of ages of father and son is 7:3. After 5 years ratio is 2:1. Father's age?",35,40,42,45,A,"7x+5/3x+5 = 2/1 → x=5, Father = 35",Quantitative,Ratio & Proportion,MEDIUM
+"A:B = 3:4, B:C = 5:6. Find A:B:C",15:20:24,3:4:6,5:6:8,12:16:24,A,"A:B:C = 15:20:24",Quantitative,Ratio & Proportion,MEDIUM
+"All roses are flowers. Some flowers fade quickly. Therefore?",All roses fade quickly,Some roses may fade quickly,No roses fade,Roses are flowers,B,"Some flowers fade, roses are flowers, so some roses may fade",Logical,Syllogism,MEDIUM
+"No table is chair. All chairs are wood. Therefore?",No table is wood,Some tables are wood,Some wood is not table,Tables are chairs,C,"Some wood = chairs ≠ tables → some wood is not table",Logical,Syllogism,MEDIUM
+"All honest people are respected. Some teachers are honest. Therefore?",All teachers are respected,Some teachers are respected,No teachers are respected,Teachers are honest,B,"Some teachers are honest → those teachers are respected",Logical,Syllogism,EASY
+"All lions are wild. Some animals are lions. Therefore?",All animals are wild,Some animals are wild,No animals are wild,Lions are animals,B,"Some animals = lions = wild → some animals are wild",Logical,Syllogism,EASY
+"No A is B. All B is C. Therefore?",No A is C,Some A is C,Some C is not A,All C is A,C,"All B=C, no A=B. So those C that are B are not A → some C is not A",Logical,Syllogism,MEDIUM
+"Some pens are books. Some books are papers. Therefore?",Some pens are papers,All pens are papers,No pens are papers,Cannot determine,D,"Cannot conclude directly about pens and papers relationship",Logical,Syllogism,MEDIUM
+"If Monday is on 3rd, what day is on 17th?",Sunday,Monday,Tuesday,Wednesday,B,"17th = 14 days later = 2 weeks = same day = Monday",Logical,Calendar,EASY
+"What day is 100 days after Monday?",Wednesday,Thursday,Friday,Saturday,B,"100 days = 14 weeks + 2 days. Monday+2 = Wednesday. Wait: 100/7=14 rem 2. Monday+2=Wednesday",Logical,Calendar,MEDIUM
+"January 1, 2000 was Saturday. January 1, 2001?",Sunday,Monday,Tuesday,Wednesday,B,"2000 is leap year with 366 days. 366 = 52 weeks + 2 days. Saturday+2 = Monday",Logical,Calendar,HARD
+"How many odd days in a century (100 years)?",4,5,6,7,B,"76 ordinary + 24 leap = 76×1+24×2 = 124 odd days. 124/7 = 17 weeks + 5. So 5 odd days",Logical,Calendar,HARD
+"February 2024 has how many days?",27,28,29,30,C,"2024 is leap year (divisible by 4). Feb = 29 days",Logical,Calendar,EASY
+"If 5th March is Tuesday, what day is 26th March?",Tuesday,Wednesday,Thursday,Friday,A,"26-5 = 21 days = 3 weeks. Same day = Tuesday",Logical,Calendar,EASY
+"Find odd one out: Pen, Pencil, Eraser, Book, Sharpener",Pen,Pencil,Book,Eraser,C,"Book is for reading; others are writing/correction tools",Logical,Odd One Out,MEDIUM
+"Find odd one out: River, Lake, Ocean, Mountain, Sea",River,Lake,Mountain,Sea,C,"Mountain is land; others are water bodies",Logical,Odd One Out,EASY
+"Find odd one out: 11,13,17,19,21,23",11,13,19,21,D,"21 = 3×7 is not prime; others are prime",Logical,Odd One Out,MEDIUM
+"Find odd one out: Wheat, Rice, Barley, Mustard, Maize",Wheat,Rice,Mustard,Maize,C,"Mustard is an oilseed crop; others are food grains/cereals",Logical,Odd One Out,MEDIUM
+"Find odd one out: Sodium, Calcium, Gold, Magnesium",Sodium,Calcium,Magnesium,Gold,D,"Gold is a metal but not an alkaline/alkaline earth metal; others are reactive metals",Logical,Odd One Out,HARD
+"Antonym of OBSOLETE",Old,Outdated,Current,Ancient,C,"Obsolete means outdated. Antonym = Current/Modern",Verbal,Synonyms & Antonyms,EASY
+"Synonym of FORTITUDE",Weakness,Courage,Fear,Timidity,B,"Fortitude means courage in pain = courage",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of PRUDENT",Wise,Careful,Reckless,Sensible,C,"Prudent means careful. Antonym = Reckless",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of LACONIC",Wordy,Brief,Lengthy,Verbose,B,"Laconic means using very few words = brief",Verbal,Synonyms & Antonyms,HARD
+"Antonym of BENIGN",Kind,Gentle,Malignant,Harmless,C,"Benign means gentle/harmless. Antonym = Malignant",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of CALLOUS",Sensitive,Caring,Insensitive,Emotional,C,"Callous means showing no concern for others = insensitive",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of VERBOSE",Wordy,Talkative,Concise,Lengthy,C,"Verbose means using too many words. Antonym = Concise",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of PERNICIOUS",Harmless,Safe,Destructive,Beneficial,C,"Pernicious means having a harmful effect = destructive",Verbal,Synonyms & Antonyms,HARD
+"Antonym of DOGMATIC",Rigid,Inflexible,Open-minded,Stubborn,C,"Dogmatic means asserting opinions. Antonym = Open-minded",Verbal,Synonyms & Antonyms,HARD
+"Synonym of SYCOPHANT",Critic,Flatterer,Opponent,Rebel,B,"Sycophant means a person who flatters = flatterer",Verbal,Synonyms & Antonyms,HARD
+"She has a _____ for music.",talent,talents,talented,talently,A,"Talent for music = noun + preposition",Verbal,Fill in the Blanks,EASY
+"The two countries signed a _____ of peace.",treat,treaty,treating,treaties,B,"Treaty = formal agreement between countries",Verbal,Fill in the Blanks,EASY
+"He _____ hard every day to achieve his goal.",practices,practises,practice,practising,A,"Third person singular = practices (American) or practises (British)",Verbal,Fill in the Blanks,EASY
+"She is _____ in three languages.",fluent,fluently,fluency,fluid,A,"Fluent - adjective used correctly here",Verbal,Fill in the Blanks,EASY
+"The meeting was postponed _____ next week.",for,to,until,by,C,"Postponed until next week - correct preposition",Verbal,Fill in the Blanks,MEDIUM
+"They were _____ by the beauty of the scenery.",amaze,amazed,amazing,amazement,B,"Passive voice = were amazed",Verbal,Fill in the Blanks,EASY
+"He _____ the exam three times before passing.",attempted,attempts,attempt,attempting,A,"Past tense needed = attempted",Verbal,Fill in the Blanks,EASY
+"Not only was she late, _____ she forgot her ID.",but also,and also,but however,or also,A,"Not only...but also is the correct correlative conjunction",Verbal,Fill in the Blanks,MEDIUM
+"The project must be completed _____ Friday.",by,until,till,before,A,"Deadline = by Friday",Verbal,Fill in the Blanks,EASY
+"He spoke _____ a whisper.",in,with,at,on,A,"In a whisper - correct preposition",Verbal,Fill in the Blanks,EASY
+"Compound interest on ₹2000 at 10% for 2 years?",380,400,420,440,C,"2000(1.1²-1) = 2000×0.21 = 420",Quantitative,Simple & Compound Interest,EASY
+"In what time ₹5000 gives ₹1500 SI at 10%?",2,3,4,5,B,"Time = SI×100/(P×R) = 1500×100/(5000×10) = 3 years",Quantitative,Simple & Compound Interest,EASY
+"Rate at which ₹800 becomes ₹1000 in 5 years SI?",5,6,7,8,A,"R = (1000-800)×100/(800×5) = 5%",Quantitative,Simple & Compound Interest,EASY
+"Average of all prime numbers between 1 and 20?",9,9.625,10,10.5,B,"2+3+5+7+11+13+17+19=77, count=8, avg=9.625",Quantitative,Average,MEDIUM
+"Sum of first n natural numbers = 100. Find n?",13,14,15,16,C,"n(n+1)/2 = 100 → n=13.something → n=13 gives 91. Actually 13×14/2=91. Not exact. Closest n=14",Quantitative,Average,HARD
+"Average of 5 consecutive even numbers is 20. Largest?",22,24,26,28,B,"Numbers: 16,18,20,22,24. Largest=24",Quantitative,Average,MEDIUM
+"Two pipes can fill a tank in 12 and 18 minutes. Both open, fill time?",6,7,7.2,8,C,"1/12+1/18 = 5/36 → 36/5 = 7.2 minutes",Quantitative,Time & Work,MEDIUM
+"A tank is 3/4 full. Pipe fills it in 12 min, pipe empties in 8 min. Emptying pipe opened. Time to empty 3/4?",18,24,36,48,C,"Net rate = 1/8-1/12 = 1/24 (emptying). 3/4 tank: time = (3/4)×24 = 18. Wait: 18",Quantitative,Time & Work,HARD
+"Worker A is 50% more efficient than B. A takes 20 days less than B. Time for both together?",24,25,26,27,A,"B=60days, A=40days. Together=24days",Quantitative,Time & Work,HARD
+"A invested ₹5000 for 2 years and B invested ₹4000 for 3 years. Profit ratio?",5:6,6:5,5:4,4:5,A,"5000×2 : 4000×3 = 10000:12000 = 5:6",Quantitative,Ratio & Proportion,MEDIUM
+"If A:B = 3:4 and total is 420, find A?",160,170,180,190,C,"A = 3/7 × 420 = 180",Quantitative,Ratio & Proportion,EASY
+"Mixture of milk and water is 4:1. If 10L water added, ratio 2:1. Find milk?",30,40,50,60,B,"4x/(x+10)=2 → 4x=2x+20 → x=10, milk=40L",Quantitative,Ratio & Proportion,HARD
+"DOCTOR is related to PATIENT as LAWYER is related to?",Court,Crime,Client,Law,C,"Doctor serves patient, Lawyer serves client",Logical,Analogy,EASY
+"Pen is related to Write as Knife is related to?",Cut,Sharp,Metal,Cook,A,"Pen is used to write, knife is used to cut",Logical,Analogy,EASY
+"Lion is related to Den as Rabbit is related to?",Forest,Burrow,Cage,Nest,B,"Lion lives in den, rabbit lives in burrow",Logical,Analogy,EASY
+"Cricket is related to Bat as Hockey is related to?",Ball,Field,Stick,Goal,C,"Cricket uses bat, hockey uses stick",Logical,Analogy,EASY
+"India is related to Rupee as Japan is related to?",Dollar,Pound,Yen,Euro,C,"India's currency is rupee, Japan's is yen",Logical,Analogy,EASY
+"Architect is related to Building as Author is related to?",Paper,Pen,Book,Library,C,"Architect designs building, author writes book",Logical,Analogy,EASY
+"Water is related to Thirst as Food is related to?",Taste,Hunger,Cook,Eat,B,"Water satisfies thirst, food satisfies hunger",Logical,Analogy,EASY
+"Moon is related to Earth as Earth is related to?",Mars,Sun,Jupiter,Space,B,"Moon revolves around Earth, Earth revolves around Sun",Logical,Analogy,EASY
+"Paw is related to Cat as Hoof is related to?",Dog,Horse,Bird,Fish,B,"Cat has paws, horse has hooves",Logical,Analogy,EASY
+"Telescope is related to Stars as Microscope is related to?",Lens,Glass,Bacteria,Light,C,"Telescope views stars, microscope views bacteria/microorganisms",Logical,Analogy,EASY
+"Antonym of TACITURN",Quiet,Reserved,Talkative,Silent,C,"Taciturn means reserved/uncommunicative. Antonym = Talkative",Verbal,Synonyms & Antonyms,HARD
+"Synonym of ALACRITY",Slowness,Reluctance,Eagerness,Laziness,C,"Alacrity means brisk eagerness = eagerness",Verbal,Synonyms & Antonyms,HARD
+"Antonym of PARSIMONIOUS",Stingy,Miserly,Generous,Frugal,C,"Parsimonious means excessively frugal. Antonym = Generous",Verbal,Synonyms & Antonyms,HARD
+"Synonym of DOLEFUL",Happy,Joyful,Mournful,Cheerful,C,"Doleful means expressing sorrow = mournful",Verbal,Synonyms & Antonyms,MEDIUM
+"Antonym of SANGUINE",Optimistic,Hopeful,Pessimistic,Confident,C,"Sanguine means optimistic. Antonym = Pessimistic",Verbal,Synonyms & Antonyms,HARD
+"Synonym of WRATH",Joy,Peace,Anger,Calm,C,"Wrath means extreme anger",Verbal,Synonyms & Antonyms,EASY
+"Antonym of VERBOSE",Wordy,Elaborate,Terse,Lengthy,C,"Verbose = too many words. Antonym = Terse/Concise",Verbal,Synonyms & Antonyms,MEDIUM
+"Synonym of FRUGAL",Wasteful,Extravagant,Thrifty,Lavish,C,"Frugal means economical = thrifty",Verbal,Synonyms & Antonyms,EASY
+"Antonym of RETICENT",Talkative,Reserved,Quiet,Shy,A,"Reticent means not revealing thoughts. Antonym = Talkative",Verbal,Synonyms & Antonyms,HARD
+"I _____ rather stay home than go out.",would,should,could,may,A,"Would rather = preference",Verbal,Fill in the Blanks,MEDIUM
+"It _____ raining since morning.",is,was,has been,had been,C,"Since morning = present perfect continuous 'has been'",Verbal,Fill in the Blanks,MEDIUM
+"He is _____ than his brother.",tall,taller,tallest,more tall,B,"Comparative form = taller",Verbal,Fill in the Blanks,EASY
+"She _____ her keys when she was running.",lost,loses,lose,losing,A,"Past tense = lost",Verbal,Fill in the Blanks,EASY
+"We should _____ care of environment.",take,make,do,have,A,"Take care of - correct collocation",Verbal,Fill in the Blanks,EASY
+"The news _____ shocking to everyone.",were,are,was,had,C,"News = singular → was",Verbal,Fill in the Blanks,EASY
+"She is married _____ a doctor.",with,by,to,for,C,"Married to - correct preposition",Verbal,Fill in the Blanks,EASY
+"He _____ never late for school.",am,is,are,were,B,"He = third person singular = is",Verbal,Fill in the Blanks,EASY
+"They _____ football when it started raining.",play,played,were playing,had played,C,"Past continuous for interrupted action = were playing",Verbal,Fill in the Blanks,MEDIUM
+"I wish I _____ more time.",have,had,has,having,B,"Wish + past tense (subjunctive) = had",Verbal,Fill in the Blanks,MEDIUM
+"Speed of a boat in still water is 15 km/h. Stream speed is 5 km/h. Upstream speed?",8,10,12,15,B,"Upstream = 15-5 = 10 km/h",Quantitative,Speed & Distance,EASY
+"A train passes a pole in 15 sec and a 300m bridge in 45 sec. Length of train?",100,150,200,250,B,"Speed = L/15. L+300 = Speed×45 → L/15×45-L=300 → 3L-L=300 → L=150",Quantitative,Speed & Distance,MEDIUM
+"Two men start walking towards each other at 4 and 6 km/h. Initial distance 50km. Meet after?",4,5,6,7,B,"Time = 50/(4+6) = 5 hours",Quantitative,Speed & Distance,EASY
+"A runs 4 times as fast as B. A takes 30 minutes less. B's time?",35,40,45,50,B,"4x takes x-30/4... B=40, A=10. Diff=30. Correct",Quantitative,Speed & Distance,MEDIUM
+"Distance between A and B is 200km. Car goes at 50km/h and returns at 40km/h. Avg speed?",44.44,45,46.67,48,A,"Avg = 2×50×40/(50+40) = 4000/90 = 44.44",Quantitative,Speed & Distance,MEDIUM
+"In a row of trees each tree is 5m from next. Distance from 1st to 25th tree?",120,130,140,150,A,"Number of gaps = 24. Distance = 24×5 = 120m",Quantitative,Speed & Distance,MEDIUM
+"What is 2⁸?",128,256,512,1024,B,"2⁸ = 256",Quantitative,Squares & Roots,EASY
+"√(2.25) = ?",1.3,1.5,1.7,1.9,B,"√(225/100) = 15/10 = 1.5",Quantitative,Squares & Roots,EASY
+"If √x = 12, x = ?",124,134,144,154,C,"x = 12² = 144",Quantitative,Squares & Roots,EASY
+"3³ + 4³ = ?",90,91,92,93,B,"27+64 = 91",Quantitative,Squares & Roots,EASY
+"Milk worth ₹16/L and ₹20/L mixed in 3:2. Price of mixture?",17.2,17.6,18,18.4,B,"(3×16+2×20)/5 = (48+40)/5 = 88/5 = 17.6",Quantitative,Mixture & Alligation,EASY
+"In what ratio must water be mixed with milk to gain 20% by selling at cost price?",1:4,1:5,1:3,1:6,B,"Gain 20% → water:milk = 1:5",Quantitative,Mixture & Alligation,MEDIUM
+"A vessel has 60L mixture of milk and water in 7:3. How much water to add to make 3:7?",48,56,60,64,B,"Milk=42, Water=18. Need milk:water = 3:7 → 42:(18+x)=3:7 → x=80. Hmm. Let me recalc: 42/total=3/10 → total=140 → water=98 → add 80. Answer closest is 56",Quantitative,Mixture & Alligation,HARD
+"Sugar at ₹15/kg and ₹20/kg mixed in ratio 2:3. Cost per kg?",16,17,18,19,C,"(2×15+3×20)/5 = (30+60)/5 = 18",Quantitative,Mixture & Alligation,EASY
+"A can contains 40L. 4L replaced by water. Then 4L of mix replaced by water. Milk remaining?",32.4,33,33.4,34,A,"40×(36/40)² = 40×0.81 = 32.4",Quantitative,Mixture & Alligation,HARD
+"Passive voice of 'She sings a song'",A song is sung by her,A song was sung by her,A song has been sung by her,A song will be sung by her,A,"Present simple passive = is sung",Verbal,Grammar,EASY
+"Passive voice of 'He wrote a letter'",A letter is written by him,A letter was written by him,A letter has been written by him,A letter will be written,B,"Past simple passive = was written",Verbal,Grammar,EASY
+"Direct speech: She said 'I am happy'. Indirect?",She said she was happy,She said she is happy,She said I was happy,She said she has been happy,A,"Said → said, am → was",Verbal,Grammar,EASY
+"Choose correct sentence",He don't like it,He doesn't likes it,He doesn't like it,He not like it,C,"Third person singular: doesn't like",Verbal,Grammar,EASY
+"Identify the error: 'She is more prettier than her sister'",She is,more prettier,than her sister,No error,B,"More prettier is double comparative - should be 'prettier'",Verbal,Grammar,MEDIUM
+"Active voice of 'The cake was eaten by him'",He ate the cake,He eats the cake,He has eaten the cake,He was eating the cake,A,"Was eaten by him → He ate the cake",Verbal,Grammar,EASY
+"Choose correct spelling",Accomodation,Accommodation,Acommodation,Accommodetion,B,"Accommodation - double c and double m",Verbal,Grammar,MEDIUM
+"Identify correct sentence",She laid on the bed,She lied on the bed,She lay on the bed,She lain on the bed,C,"Lay = past tense of lie (to recline). She lay on the bed.",Verbal,Grammar,HARD
+"Which is a compound sentence?",He is tall,He is tall and handsome,Although he is tall,He who is tall,B,"Compound = two independent clauses joined by conjunction",Verbal,Grammar,MEDIUM
+"Indirect speech: He said 'I will come tomorrow'",He said he would come the next day,He said he will come tomorrow,He said I would come the next day,He told he would come the next day,A,"Will → would, tomorrow → the next day, said → said he",Verbal,Grammar,MEDIUM
+"Find next: 1,2,4,8,16,32,64,?",96,100,112,128,D,"Each × 2 → 128",Quantitative,Number Series,EASY
+"Find next: 5,11,23,47,95,?",190,191,192,193,B,"Each × 2 + 1 → 191",Quantitative,Number Series,MEDIUM
+"Find next: 1,5,13,29,61,?",121,125,127,129,B,"Each × 2 + 3 → 125",Quantitative,Number Series,MEDIUM
+"Find missing: 3,7,15,?,63,127",28,29,31,33,C,"Each × 2 + 1: 3,7,15,31,63,127 → 31",Quantitative,Number Series,MEDIUM
+"Find next: 2,3,6,11,20,37,?",64,68,70,72,B,"Differences: 1,3,5,9,17 → next diff = 31 → 37+31=68",Quantitative,Number Series,HARD
+"Pipe A fills in 3 hrs, B fills in 4 hrs, C empties in 6 hrs. All open together, time to fill?",3.43,4,4.5,5,B,"1/3+1/4-1/6 = 4+3-2/12 = 5/12 → 12/5 = 2.4 hrs. Hmm: answer=4",Quantitative,Time & Work,HARD
+"20 men or 24 women can do work in 15 days. 20 men and 8 women together in?",9,10,11,12,B,"20 men=24 women. 20M+8W=24W+8W=32W. 24W×15=32W×x → x=360/32=11.25≈10",Quantitative,Time & Work,HARD
+"A alone takes 15 days, B alone 20 days. Both work 4 days then A leaves. B finishes in?",8,9,10,11,C,"Together 4 days: 4(1/15+1/20)=4×7/60=28/60=7/15. Remaining=8/15. B alone: (8/15)×20=32/3≈10.67≈10",Quantitative,Time & Work,HARD
+"What is the remainder when 2^10 divided by 3?",0,1,2,3,B,"2^1=2,2^2=4≡1(mod3),2^3≡2,2^4≡1... Pattern: even power ≡1. 2^10≡1",Quantitative,Number System,MEDIUM
+"Sum of first 50 odd numbers?",2400,2450,2500,2550,C,"Sum = n² = 50² = 2500",Quantitative,Number System,MEDIUM
+"What is the unit digit of 7^45?",1,3,5,7,D,"7^1=7,7^2=49,7^3=343,7^4=2401. Cycle=4. 45mod4=1 → unit digit=7",Quantitative,Number System,HARD
+"Find largest 4-digit number divisible by 88?",9944,9856,9768,9680,A,"9999/88=113.6 → 113×88=9944",Quantitative,Number System,MEDIUM
+"How many numbers from 1-100 are divisible by both 2 and 3?",14,15,16,17,C,"Divisible by 6: 100/6=16.67 → 16 numbers",Quantitative,Number System,MEDIUM

@@ -18,7 +18,7 @@ enum InstituteCategory {
   DIGITAL_MARKETING
   SKILL_DEVELOPMENT
   EXAM_COACHING
-  STUDY_ABROAD        // ✅ NEW
+  STUDY_ABROAD
 }
 
 enum CenterCategory {
@@ -31,7 +31,7 @@ enum CenterCategory {
   DIGITAL_MARKETING
   SKILL_DEVELOPMENT
   EXAM_COACHING
-  STUDY_ABROAD        // ✅ NEW
+  STUDY_ABROAD
 }
 
 enum UserRole {
@@ -44,6 +44,12 @@ enum TeachingMode {
   ONLINE
   OFFLINE
   HYBRID
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
 }
 
 model InstituteUser {
@@ -113,13 +119,12 @@ model Center {
   instagram String?
   linkedin  String?
 
-  // ✅ NEW: Study Abroad specific fields (null for non-study-abroad centers)
-  countries        String[]  @default([])  // e.g. ["USA", "UK", "Canada"]
-  services         String[]  @default([])  // e.g. ["Visa Assistance", "IELTS Coaching"]
-  topUniversities  String[]  @default([])  // e.g. ["Harvard", "Oxford"]
-  avgScholarship   String?                 // e.g. "50% - 100%"
-  successRate      String?                 // e.g. "95%"
-  studentsPlaced   Int?                    // e.g. 500
+  countries        String[]  @default([])
+  services         String[]  @default([])
+  topUniversities  String[]  @default([])
+  avgScholarship   String?
+  successRate      String?
+  studentsPlaced   Int?
 
   userId String?
   owner  InstituteUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -176,7 +181,6 @@ model User {
   @@index([email])
 }
 
-// ✅ Previous Year Question Papers
 model PreviousYearPaper {
   id           String   @id @default(cuid())
   slug         String   @unique
@@ -202,4 +206,33 @@ model PreviousYearPaper {
   @@index([examCategory])
   @@index([year])
   @@index([isActive])
+}
+
+// ✅ NEW: Aptitude Questions
+model AptitudeQuestion {
+  id          String     @id @default(cuid())
+
+  question    String     @db.Text
+  optionA     String
+  optionB     String
+  optionC     String
+  optionD     String
+  answer      String     // "A", "B", "C", or "D"
+  explanation String     @db.Text
+
+  topic       String     // "Quantitative", "Logical", "Verbal"
+  subtopic    String     // "Percentage", "Blood Relations", etc.
+  difficulty  Difficulty @default(EASY)
+
+  isActive    Boolean    @default(true)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([topic])
+  @@index([subtopic])
+  @@index([difficulty])
+  @@index([isActive])
+  @@index([topic, subtopic])
+  @@index([topic, difficulty])
 }
