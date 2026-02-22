@@ -9,29 +9,25 @@ datasource db {
 }
 
 enum InstituteCategory {
-  TECHNOLOGY
-  COMPETITIVE_EXAMS
-  LANGUAGE_TRAINING
-  MANAGEMENT
-  PROFESSIONAL_COURSES
+  SCHOOL_TUITION
+  STUDY_ABROAD
+  LANGUAGES
+  IT_TECHNOLOGY
   DESIGN_CREATIVE
-  DIGITAL_MARKETING
+  MANAGEMENT
   SKILL_DEVELOPMENT
   EXAM_COACHING
-  STUDY_ABROAD
 }
 
 enum CenterCategory {
-  TECHNOLOGY
-  COMPETITIVE_EXAMS
-  LANGUAGE_TRAINING
-  MANAGEMENT
-  PROFESSIONAL_COURSES
+  SCHOOL_TUITION
+  STUDY_ABROAD
+  LANGUAGES
+  IT_TECHNOLOGY
   DESIGN_CREATIVE
-  DIGITAL_MARKETING
+  MANAGEMENT
   SKILL_DEVELOPMENT
   EXAM_COACHING
-  STUDY_ABROAD
 }
 
 enum UserRole {
@@ -208,7 +204,6 @@ model PreviousYearPaper {
   @@index([isActive])
 }
 
-// ✅ NEW: Aptitude Questions
 model AptitudeQuestion {
   id          String     @id @default(cuid())
 
@@ -217,11 +212,11 @@ model AptitudeQuestion {
   optionB     String
   optionC     String
   optionD     String
-  answer      String     // "A", "B", "C", or "D"
+  answer      String
   explanation String     @db.Text
 
-  topic       String     // "Quantitative", "Logical", "Verbal"
-  subtopic    String     // "Percentage", "Blood Relations", etc.
+  topic       String
+  subtopic    String
   difficulty  Difficulty @default(EASY)
 
   isActive    Boolean    @default(true)
