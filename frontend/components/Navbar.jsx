@@ -4,20 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
-  Menu,
-  X,
-  User,
-  LogOut,
-  LayoutDashboard,
-  Search,
-  FileText,
-  Target
+  Menu, X, User, LogOut, LayoutDashboard,
+  Search, FileText, Target, Bell
 } from "lucide-react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isInstituteLoggedIn, setIsInstituteLoggedIn] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -27,6 +24,8 @@ export default function Navbar() {
         const userAuth = localStorage.getItem("userLoggedIn") === "true";
         setIsInstituteLoggedIn(instituteAuth);
         setIsUserLoggedIn(userAuth);
+        if (instituteAuth) fetchUnreadCount();
+        else setUnreadCount(0);
       } catch (error) {
         console.error("Error checking auth:", error);
       }
@@ -44,8 +43,20 @@ export default function Navbar() {
     };
   }, [pathname]);
 
-  // Close mobile menu on route change
   useEffect(() => { setIsOpen(false); }, [pathname]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const token = localStorage.getItem("instituteToken");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/auth/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setUnreadCount(data.unreadCount || 0);
+    } catch {}
+  };
 
   const handleLogout = () => {
     if (isInstituteLoggedIn) {
@@ -98,7 +109,6 @@ export default function Navbar() {
                 <FileText className="w-4 h-4" />
                 <span>Papers</span>
               </Link>
-              {/* ✅ NEW */}
               <Link href="/practice"
                 className={`flex items-center gap-1.5 text-sm transition-colors hover:text-blue-600 ${pathname === '/practice' ? 'text-blue-600' : 'text-gray-700'}`}>
                 <Target className="w-4 h-4" />
@@ -109,6 +119,21 @@ export default function Navbar() {
             {/* Auth */}
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
+                {/* Bell — only for institute */}
+                {isInstituteLoggedIn && (
+                  <Link
+                    href="/institute/notifications"
+                    className="relative p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors"
+                    title="Notifications"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
                 <Link href={dashboardHref}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
                   {isInstituteLoggedIn ? <LayoutDashboard className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -129,21 +154,36 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <button onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-md">
-            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {/* Mobile: bell + hamburger */}
+          <div className="md:hidden flex items-center gap-2">
+            {isInstituteLoggedIn && (
+              <Link
+                href="/institute/notifications"
+                className="relative p-1.5 text-gray-500 hover:text-blue-600 rounded-md"
+                title="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
+            <button onClick={() => setIsOpen(!isOpen)}
+              className="p-2 text-gray-700 hover:bg-gray-100 rounded-md">
+              {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Menu — fixed overlay above content */}
+        {/* Mobile Menu */}
         {isOpen && (
           <>
             <div className="md:hidden fixed inset-0 top-16 bg-black/20 z-40"
               onClick={() => setIsOpen(false)} />
             <div className="md:hidden fixed left-0 right-0 top-16 z-50 bg-white border-t shadow-lg rounded-b-2xl overflow-hidden">
               <div className="space-y-0">
-
                 <Link href="/"
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm border-b border-gray-100 ${pathname === '/' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => setIsOpen(false)}>
@@ -167,7 +207,6 @@ export default function Navbar() {
                   <span>Previous Year Papers</span>
                 </Link>
 
-                {/* ✅ NEW: Practice Zone */}
                 <Link href="/practice"
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm border-b border-gray-100 ${pathname === '/practice' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => setIsOpen(false)}>
@@ -175,7 +214,6 @@ export default function Navbar() {
                   <span>Practice Zone 🎯</span>
                 </Link>
 
-                {/* Auth */}
                 {isLoggedIn ? (
                   <>
                     <Link href={dashboardHref}

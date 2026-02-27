@@ -1,4 +1,3 @@
-// app/institute/dashboard/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -19,32 +18,24 @@ export default function InstituteDashboard() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-  // ✅ Check if study abroad consultant
   const isStudyAbroad = institute?.primaryCategory === "STUDY_ABROAD";
+  const isSchoolTuition = institute?.primaryCategory === "SCHOOL_TUITION";
 
-  useEffect(() => {
-    checkAuthAndFetchData();
-  }, []);
+  useEffect(() => { checkAuthAndFetchData(); }, []);
 
   const checkAuthAndFetchData = async () => {
     const token = localStorage.getItem("instituteToken");
-    if (!token) {
-      router.push("/institute/login");
-      return;
-    }
-
+    if (!token) { router.push("/institute/login"); return; }
     try {
       const response = await fetch(`${API_URL}/auth/me`, {
-        headers: { "Authorization": `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.ok) throw new Error("Failed");
-
       const data = await response.json();
       setInstitute(data.user);
       setCenter(data.center);
       setCenterSlug(data.center?.slug);
-    } catch (error) {
+    } catch {
       router.push("/institute/login");
     } finally {
       setLoading(false);
@@ -61,16 +52,13 @@ export default function InstituteDashboard() {
   const handleGalleryUpload = async (e) => {
     const files = Array.from(e.target.files);
     const currentGallery = center?.gallery || [];
-
     if (currentGallery.length + files.length > 3) {
       alert(`You can only have maximum 3 photos. Currently you have ${currentGallery.length}.`);
       return;
     }
     if (files.length === 0) return;
-
     setUploadingGallery(true);
     const token = localStorage.getItem("instituteToken");
-
     try {
       for (const file of files) {
         const formData = new FormData();
@@ -79,7 +67,7 @@ export default function InstituteDashboard() {
         const response = await fetch(`${API_URL}/centers/${centerId}/upload-gallery`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
-          body: formData
+          body: formData,
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -102,8 +90,8 @@ export default function InstituteDashboard() {
       const centerId = center?.id || centerSlug;
       const response = await fetch(`${API_URL}/centers/${centerId}/delete-gallery`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl })
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl }),
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -146,30 +134,48 @@ export default function InstituteDashboard() {
   };
 
   useEffect(() => {
-    if (!institute || !center?.courses || isStudyAbroad) return;
+    if (!institute || !center?.courses || isStudyAbroad || isSchoolTuition) return;
     const coursesByCategory = parseCourses(center.courses);
     const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
     if (categoriesWithCourses.length > 0) setActiveTab(categoriesWithCourses[0]);
   }, [institute, center]);
 
   const formatCategory = (category) => {
-    return category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
+    const labels = {
+      SCHOOL_TUITION:    "School Tuition",
+      STUDY_ABROAD:      "Study Abroad",
+      LANGUAGES:         "Languages",
+      IT_TECHNOLOGY:     "IT & Technology",
+      DESIGN_CREATIVE:   "Design & Creative",
+      MANAGEMENT:        "Management",
+      SKILL_DEVELOPMENT: "Skill Development",
+      EXAM_COACHING:     "Exam Coaching",
+    };
+    return labels[category] || category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
   };
+
+  // Parse school tuition data from courseDetails
+  const schoolData = (() => {
+    if (!isSchoolTuition) return null;
+    const cd = center?.courseDetails;
+    if (!cd) return null;
+    if (typeof cd === "string") {
+      try { return JSON.parse(cd); } catch { return null; }
+    }
+    return cd;
+  })();
 
   if (loading) {
     return (
       <main className="max-w-4xl mx-auto px-4 py-10">
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mx-auto" />
         </div>
       </main>
     );
   }
 
-  if (!institute) {
-    router.push("/institute/login");
-    return null;
-  }
+  if (!institute) { router.push("/institute/login"); return null; }
 
   const coursesByCategory = center?.courses ? parseCourses(center.courses) : {};
   const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
@@ -179,7 +185,7 @@ export default function InstituteDashboard() {
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
 
-          {/* Header */}
+          {/* Header Banner */}
           <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
             {center?.image && (
               <img src={center.image} alt={institute.instituteName} className="w-full h-full object-cover" />
@@ -207,10 +213,6 @@ export default function InstituteDashboard() {
             <div className="mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">{institute.instituteName}</h1>
-                {/* ✅ Study abroad badge */}
-                {isStudyAbroad && (
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">🌍 Study Abroad</span>
-                )}
               </div>
               <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,7 +232,6 @@ export default function InstituteDashboard() {
                   {formatCategory(cat)}
                 </span>
               ))}
-              {/* ✅ Only show teachingMode for non-study-abroad */}
               {!isStudyAbroad && institute.teachingMode && (
                 <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
                   {institute.teachingMode}
@@ -243,7 +244,7 @@ export default function InstituteDashboard() {
               )}
             </div>
 
-            {/* ✅ Study Abroad Stats */}
+            {/* Study Abroad Stats */}
             {isStudyAbroad && (center?.studentsPlaced || center?.successRate || center?.avgScholarship) && (
               <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b">
                 {center.studentsPlaced && (
@@ -267,6 +268,30 @@ export default function InstituteDashboard() {
               </div>
             )}
 
+            {/* School Tuition Stats */}
+            {isSchoolTuition && schoolData && (schoolData.studentsCount || schoolData.batchSize || schoolData.feeRange) && (
+              <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b">
+                {schoolData.studentsCount && (
+                  <div className="text-center p-2 bg-indigo-50 rounded-lg">
+                    <p className="text-lg font-bold text-indigo-700">{schoolData.studentsCount}+</p>
+                    <p className="text-xs text-gray-500">Students</p>
+                  </div>
+                )}
+                {schoolData.batchSize && (
+                  <div className="text-center p-2 bg-green-50 rounded-lg">
+                    <p className="text-lg font-bold text-green-700">{schoolData.batchSize}</p>
+                    <p className="text-xs text-gray-500">Batch Size</p>
+                  </div>
+                )}
+                {schoolData.feeRange && (
+                  <div className="text-center p-2 bg-amber-50 rounded-lg">
+                    <p className="text-lg font-bold text-amber-700">{schoolData.feeRange}</p>
+                    <p className="text-xs text-gray-500">Fee / Month</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Description */}
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
@@ -278,10 +303,9 @@ export default function InstituteDashboard() {
               </p>
             </div>
 
-            {/* ✅ STUDY ABROAD: Countries & Services */}
+            {/* ── STUDY ABROAD ─────────────────────────────────────── */}
             {isStudyAbroad && (
               <>
-                {/* Countries */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-sm font-bold text-gray-900">Countries</h2>
@@ -291,7 +315,7 @@ export default function InstituteDashboard() {
                     <div className="flex flex-wrap gap-1.5">
                       {center.countries.map((country, i) => (
                         <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded-full">
-                          🌍 {country}
+                          {country}
                         </span>
                       ))}
                     </div>
@@ -303,7 +327,6 @@ export default function InstituteDashboard() {
                   )}
                 </div>
 
-                {/* Services */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-sm font-bold text-gray-900">Services</h2>
@@ -328,14 +351,13 @@ export default function InstituteDashboard() {
                   )}
                 </div>
 
-                {/* Top Universities */}
                 {center?.topUniversities?.length > 0 && (
                   <div className="mb-3">
                     <h2 className="text-sm font-bold text-gray-900 mb-2">Top Universities</h2>
                     <div className="flex flex-wrap gap-1.5">
                       {center.topUniversities.map((uni, i) => (
                         <span key={i} className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium rounded-full">
-                          🎓 {uni}
+                          {uni}
                         </span>
                       ))}
                     </div>
@@ -344,8 +366,85 @@ export default function InstituteDashboard() {
               </>
             )}
 
-            {/* ✅ INSTITUTE: Courses (hidden for study abroad) */}
-            {!isStudyAbroad && (
+            {/* ── SCHOOL TUITION ───────────────────────────────────── */}
+            {isSchoolTuition && (
+              <>
+                {/* Boards */}
+                {schoolData?.boards?.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-sm font-bold text-gray-900">Boards</h2>
+                      <Link href="/institute/dashboard/school-tuition" className="text-accent text-xs font-medium">Manage</Link>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {schoolData.boards.map((b, i) => (
+                        <span key={i} className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-medium rounded-full">
+                          {b}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Classes */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-sm font-bold text-gray-900">Classes</h2>
+                    <Link href="/institute/dashboard/school-tuition" className="text-accent text-xs font-medium">
+                      {schoolData?.classes?.length > 0 ? "Manage" : "Add"}
+                    </Link>
+                  </div>
+                  {schoolData?.classes?.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {schoolData.classes.map((c, i) => (
+                        <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded-full">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 border-2 border-dashed rounded-lg">
+                      <p className="text-xs text-gray-500 mb-1">No classes added</p>
+                      <Link href="/institute/dashboard/school-tuition" className="text-accent text-xs font-medium">Add classes →</Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Subjects */}
+                {schoolData?.subjects?.length > 0 && (
+                  <div className="mb-3">
+                    <h2 className="text-sm font-bold text-gray-900 mb-2">Subjects</h2>
+                    <div className="flex flex-wrap gap-1.5">
+                      {schoolData.subjects.map((s, i) => (
+                        <span key={i} className="px-2.5 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-medium rounded-full">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Special Programs */}
+                {schoolData?.specialPrograms?.length > 0 && (
+                  <div className="mb-3">
+                    <h2 className="text-sm font-bold text-gray-900 mb-2">Special Programs</h2>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {schoolData.specialPrograms.map((p, i) => (
+                        <div key={i} className="px-2.5 py-1.5 bg-gray-50 border rounded-md flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-gray-800 text-xs">{p}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── COURSES (all other categories) ───────────────────── */}
+            {!isStudyAbroad && !isSchoolTuition && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-sm font-bold text-gray-900">Courses</h2>
@@ -358,7 +457,7 @@ export default function InstituteDashboard() {
                         {categoriesWithCourses.map(cat => (
                           <button key={cat} onClick={() => setActiveTab(cat)}
                             className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all ${
-                              activeTab === cat ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'
+                              activeTab === cat ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700"
                             }`}>
                             {formatCategory(cat)} ({coursesByCategory[cat].length})
                           </button>
@@ -406,7 +505,7 @@ export default function InstituteDashboard() {
                   {center.whatsapp && (
                     <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                       <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                       </svg>
                       <span className="text-xs font-medium text-gray-900 truncate">{center.whatsapp}</span>
                     </div>
@@ -437,25 +536,25 @@ export default function InstituteDashboard() {
                 <div className="flex items-center gap-2">
                   {center.facebook && (
                     <a href={center.facebook} target="_blank" rel="noopener noreferrer"
-                       className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                      className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                       </svg>
                     </a>
                   )}
                   {center.instagram && (
                     <a href={center.instagram} target="_blank" rel="noopener noreferrer"
-                       className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center">
+                      className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-full flex items-center justify-center">
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                       </svg>
                     </a>
                   )}
                   {center.linkedin && (
                     <a href={center.linkedin} target="_blank" rel="noopener noreferrer"
-                       className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
+                      className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                       </svg>
                     </a>
                   )}
@@ -478,7 +577,7 @@ export default function InstituteDashboard() {
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={() => setShowLogoutModal(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
