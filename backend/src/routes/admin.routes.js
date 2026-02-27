@@ -11,7 +11,8 @@ import {
   deleteCenter,
   getAllUsers,
   deleteUser,
-  toggleUserStatus
+  toggleUserStatus,
+  getAnalytics
 } from "../controllers/admin.controller.js";
 import { adminOnly } from "../middleware/admin.middleware.js";
 
@@ -32,6 +33,9 @@ router.delete("/institutes/:id", adminOnly, deleteInstitute);
 // Centers
 router.get("/centers", adminOnly, getAllCenters);
 router.delete("/centers/:id", adminOnly, deleteCenter);
+
+// Analytics
+router.get("/analytics", adminOnly, getAnalytics);
 
 // Users
 router.get("/users", adminOnly, getAllUsers);

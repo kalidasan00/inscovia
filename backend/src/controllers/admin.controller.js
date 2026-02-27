@@ -262,3 +262,118 @@ export const toggleUserStatus = async (req, res) => {
     res.status(500).json({ error: "Failed to update user status" });
   }
 };
+
+// Get Analytics
+export const getAnalytics = async (req, res) => {
+  try {
+    const [
+      totalInstitutes, verifiedInstitutes, pendingInstitutes,
+      totalCenters, totalUsers, totalReviews, totalPapers, totalAptitude,
+      institutesByCategory, institutesByState,
+      centersByCategory, centersByState, centersByMode,
+      topCenters, reviewsByRating, papersByCategory, aptitudeByTopic,
+      recentUsers, recentInstitutes, recentCenters, paperDownloads
+    ] = await Promise.all([
+      prisma.instituteUser.count({ where: { role: "INSTITUTE" } }),
+      prisma.instituteUser.count({ where: { role: "INSTITUTE", isVerified: true } }),
+      prisma.instituteUser.count({ where: { role: "INSTITUTE", isVerified: false } }),
+      prisma.center.count(),
+      prisma.user.count(),
+      prisma.review.count(),
+      prisma.previousYearPaper.count(),
+      prisma.aptitudeQuestion.count(),
+
+      prisma.instituteUser.groupBy({
+        by: ["primaryCategory"], where: { role: "INSTITUTE" },
+        _count: { id: true }, orderBy: { _count: { id: "desc" } }
+      }),
+      prisma.instituteUser.groupBy({
+        by: ["state"], where: { role: "INSTITUTE" },
+        _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8
+      }),
+      prisma.center.groupBy({
+        by: ["primaryCategory"],
+        _count: { id: true }, orderBy: { _count: { id: "desc" } }
+      }),
+      prisma.center.groupBy({
+        by: ["state"],
+        _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8
+      }),
+      prisma.center.groupBy({
+        by: ["teachingMode"],
+        _count: { id: true }
+      }),
+      prisma.center.findMany({
+        where: { rating: { gt: 0 } },
+        orderBy: { rating: "desc" }, take: 5,
+        select: { id: true, name: true, city: true, rating: true, primaryCategory: true }
+      }),
+      prisma.review.groupBy({
+        by: ["rating"],
+        _count: { id: true },
+        orderBy: { rating: "desc" }
+      }),
+      prisma.previousYearPaper.groupBy({
+        by: ["examCategory"],
+        _count: { id: true }, orderBy: { _count: { id: "desc" } }
+      }),
+      prisma.aptitudeQuestion.groupBy({
+        by: ["topic"],
+        _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8
+      }),
+      prisma.user.findMany({
+        where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        select: { createdAt: true }, orderBy: { createdAt: "asc" }
+      }),
+      prisma.instituteUser.findMany({
+        where: { role: "INSTITUTE", createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        select: { createdAt: true }, orderBy: { createdAt: "asc" }
+      }),
+      prisma.center.findMany({
+        where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        select: { createdAt: true }, orderBy: { createdAt: "asc" }
+      }),
+      prisma.previousYearPaper.aggregate({ _sum: { downloads: true } }),
+    ]);
+
+    const groupByDay = (items) => {
+      const map = {};
+      items.forEach(item => {
+        const day = item.createdAt.toISOString().split("T")[0];
+        map[day] = (map[day] || 0) + 1;
+      });
+      const result = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const key = d.toISOString().split("T")[0];
+        result.push({ date: key, count: map[key] || 0 });
+      }
+      return result;
+    };
+
+    res.json({
+      overview: {
+        totalInstitutes, verifiedInstitutes, pendingInstitutes,
+        totalCenters, totalUsers, totalReviews, totalPapers, totalAptitude,
+        totalDownloads: paperDownloads._sum.downloads || 0,
+      },
+      institutesByCategory: institutesByCategory.map(i => ({ name: i.primaryCategory, count: i._count.id })),
+      institutesByState: institutesByState.map(i => ({ name: i.state, count: i._count.id })),
+      centersByCategory: centersByCategory.map(c => ({ name: c.primaryCategory, count: c._count.id })),
+      centersByState: centersByState.map(c => ({ name: c.state, count: c._count.id })),
+      centersByMode: centersByMode.map(c => ({ name: c.teachingMode, count: c._count.id })),
+      topCenters,
+      reviewsByRating: reviewsByRating.map(r => ({ rating: r.rating, count: r._count.id })),
+      papersByCategory: papersByCategory.map(p => ({ name: p.examCategory, count: p._count.id })),
+      aptitudeByTopic: aptitudeByTopic.map(a => ({ name: a.topic, count: a._count.id })),
+      growth: {
+        users: groupByDay(recentUsers),
+        institutes: groupByDay(recentInstitutes),
+        centers: groupByDay(recentCenters),
+      }
+    });
+  } catch (error) {
+    console.error("Analytics error:", error);
+    res.status(500).json({ error: "Failed to fetch analytics" });
+  }
+};
