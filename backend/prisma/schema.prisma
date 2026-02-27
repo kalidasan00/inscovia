@@ -182,6 +182,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  notifications Notification[]
+
   @@index([email])
 }
 
@@ -247,13 +249,18 @@ model Notification {
   type    NotificationType @default(INFO)
   isRead  Boolean          @default(false)
 
-  // null = broadcast to ALL institutes
+  // Institute notification — null = broadcast to all institutes
   instituteId String?
   institute   InstituteUser? @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+
+  // User notification — null = broadcast to all users
+  userId String?
+  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
   @@index([instituteId])
+  @@index([userId])
   @@index([isRead])
   @@index([createdAt])
 }
