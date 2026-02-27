@@ -48,6 +48,13 @@ enum Difficulty {
   HARD
 }
 
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ALERT
+}
+
 model InstituteUser {
   id       String   @id @default(cuid())
   email    String   @unique
@@ -71,7 +78,8 @@ model InstituteUser {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  centers Center[]
+  centers       Center[]
+  notifications Notification[]
 
   @@index([email])
   @@index([primaryCategory])
@@ -230,4 +238,22 @@ model AptitudeQuestion {
   @@index([isActive])
   @@index([topic, subtopic])
   @@index([topic, difficulty])
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  title   String
+  message String           @db.Text
+  type    NotificationType @default(INFO)
+  isRead  Boolean          @default(false)
+
+  // null = broadcast to ALL institutes
+  instituteId String?
+  institute   InstituteUser? @relation(fields: [instituteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([instituteId])
+  @@index([isRead])
+  @@index([createdAt])
 }
