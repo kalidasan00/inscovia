@@ -1,4 +1,4 @@
-// backend/src/routes/auth.js
+// backend/src/routes/auth.routes.js
 import express from "express";
 import {
   registerInstitute,

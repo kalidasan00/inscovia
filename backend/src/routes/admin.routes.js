@@ -12,7 +12,10 @@ import {
   getAllUsers,
   deleteUser,
   toggleUserStatus,
-  getAnalytics
+  getAnalytics,
+  sendNotification,
+  getAllNotifications,
+  deleteNotification
 } from "../controllers/admin.controller.js";
 import { adminOnly } from "../middleware/admin.middleware.js";
 
@@ -41,5 +44,10 @@ router.get("/analytics", adminOnly, getAnalytics);
 router.get("/users", adminOnly, getAllUsers);
 router.delete("/users/:id", adminOnly, deleteUser);
 router.put("/users/:id/toggle-status", adminOnly, toggleUserStatus);
+
+// Notifications
+router.post("/notifications", adminOnly, sendNotification);
+router.get("/notifications", adminOnly, getAllNotifications);
+router.delete("/notifications/:id", adminOnly, deleteNotification);
 
 export default router;
