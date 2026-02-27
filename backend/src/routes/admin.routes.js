@@ -8,22 +8,34 @@ import {
   deleteInstitute,
   toggleInstituteStatus,
   getAllCenters,
-  deleteCenter
+  deleteCenter,
+  getAllUsers,
+  deleteUser,
+  toggleUserStatus
 } from "../controllers/admin.controller.js";
 import { adminOnly } from "../middleware/admin.middleware.js";
 
 const router = express.Router();
 
-// Public route - Admin login
+// Public
 router.post("/login", adminLogin);
 
-// Protected admin routes
+// Dashboard
 router.get("/dashboard/stats", adminOnly, getDashboardStats);
+
+// Institutes
 router.get("/institutes", adminOnly, getAllInstitutes);
 router.put("/institutes/:id/approve", adminOnly, approveInstitute);
 router.put("/institutes/:id/toggle-status", adminOnly, toggleInstituteStatus);
 router.delete("/institutes/:id", adminOnly, deleteInstitute);
+
+// Centers
 router.get("/centers", adminOnly, getAllCenters);
 router.delete("/centers/:id", adminOnly, deleteCenter);
+
+// Users
+router.get("/users", adminOnly, getAllUsers);
+router.delete("/users/:id", adminOnly, deleteUser);
+router.put("/users/:id/toggle-status", adminOnly, toggleUserStatus);
 
 export default router;

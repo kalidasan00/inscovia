@@ -8,60 +8,39 @@ export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('🔍 Admin login attempt:', email); // DEBUG
+    console.log('🔍 Admin login attempt:', email);
 
     if (!email || !password) {
-      console.log('❌ Missing email or password'); // DEBUG
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    // Find admin user
-    const admin = await prisma.instituteUser.findUnique({
-      where: { email }
-    });
-
-    console.log('👤 Admin found:', !!admin); // DEBUG
-    console.log('🎭 Role:', admin?.role); // DEBUG
-    console.log('✅ isActive:', admin?.isActive); // DEBUG
+    const admin = await prisma.instituteUser.findUnique({ where: { email } });
 
     if (!admin || admin.role !== "ADMIN") {
-      console.log('❌ Invalid credentials - not admin or not found'); // DEBUG
       return res.status(401).json({ error: "Invalid admin credentials" });
     }
 
     if (!admin.isActive) {
-      console.log('❌ Admin account deactivated'); // DEBUG
       return res.status(403).json({ error: "Admin account is deactivated" });
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, admin.password);
-    console.log('🔑 Password valid:', isPasswordValid); // DEBUG
 
     if (!isPasswordValid) {
-      console.log('❌ Invalid password'); // DEBUG
       return res.status(401).json({ error: "Invalid admin credentials" });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { id: admin.id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "7d" }
     );
 
-    console.log('✅ Login successful, token generated'); // DEBUG
-
     res.json({
       success: true,
       message: "Admin login successful",
       token,
-      admin: {
-        id: admin.id,
-        name: admin.instituteName,
-        email: admin.email,
-        role: admin.role
-      }
+      admin: { id: admin.id, name: admin.instituteName, email: admin.email, role: admin.role }
     });
   } catch (error) {
     console.error("❌ Admin login error:", error);
@@ -72,8 +51,6 @@ export const adminLogin = async (req, res) => {
 // Get Dashboard Statistics
 export const getDashboardStats = async (req, res) => {
   try {
-    console.log('📊 Fetching dashboard stats...'); // DEBUG
-
     const [
       totalCenters,
       totalInstitutes,
@@ -85,48 +62,23 @@ export const getDashboardStats = async (req, res) => {
     ] = await Promise.all([
       prisma.center.count(),
       prisma.instituteUser.count({ where: { role: "INSTITUTE" } }),
-      prisma.instituteUser.count({
-        where: { role: "INSTITUTE", isVerified: false }
-      }),
-      prisma.instituteUser.count({
-        where: { role: "INSTITUTE", isActive: true }
-      }),
+      prisma.instituteUser.count({ where: { role: "INSTITUTE", isVerified: false } }),
+      prisma.instituteUser.count({ where: { role: "INSTITUTE", isActive: true } }),
       prisma.user.count(),
       prisma.center.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        include: {
-          owner: {
-            select: {
-              instituteName: true,
-              email: true
-            }
-          }
-        }
+        include: { owner: { select: { instituteName: true, email: true } } }
       }),
       prisma.review.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
-        include: {
-          center: {
-            select: {
-              name: true
-            }
-          }
-        }
+        include: { center: { select: { name: true } } }
       })
     ]);
 
-    console.log('✅ Dashboard stats loaded successfully'); // DEBUG
-
     res.json({
-      stats: {
-        totalCenters,
-        totalInstitutes,
-        pendingInstitutes,
-        activeInstitutes,
-        totalUsers
-      },
+      stats: { totalCenters, totalInstitutes, pendingInstitutes, activeInstitutes, totalUsers },
       recentCenters,
       recentReviews
     });
@@ -140,27 +92,16 @@ export const getDashboardStats = async (req, res) => {
 export const getAllInstitutes = async (req, res) => {
   try {
     const { status } = req.query;
-
     let where = { role: "INSTITUTE" };
 
-    if (status === "pending") {
-      where.isVerified = false;
-    } else if (status === "verified") {
-      where.isVerified = true;
-    } else if (status === "active") {
-      where.isActive = true;
-      where.isVerified = true;
-    } else if (status === "inactive") {
-      where.isActive = false;
-    }
+    if (status === "pending") where.isVerified = false;
+    else if (status === "verified") where.isVerified = true;
+    else if (status === "active") { where.isActive = true; where.isVerified = true; }
+    else if (status === "inactive") where.isActive = false;
 
     const institutes = await prisma.instituteUser.findMany({
       where,
-      include: {
-        _count: {
-          select: { centers: true }
-        }
-      },
+      include: { _count: { select: { centers: true } } },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -175,39 +116,23 @@ export const getAllInstitutes = async (req, res) => {
 export const approveInstitute = async (req, res) => {
   try {
     const { id } = req.params;
-
     const institute = await prisma.instituteUser.update({
       where: { id },
-      data: {
-        isVerified: true,
-        isActive: true
-      }
+      data: { isVerified: true, isActive: true }
     });
-
-    res.json({
-      success: true,
-      message: "Institute approved successfully",
-      institute
-    });
+    res.json({ success: true, message: "Institute approved successfully", institute });
   } catch (error) {
     console.error("Approve institute error:", error);
     res.status(500).json({ error: "Failed to approve institute" });
   }
 };
 
-// Reject/Delete Institute
+// Delete Institute
 export const deleteInstitute = async (req, res) => {
   try {
     const { id } = req.params;
-
-    await prisma.instituteUser.delete({
-      where: { id }
-    });
-
-    res.json({
-      success: true,
-      message: "Institute deleted successfully"
-    });
+    await prisma.instituteUser.delete({ where: { id } });
+    res.json({ success: true, message: "Institute deleted successfully" });
   } catch (error) {
     console.error("Delete institute error:", error);
     res.status(500).json({ error: "Failed to delete institute" });
@@ -218,14 +143,8 @@ export const deleteInstitute = async (req, res) => {
 export const toggleInstituteStatus = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const institute = await prisma.instituteUser.findUnique({
-      where: { id }
-    });
-
-    if (!institute) {
-      return res.status(404).json({ error: "Institute not found" });
-    }
+    const institute = await prisma.instituteUser.findUnique({ where: { id } });
+    if (!institute) return res.status(404).json({ error: "Institute not found" });
 
     const updated = await prisma.instituteUser.update({
       where: { id },
@@ -249,18 +168,11 @@ export const getAllCenters = async (req, res) => {
     const centers = await prisma.center.findMany({
       include: {
         owner: {
-          select: {
-            instituteName: true,
-            email: true,
-            phone: true,
-            isVerified: true,
-            isActive: true
-          }
+          select: { instituteName: true, email: true, phone: true, isVerified: true, isActive: true }
         }
       },
       orderBy: { createdAt: 'desc' }
     });
-
     res.json({ centers });
   } catch (error) {
     console.error("Get centers error:", error);
@@ -272,17 +184,81 @@ export const getAllCenters = async (req, res) => {
 export const deleteCenter = async (req, res) => {
   try {
     const { id } = req.params;
+    await prisma.center.delete({ where: { id } });
+    res.json({ success: true, message: "Center deleted successfully" });
+  } catch (error) {
+    console.error("Delete center error:", error);
+    res.status(500).json({ error: "Failed to delete center" });
+  }
+};
 
-    await prisma.center.delete({
-      where: { id }
+// Get All Users
+export const getAllUsers = async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+            { phone: { contains: search, mode: "insensitive" } }
+          ]
+        }
+      : {};
+
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        gender: true,
+        isActive: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ users, total: users.length });
+  } catch (error) {
+    console.error("Get users error:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+};
+
+// Delete User
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.user.delete({ where: { id } });
+    res.json({ success: true, message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+};
+
+// Toggle User Active Status
+export const toggleUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { isActive: !user.isActive }
     });
 
     res.json({
       success: true,
-      message: "Center deleted successfully"
+      message: `User ${updated.isActive ? 'activated' : 'deactivated'} successfully`,
+      user: updated
     });
   } catch (error) {
-    console.error("Delete center error:", error);
-    res.status(500).json({ error: "Failed to delete center" });
+    console.error("Toggle user status error:", error);
+    res.status(500).json({ error: "Failed to update user status" });
   }
 };
