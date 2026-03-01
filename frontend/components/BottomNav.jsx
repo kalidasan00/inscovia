@@ -8,10 +8,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  if (pathname?.startsWith('/institute/login') || pathname?.startsWith('/institute/register')) {
-    return null;
-  }
-
+  // ✅ ALL hooks must come BEFORE any early return
   const [isInstituteLoggedIn, setIsInstituteLoggedIn] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
@@ -29,7 +26,12 @@ export default function BottomNav() {
     };
   }, [pathname]);
 
-  // ✅ Check if study abroad filter is active
+  // ✅ Early return AFTER all hooks
+  if (pathname?.startsWith('/institute/login') ||
+      pathname?.startsWith('/institute/register')) {
+    return null;
+  }
+
   const isStudyAbroadActive = pathname?.startsWith("/centers") && searchParams?.get("category") === "STUDY_ABROAD";
   const isCentersActive = pathname?.startsWith("/centers") && !isStudyAbroadActive;
 
@@ -56,7 +58,7 @@ export default function BottomNav() {
     },
     {
       name: "Study Abroad",
-      href: "/centers?category=STUDY_ABROAD", // ✅ Filter centers by STUDY_ABROAD
+      href: "/centers?category=STUDY_ABROAD",
       isActive: isStudyAbroadActive,
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +73,9 @@ export default function BottomNav() {
         : isUserLoggedIn
           ? "/user/dashboard"
           : "/user-menu",
-      isActive: pathname?.startsWith("/institute/dashboard") || pathname?.startsWith("/user/dashboard") || pathname?.startsWith("/user-menu"),
+      isActive: pathname?.startsWith("/institute/dashboard") ||
+                pathname?.startsWith("/user/dashboard") ||
+                pathname?.startsWith("/user-menu"),
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
