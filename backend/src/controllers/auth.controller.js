@@ -1,4 +1,4 @@
-// backend/src/controllers/auth.controller.js - OPTIMIZED VERSION
+// backend/src/controllers/auth.controller.js
 import prisma from "../lib/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -12,16 +12,10 @@ const resetTokenStore = new Map();
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of otpStore.entries()) {
-    if (now > value.expiresAt) {
-      otpStore.delete(key);
-      console.log(`🧹 Cleaned expired OTP for ${key}`);
-    }
+    if (now > value.expiresAt) { otpStore.delete(key); console.log(`🧹 Cleaned expired OTP for ${key}`); }
   }
   for (const [key, value] of resetTokenStore.entries()) {
-    if (now > value.expiresAt) {
-      resetTokenStore.delete(key);
-      console.log(`🧹 Cleaned expired reset token`);
-    }
+    if (now > value.expiresAt) { resetTokenStore.delete(key); console.log(`🧹 Cleaned expired reset token`); }
   }
 }, 10 * 60 * 1000);
 
@@ -35,18 +29,16 @@ const generateUniqueSlug = (instituteName, city) => {
   return `${baseSlug}-${citySlug}-${timestamp}`;
 };
 
-// ✅ All valid categories including STUDY_ABROAD
+// ✅ FIXED — matches schema InstituteCategory & CenterCategory enums exactly
 const validCategories = [
-  'TECHNOLOGY',
-  'COMPETITIVE_EXAMS',
-  'LANGUAGE_TRAINING',
-  'MANAGEMENT',
-  'PROFESSIONAL_COURSES',
+  'SCHOOL_TUITION',
+  'STUDY_ABROAD',
+  'LANGUAGES',
+  'IT_TECHNOLOGY',
   'DESIGN_CREATIVE',
-  'DIGITAL_MARKETING',
+  'MANAGEMENT',
   'SKILL_DEVELOPMENT',
   'EXAM_COACHING',
-  'STUDY_ABROAD',  // ✅ NEW
 ];
 
 const validModes = ['ONLINE', 'OFFLINE', 'HYBRID'];
@@ -56,15 +48,10 @@ const validModes = ['ONLINE', 'OFFLINE', 'HYBRID'];
 export const sendOTP = async (req, res) => {
   try {
     const { email, instituteName } = req.body;
-
-    if (!email || !instituteName) {
-      return res.status(400).json({ error: "Email and institute name are required" });
-    }
+    if (!email || !instituteName) return res.status(400).json({ error: "Email and institute name are required" });
 
     const existingUser = await prisma.instituteUser.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: "Email already registered" });
-    }
+    if (existingUser) return res.status(400).json({ error: "Email already registered" });
 
     const otp = generateOTP();
     const expiresAt = Date.now() + 10 * 60 * 1000;
@@ -82,22 +69,12 @@ export const sendOTP = async (req, res) => {
 export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
-
-    if (!email || !otp) {
-      return res.status(400).json({ error: "Email and OTP are required" });
-    }
+    if (!email || !otp) return res.status(400).json({ error: "Email and OTP are required" });
 
     const storedData = otpStore.get(email);
-    if (!storedData) {
-      return res.status(400).json({ error: "OTP not found or expired. Please request a new one." });
-    }
-    if (Date.now() > storedData.expiresAt) {
-      otpStore.delete(email);
-      return res.status(400).json({ error: "OTP expired. Please request a new one." });
-    }
-    if (storedData.otp !== otp) {
-      return res.status(400).json({ error: "Invalid OTP. Please try again." });
-    }
+    if (!storedData) return res.status(400).json({ error: "OTP not found or expired. Please request a new one." });
+    if (Date.now() > storedData.expiresAt) { otpStore.delete(email); return res.status(400).json({ error: "OTP expired. Please request a new one." }); }
+    if (storedData.otp !== otp) return res.status(400).json({ error: "Invalid OTP. Please try again." });
 
     otpStore.delete(email);
     console.log(`✅ OTP verified for ${email}`);
@@ -108,7 +85,7 @@ export const verifyOTP = async (req, res) => {
   }
 };
 
-// ============= FORGOT PASSWORD FUNCTIONS =============
+// ============= FORGOT PASSWORD =============
 
 export const forgotPassword = async (req, res) => {
   try {
@@ -116,9 +93,7 @@ export const forgotPassword = async (req, res) => {
     if (!email) return res.status(400).json({ error: "Email is required" });
 
     const user = await prisma.instituteUser.findUnique({ where: { email: email.toLowerCase().trim() } });
-    if (!user) {
-      return res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
-    }
+    if (!user) return res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
 
     const resetToken = generateResetToken();
     const expiresAt = Date.now() + 60 * 60 * 1000;
@@ -140,10 +115,7 @@ export const verifyResetToken = async (req, res) => {
 
     const tokenData = resetTokenStore.get(token);
     if (!tokenData) return res.status(400).json({ error: "Invalid or expired reset token" });
-    if (Date.now() > tokenData.expiresAt) {
-      resetTokenStore.delete(token);
-      return res.status(400).json({ error: "Reset token has expired" });
-    }
+    if (Date.now() > tokenData.expiresAt) { resetTokenStore.delete(token); return res.status(400).json({ error: "Reset token has expired" }); }
 
     res.json({ success: true, message: "Token is valid" });
   } catch (error) {
@@ -160,16 +132,10 @@ export const resetPassword = async (req, res) => {
 
     const tokenData = resetTokenStore.get(token);
     if (!tokenData) return res.status(400).json({ error: "Invalid or expired reset token" });
-    if (Date.now() > tokenData.expiresAt) {
-      resetTokenStore.delete(token);
-      return res.status(400).json({ error: "Reset token has expired" });
-    }
+    if (Date.now() > tokenData.expiresAt) { resetTokenStore.delete(token); return res.status(400).json({ error: "Reset token has expired" }); }
 
     const user = await prisma.instituteUser.findUnique({ where: { email: tokenData.email } });
-    if (!user) {
-      resetTokenStore.delete(token);
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) { resetTokenStore.delete(token); return res.status(404).json({ error: "User not found" }); }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     await prisma.instituteUser.update({ where: { id: user.id }, data: { password: hashedPassword } });
@@ -200,19 +166,16 @@ export const registerInstitute = async (req, res) => {
       return res.status(400).json({ error: "All required fields must be filled" });
     }
 
-    // Validate primary category
+    // ✅ Validate primary category against schema enum
     if (!validCategories.includes(primaryCategory)) {
-      return res.status(400).json({ error: "Invalid primary category" });
+      return res.status(400).json({ error: `Invalid primary category. Must be one of: ${validCategories.join(', ')}` });
     }
 
-    // ✅ teachingMode is optional for STUDY_ABROAD, required for others
-    if (primaryCategory !== 'STUDY_ABROAD') {
-      if (!teachingMode) {
-        return res.status(400).json({ error: "Teaching mode is required" });
-      }
-      if (!validModes.includes(teachingMode)) {
-        return res.status(400).json({ error: "Invalid teaching mode" });
-      }
+    // ✅ teachingMode — always required (schema has no nullable on teachingMode)
+    // Default to OFFLINE for STUDY_ABROAD if not provided
+    const resolvedTeachingMode = teachingMode || 'OFFLINE';
+    if (!validModes.includes(resolvedTeachingMode)) {
+      return res.status(400).json({ error: "Invalid teaching mode" });
     }
 
     // Validate secondary categories
@@ -220,17 +183,15 @@ export const registerInstitute = async (req, res) => {
       return res.status(400).json({ error: "Maximum 2 secondary categories allowed" });
     }
     if (secondaryCategories.some(cat => !validCategories.includes(cat))) {
-      return res.status(400).json({ error: "Invalid secondary category" });
+      return res.status(400).json({ error: `Invalid secondary category. Must be one of: ${validCategories.join(', ')}` });
     }
     if (secondaryCategories.includes(primaryCategory)) {
       return res.status(400).json({ error: "Primary category cannot be a secondary category" });
     }
 
-    // Check if email already exists
+    // Check duplicate email
     const existingUser = await prisma.instituteUser.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: "Email already registered" });
-    }
+    if (existingUser) return res.status(400).json({ error: "Email already registered" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const slug = generateUniqueSlug(instituteName, city);
@@ -238,12 +199,17 @@ export const registerInstitute = async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       const instituteUser = await tx.instituteUser.create({
         data: {
-          instituteName, email, phone,
+          instituteName,
+          email,
+          phone,
           password: hashedPassword,
           primaryCategory,
           secondaryCategories,
-          teachingMode: primaryCategory === 'STUDY_ABROAD' ? (teachingMode || 'ONLINE') : teachingMode,
-          state, district, city, location,
+          teachingMode: resolvedTeachingMode,
+          state,
+          district,
+          city,
+          location,
           isVerified: otpVerified || false
         }
       });
@@ -254,14 +220,18 @@ export const registerInstitute = async (req, res) => {
           slug,
           primaryCategory,
           secondaryCategories,
-          teachingMode: primaryCategory === 'STUDY_ABROAD' ? (teachingMode || 'ONLINE') : teachingMode,
-          state, district, city, location,
+          teachingMode: resolvedTeachingMode,
+          state,
+          district,
+          city,
+          location,
           description: `Welcome to ${instituteName}! ${
             primaryCategory === 'STUDY_ABROAD'
               ? `We are a study abroad consultancy located in ${city}, ${state}.`
               : `We are a ${primaryCategory.toLowerCase().replace(/_/g, ' ')} institute located in ${city}, ${state}.`
           }`,
-          phone, email,
+          phone,
+          email,
           rating: 0,
           courses: [],
           courseDetails: [],
@@ -350,7 +320,12 @@ export const loginInstitute = async (req, res) => {
         primaryCategory: user.primaryCategory,
         secondaryCategories: user.secondaryCategories,
         teachingMode: user.teachingMode,
-        location: { state: user.state, district: user.district, city: user.city, location: user.location }
+        location: {
+          state: user.state,
+          district: user.district,
+          city: user.city,
+          location: user.location
+        }
       },
       centers: user.centers
     });
@@ -406,7 +381,6 @@ export const getCurrentUser = async (req, res) => {
             facebook: true,
             instagram: true,
             linkedin: true,
-            // ✅ NEW: Study abroad fields
             countries: true,
             services: true,
             topUniversities: true,
