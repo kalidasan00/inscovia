@@ -1,3 +1,4 @@
+// components/AIChatWidget.js
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -25,6 +26,7 @@ export default function AIChatWidget() {
   const [centerCards, setCenterCards] = useState([]);
   const [error, setError] = useState(null);
   const [retryMsg, setRetryMsg] = useState(null);
+  const [panelHeight, setPanelHeight] = useState("100dvh");
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -36,6 +38,32 @@ export default function AIChatWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, centerCards]);
+
+  // ✅ THE REAL FIX:
+  // On iOS Safari, `bottom: 0` does NOT move up when keyboard opens.
+  // We listen to window.visualViewport resize — which DOES shrink when
+  // the keyboard appears — and manually set the panel height to match.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updateHeight = () => {
+      if (window.visualViewport) {
+        // visualViewport.height = screen height minus keyboard
+        const navbarHeight = document.querySelector("nav")?.offsetHeight || 64;
+        const availableHeight = window.visualViewport.height - navbarHeight;
+        setPanelHeight(`${availableHeight}px`);
+      }
+    };
+
+    updateHeight();
+    window.visualViewport?.addEventListener("resize", updateHeight);
+    window.visualViewport?.addEventListener("scroll", updateHeight);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateHeight);
+      window.visualViewport?.removeEventListener("scroll", updateHeight);
+    };
+  }, [isOpen]);
 
   const sendMessage = async (text, isRetry = false) => {
     const userText = text || input.trim();
@@ -104,20 +132,20 @@ export default function AIChatWidget() {
 
       {isOpen && (
         <>
-          {/* ===================== MOBILE ===================== */}
-          {/*
-            MOBILE FIX: We use dvh (dynamic viewport height) which
-            accounts for the keyboard. The panel stays BELOW the navbar
-            and ABOVE the keyboard naturally. No JS needed.
-            - position: fixed, top = navbar height, bottom = 0
-            - height is calculated by CSS, not JS
-            - input is always anchored at bottom of the panel
+          {/* ===================== MOBILE =====================
+            FIX EXPLANATION:
+            - iOS Safari does NOT shrink `bottom:0` fixed elements when keyboard opens
+            - `window.visualViewport.height` DOES shrink when keyboard opens
+            - We listen to visualViewport resize and update panel height in JS
+            - Panel height = visualViewport.height - navbar height
+            - This means keyboard can NEVER overlap the chat panel
+            - `top` is set to navbar bottom, height = panelHeight from state
           */}
           <div
-            className="md:hidden fixed inset-x-0 z-[60] flex flex-col"
+            className="md:hidden fixed inset-x-0 z-[60] flex flex-col overflow-hidden"
             style={{
-              top: "64px",       /* navbar height */
-              bottom: 0,
+              top: `${document.querySelector("nav")?.offsetHeight || 64}px`,
+              height: panelHeight,
               background: "#0f0f13",
             }}
           >
@@ -146,7 +174,7 @@ export default function AIChatWidget() {
               </div>
             </div>
 
-            {/* Messages — flex-1 scrollable */}
+            {/* Messages */}
             <div ref={chatBodyRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-3 overscroll-contain">
               <MessageList
                 messages={messages} loading={loading} error={error}
@@ -172,7 +200,7 @@ export default function AIChatWidget() {
               </div>
             )}
 
-            {/* Input — always at bottom, never overlapped by keyboard */}
+            {/* Input */}
             <div className="flex-shrink-0 px-3 py-3 border-t border-white/10"
               style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
               <div className="flex gap-2 items-center">
@@ -184,10 +212,12 @@ export default function AIChatWidget() {
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); sendMessage(); } }}
                   placeholder="Ask about courses..."
                   disabled={loading}
-                  style={{ fontSize: "16px" }} /* prevents iOS zoom */
                   className="flex-1 px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-40"
-                  // Inline style for background since Tailwind doesn't have this shade
-                  style={{ fontSize: "16px", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
+                  style={{
+                    fontSize: "16px", // prevents iOS auto-zoom on focus
+                    background: "rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(255,255,255,0.12)"
+                  }}
                 />
                 <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
                   className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-30 transition-opacity"
@@ -202,7 +232,6 @@ export default function AIChatWidget() {
           <div className="hidden md:flex fixed bottom-8 right-8 z-50 w-[380px] flex-col rounded-2xl overflow-hidden shadow-2xl"
             style={{ height: "560px", background: "#0f0f13", border: "1px solid rgba(255,255,255,0.1)" }}>
 
-            {/* Header */}
             <div className="flex-shrink-0 flex items-center justify-between px-4 py-3"
               style={{ background: "linear-gradient(135deg, #1e3a8a, #312e81)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
               <div className="flex items-center gap-3">
@@ -227,7 +256,6 @@ export default function AIChatWidget() {
               </div>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 overscroll-contain">
               <MessageList
                 messages={messages} loading={loading} error={error}
@@ -238,7 +266,6 @@ export default function AIChatWidget() {
               />
             </div>
 
-            {/* Suggestions */}
             {showSuggestions && (
               <div className="flex-shrink-0 px-3 pt-2 pb-1 border-t border-white/10">
                 <p className="text-[10px] text-white/30 mb-1.5">💡 Try asking:</p>
@@ -253,7 +280,6 @@ export default function AIChatWidget() {
               </div>
             )}
 
-            {/* Input */}
             <div className="flex-shrink-0 px-3 py-3 border-t border-white/10">
               <div className="flex gap-2 items-center">
                 <input
@@ -312,7 +338,6 @@ function MessageList({ messages, loading, error, retryMsg, centerCards, sendMess
         </div>
       ))}
 
-      {/* Typing indicator */}
       {loading && (
         <div className="flex justify-start items-center gap-2">
           {aiAvatar}
@@ -326,7 +351,6 @@ function MessageList({ messages, loading, error, retryMsg, centerCards, sendMess
         </div>
       )}
 
-      {/* Error */}
       {error && !loading && (
         <div className="flex justify-start">
           <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-1 mr-1.5">
@@ -343,7 +367,6 @@ function MessageList({ messages, loading, error, retryMsg, centerCards, sendMess
         </div>
       )}
 
-      {/* Center Cards */}
       {centerCards.length > 0 && !loading && (
         <div className="space-y-2">
           <p className="text-xs text-white/30 font-medium px-1">📍 Recommended for you:</p>
