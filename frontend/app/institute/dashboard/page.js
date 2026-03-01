@@ -1,3 +1,4 @@
+// app/institute/dashboard/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -35,16 +36,25 @@ export default function InstituteDashboard() {
       setInstitute(data.user);
       setCenter(data.center);
       setCenterSlug(data.center?.slug);
+      // ✅ Keep in sync so Navbar bell icon works correctly
+      localStorage.setItem("instituteLoggedIn", "true");
     } catch {
+      // ✅ Clean up all auth keys on failure
+      localStorage.removeItem("instituteToken");
+      localStorage.removeItem("instituteData");
+      localStorage.removeItem("instituteLoggedIn");
       router.push("/institute/login");
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Fixed: clears all 3 keys + fires event so Navbar bell disappears immediately
   const handleLogout = () => {
     localStorage.removeItem("instituteToken");
     localStorage.removeItem("instituteData");
+    localStorage.removeItem("instituteLoggedIn");
+    window.dispatchEvent(new Event("authStateChanged"));
     setShowLogoutModal(false);
     router.push("/institute/login");
   };
@@ -154,7 +164,6 @@ export default function InstituteDashboard() {
     return labels[category] || category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
   };
 
-  // Parse school tuition data from courseDetails
   const schoolData = (() => {
     if (!isSchoolTuition) return null;
     const cd = center?.courseDetails;
@@ -303,7 +312,7 @@ export default function InstituteDashboard() {
               </p>
             </div>
 
-            {/* ── STUDY ABROAD ─────────────────────────────────────── */}
+            {/* STUDY ABROAD */}
             {isStudyAbroad && (
               <>
                 <div className="mb-3">
@@ -366,10 +375,9 @@ export default function InstituteDashboard() {
               </>
             )}
 
-            {/* ── SCHOOL TUITION ───────────────────────────────────── */}
+            {/* SCHOOL TUITION */}
             {isSchoolTuition && (
               <>
-                {/* Boards */}
                 {schoolData?.boards?.length > 0 && (
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
@@ -386,7 +394,6 @@ export default function InstituteDashboard() {
                   </div>
                 )}
 
-                {/* Classes */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-sm font-bold text-gray-900">Classes</h2>
@@ -410,7 +417,6 @@ export default function InstituteDashboard() {
                   )}
                 </div>
 
-                {/* Subjects */}
                 {schoolData?.subjects?.length > 0 && (
                   <div className="mb-3">
                     <h2 className="text-sm font-bold text-gray-900 mb-2">Subjects</h2>
@@ -424,7 +430,6 @@ export default function InstituteDashboard() {
                   </div>
                 )}
 
-                {/* Special Programs */}
                 {schoolData?.specialPrograms?.length > 0 && (
                   <div className="mb-3">
                     <h2 className="text-sm font-bold text-gray-900 mb-2">Special Programs</h2>
@@ -443,7 +448,7 @@ export default function InstituteDashboard() {
               </>
             )}
 
-            {/* ── COURSES (all other categories) ───────────────────── */}
+            {/* COURSES */}
             {!isStudyAbroad && !isSchoolTuition && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">

@@ -1,3 +1,4 @@
+// app/institute/register/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -277,7 +278,7 @@ export default function RegisterInstitute() {
                         </select>
                       </div>
 
-                      {/* Secondary Categories — only shown if allowed secondaries exist */}
+                      {/* Secondary Categories */}
                       {formData.primaryCategory && availableSecondary.length > 0 && (
                         <div>
                           <label className={labelClass}>

@@ -24,7 +24,8 @@ export default function Navbar() {
         const userAuth = localStorage.getItem("userLoggedIn") === "true";
         setIsInstituteLoggedIn(instituteAuth);
         setIsUserLoggedIn(userAuth);
-        if (instituteAuth) fetchUnreadCount();
+        if (instituteAuth) fetchInstituteUnreadCount();
+        else if (userAuth) fetchUserUnreadCount();
         else setUnreadCount(0);
       } catch (error) {
         console.error("Error checking auth:", error);
@@ -45,11 +46,24 @@ export default function Navbar() {
 
   useEffect(() => { setIsOpen(false); }, [pathname]);
 
-  const fetchUnreadCount = async () => {
+  const fetchInstituteUnreadCount = async () => {
     try {
       const token = localStorage.getItem("instituteToken");
       if (!token) return;
       const res = await fetch(`${API_URL}/auth/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setUnreadCount(data.unreadCount || 0);
+    } catch {}
+  };
+
+  const fetchUserUnreadCount = async () => {
+    try {
+      const token = localStorage.getItem("userToken");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/user/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) return;
@@ -119,13 +133,11 @@ export default function Navbar() {
             {/* Auth */}
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
-                {/* Bell — only for institute */}
-                {isInstituteLoggedIn && (
-                  <Link
-                    href="/institute/notifications"
+                {/* Bell — institute or user */}
+                {(isInstituteLoggedIn || isUserLoggedIn) && (
+                  <Link href="/notifications"
                     className="relative p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors"
-                    title="Notifications"
-                  >
+                    title="Notifications">
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
@@ -154,14 +166,10 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile: bell + hamburger */}
           <div className="md:hidden flex items-center gap-2">
-            {isInstituteLoggedIn && (
-              <Link
-                href="/institute/notifications"
-                className="relative p-1.5 text-gray-500 hover:text-blue-600 rounded-md"
-                title="Notifications"
-              >
+            {(isInstituteLoggedIn || isUserLoggedIn) && (
+              <Link href="/notifications"
+                className="relative p-1.5 text-gray-500 hover:text-blue-600 rounded-md" title="Notifications">
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
