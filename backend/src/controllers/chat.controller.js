@@ -1,60 +1,68 @@
-// backend/src/controllers/chat.controller.js - GROQ VERSION (FREE)
+// backend/src/controllers/chat.controller.js
 import prisma from "../lib/prisma.js";
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// ✅ Fetch relevant centers from DB based on message keywords
+// ✅ All category values match schema enums exactly
 const getRelevantCenters = async (message) => {
   const msg = message.toLowerCase();
 
   let categoryFilter = [];
 
-  if (msg.includes("study abroad") || msg.includes("abroad") || msg.includes("usa") || msg.includes("uk") ||
-      msg.includes("canada") || msg.includes("australia") || msg.includes("visa") || msg.includes("ielts") ||
-      msg.includes("toefl") || msg.includes("overseas") || msg.includes("foreign university")) {
+  if (msg.includes("study abroad") || msg.includes("abroad") || msg.includes("usa") ||
+      msg.includes("uk") || msg.includes("canada") || msg.includes("australia") ||
+      msg.includes("visa") || msg.includes("overseas") || msg.includes("foreign university")) {
     categoryFilter.push("STUDY_ABROAD");
   }
   if (msg.includes("coding") || msg.includes("software") || msg.includes("programming") ||
-      msg.includes("python") || msg.includes("java") || msg.includes("web") || msg.includes("it") ||
-      msg.includes("technology") || msg.includes("computer")) {
-    categoryFilter.push("TECHNOLOGY");
+      msg.includes("python") || msg.includes("java") || msg.includes("web") ||
+      msg.includes("it") || msg.includes("technology") || msg.includes("computer") ||
+      msg.includes("cyber") || msg.includes("ai") || msg.includes("ml") ||
+      msg.includes("data science")) {
+    categoryFilter.push("IT_TECHNOLOGY");
   }
-  if (msg.includes("jee") || msg.includes("neet") || msg.includes("upsc") || msg.includes("psc") ||
-      msg.includes("competitive") || msg.includes("entrance") || msg.includes("exam") ||
-      msg.includes("ssc") || msg.includes("bank")) {
-    categoryFilter.push("COMPETITIVE_EXAMS");
+  if (msg.includes("jee") || msg.includes("neet") || msg.includes("upsc") ||
+      msg.includes("psc") || msg.includes("competitive") || msg.includes("entrance") ||
+      msg.includes("exam") || msg.includes("ssc") || msg.includes("bank") ||
+      msg.includes("coaching")) {
+    categoryFilter.push("EXAM_COACHING");
   }
   if (msg.includes("english") || msg.includes("language") || msg.includes("spoken") ||
-      msg.includes("communication") || msg.includes("ielts") || msg.includes("french") ||
-      msg.includes("german") || msg.includes("arabic")) {
-    categoryFilter.push("LANGUAGE_TRAINING");
+      msg.includes("communication") || msg.includes("ielts") || msg.includes("toefl") ||
+      msg.includes("french") || msg.includes("german") || msg.includes("arabic") ||
+      msg.includes("hindi") || msg.includes("spanish")) {
+    categoryFilter.push("LANGUAGES");
   }
   if (msg.includes("mba") || msg.includes("management") || msg.includes("business") ||
-      msg.includes("marketing") || msg.includes("finance")) {
+      msg.includes("marketing") || msg.includes("finance") || msg.includes("hr")) {
     categoryFilter.push("MANAGEMENT");
   }
-  if (msg.includes("ca") || msg.includes("cma") || msg.includes("cs") || msg.includes("chartered") ||
-      msg.includes("accountan") || msg.includes("professional")) {
-    categoryFilter.push("PROFESSIONAL_COURSES");
-  }
-  if (msg.includes("design") || msg.includes("graphic") || msg.includes("ui") || msg.includes("ux") ||
-      msg.includes("creative") || msg.includes("art") || msg.includes("photoshop")) {
+  if (msg.includes("design") || msg.includes("graphic") || msg.includes("ui") ||
+      msg.includes("ux") || msg.includes("creative") || msg.includes("art") ||
+      msg.includes("photoshop") || msg.includes("illustration") || msg.includes("animation")) {
     categoryFilter.push("DESIGN_CREATIVE");
   }
-  if (msg.includes("digital marketing") || msg.includes("seo") || msg.includes("social media") ||
-      msg.includes("google ads")) {
-    categoryFilter.push("DIGITAL_MARKETING");
-  }
-  if (msg.includes("skill") || msg.includes("vocational") || msg.includes("trade")) {
+  if (msg.includes("skill") || msg.includes("vocational") || msg.includes("trade") ||
+      msg.includes("digital marketing") || msg.includes("seo") || msg.includes("social media") ||
+      msg.includes("google ads") || msg.includes("ca") || msg.includes("tally") ||
+      msg.includes("accountan")) {
     categoryFilter.push("SKILL_DEVELOPMENT");
+  }
+  if (msg.includes("school") || msg.includes("tuition") || msg.includes("class 10") ||
+      msg.includes("class 12") || msg.includes("cbse") || msg.includes("icse") ||
+      msg.includes("state board") || msg.includes("primary") || msg.includes("secondary")) {
+    categoryFilter.push("SCHOOL_TUITION");
   }
 
   // Detect location
   let locationFilter = null;
-  const locationKeywords = ["kozhikode", "calicut", "kochi", "cochin", "trivandrum", "thiruvananthapuram",
-    "thrissur", "malappuram", "kannur", "kollam", "palakkad", "bangalore", "chennai", "mumbai",
-    "delhi", "hyderabad", "pune", "kolkata", "kerala", "karnataka"];
+  const locationKeywords = [
+    "kozhikode", "calicut", "kochi", "cochin", "trivandrum", "thiruvananthapuram",
+    "thrissur", "malappuram", "kannur", "kollam", "palakkad", "kottayam", "alappuzha",
+    "bangalore", "chennai", "mumbai", "delhi", "hyderabad", "pune", "kolkata",
+    "kerala", "karnataka", "tamilnadu", "tamil nadu", "maharashtra"
+  ];
 
   for (const loc of locationKeywords) {
     if (msg.includes(loc)) { locationFilter = loc; break; }
@@ -162,7 +170,6 @@ export const chat = async (req, res) => {
       return res.status(400).json({ error: "No user message found" });
     }
 
-    // ✅ RAG — fetch relevant centers from DB
     const relevantCenters = await getRelevantCenters(lastUserMessage.content);
     const centersContext = formatCentersForContext(relevantCenters);
 
@@ -175,7 +182,6 @@ ${centersContext}
 
 Only recommend institutes listed above. Reference them by name.`;
 
-    // ✅ Call Groq API (FREE)
     const response = await fetch(GROQ_API_URL, {
       method: "POST",
       headers: {
