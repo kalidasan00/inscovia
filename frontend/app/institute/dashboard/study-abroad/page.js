@@ -1,9 +1,10 @@
+// app/institute/dashboard/study-abroad/page.js
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Footer from "../../../../components/Footer";
-import { X, Plus, ArrowLeft, Save } from "lucide-react";
+import { X, Plus, ArrowLeft, Save, Globe, GraduationCap } from "lucide-react";
 
 const POPULAR_COUNTRIES = [
   "USA", "UK", "Canada", "Australia", "Germany", "France", "New Zealand",
@@ -32,13 +33,12 @@ export default function StudyAbroadManage() {
 
   const [newCountry, setNewCountry] = useState("");
   const [newUniversity, setNewUniversity] = useState("");
+  const [newService, setNewService] = useState("");
 
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     const token = localStorage.getItem("instituteToken");
@@ -51,7 +51,6 @@ export default function StudyAbroadManage() {
       if (!res.ok) throw new Error("Failed");
       const data = await res.json();
 
-      // Only study abroad consultants can access this page
       if (data.user?.primaryCategory !== "STUDY_ABROAD") {
         router.push("/institute/dashboard");
         return;
@@ -126,6 +125,18 @@ export default function StudyAbroadManage() {
     );
   };
 
+  const addCustomService = () => {
+    const val = newService.trim();
+    if (!val || services.includes(val)) return;
+    setServices(prev => [...prev, val]);
+    setNewService("");
+  };
+
+  const removeCustomService = (service) => {
+    if (POPULAR_SERVICES.includes(service)) return; // only remove custom ones via X
+    setServices(prev => prev.filter(s => s !== service));
+  };
+
   const addUniversity = () => {
     const val = newUniversity.trim();
     if (!val || topUniversities.includes(val)) return;
@@ -148,6 +159,7 @@ export default function StudyAbroadManage() {
   return (
     <>
       <main className="max-w-3xl mx-auto px-3 sm:px-4 py-4 pb-24 md:pb-8">
+
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <Link href="/institute/dashboard" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -163,7 +175,7 @@ export default function StudyAbroadManage() {
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
         )}
         {success && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">✅ Saved successfully!</div>
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">Saved successfully!</div>
         )}
 
         <div className="space-y-5">
@@ -172,13 +184,13 @@ export default function StudyAbroadManage() {
           <div className="bg-white border rounded-xl p-4">
             <h2 className="text-sm font-bold text-gray-900 mb-3">Countries You Handle</h2>
 
-            {/* Selected countries */}
             {countries.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {countries.map(c => (
                   <span key={c} className="flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                    🌍 {c}
-                    <button onClick={() => removeCountry(c)} className="hover:text-blue-900">
+                    <Globe className="w-3 h-3 flex-shrink-0" />
+                    {c}
+                    <button onClick={() => removeCountry(c)} className="hover:text-blue-900 ml-0.5">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -186,7 +198,6 @@ export default function StudyAbroadManage() {
               </div>
             )}
 
-            {/* Popular countries */}
             <p className="text-xs text-gray-500 mb-2">Popular countries:</p>
             <div className="flex flex-wrap gap-1.5 mb-3">
               {POPULAR_COUNTRIES.map(c => (
@@ -201,7 +212,6 @@ export default function StudyAbroadManage() {
               ))}
             </div>
 
-            {/* Custom country */}
             <div className="flex gap-2">
               <input type="text" value={newCountry} onChange={e => setNewCountry(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && addCustomCountry()}
@@ -217,7 +227,7 @@ export default function StudyAbroadManage() {
           {/* Services */}
           <div className="bg-white border rounded-xl p-4">
             <h2 className="text-sm font-bold text-gray-900 mb-3">Services You Offer</h2>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 mb-3">
               {POPULAR_SERVICES.map(service => (
                 <button key={service} onClick={() => toggleService(service)}
                   className={`px-3 py-2.5 border-2 rounded-lg text-xs font-medium text-left transition-all ${
@@ -236,6 +246,32 @@ export default function StudyAbroadManage() {
                 </button>
               ))}
             </div>
+
+            {/* Custom services added */}
+            {services.filter(s => !POPULAR_SERVICES.includes(s)).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {services.filter(s => !POPULAR_SERVICES.includes(s)).map(s => (
+                  <span key={s} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                    {s}
+                    <button onClick={() => removeCustomService(s)} className="hover:text-indigo-900 ml-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Add custom service */}
+            <div className="flex gap-2">
+              <input type="text" value={newService} onChange={e => setNewService(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addCustomService()}
+                placeholder="Add custom service..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <button onClick={addCustomService}
+                className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Top Universities */}
@@ -246,8 +282,9 @@ export default function StudyAbroadManage() {
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {topUniversities.map(uni => (
                   <span key={uni} className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                    🎓 {uni}
-                    <button onClick={() => removeUniversity(uni)} className="hover:text-amber-900">
+                    <GraduationCap className="w-3 h-3 flex-shrink-0" />
+                    {uni}
+                    <button onClick={() => removeUniversity(uni)} className="hover:text-amber-900 ml-0.5">
                       <X className="w-3 h-3" />
                     </button>
                   </span>

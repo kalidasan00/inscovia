@@ -27,6 +27,7 @@ export default function AIChatWidget() {
   const [error, setError] = useState(null);
   const [retryMsg, setRetryMsg] = useState(null);
   const [panelHeight, setPanelHeight] = useState("100dvh");
+  const [navbarHeight, setNavbarHeight] = useState(64);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -47,11 +48,11 @@ export default function AIChatWidget() {
     if (!isOpen) return;
 
     const updateHeight = () => {
+      const nav = document.querySelector("nav");
+      const navH = nav?.offsetHeight || 64;
+      setNavbarHeight(navH);
       if (window.visualViewport) {
-        // visualViewport.height = screen height minus keyboard
-        const navbarHeight = document.querySelector("nav")?.offsetHeight || 64;
-        const availableHeight = window.visualViewport.height - navbarHeight;
-        setPanelHeight(`${availableHeight}px`);
+        setPanelHeight(`${window.visualViewport.height - navH}px`);
       }
     };
 
@@ -144,7 +145,7 @@ export default function AIChatWidget() {
           <div
             className="md:hidden fixed inset-x-0 z-[60] flex flex-col overflow-hidden"
             style={{
-              top: `${document.querySelector("nav")?.offsetHeight || 64}px`,
+              top: `${navbarHeight}px`,
               height: panelHeight,
               background: "#0f0f13",
             }}
