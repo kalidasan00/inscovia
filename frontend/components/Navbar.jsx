@@ -1,21 +1,295 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Menu, X, User, LogOut, LayoutDashboard,
-  Search, FileText, Target, Bell
+  Search, FileText, Target, Bell,
+  MapPin, BookOpen, Building2, Sparkles, Loader2
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
+// ─────────────────────────────────────────
+// Inline SmartSearch for Navbar
+// ─────────────────────────────────────────
+function NavSearch({ centers }) {
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [aiMode, setAiMode] = useState(false);
+  const [aiResults, setAiResults] = useState([]);
+  const [suggestions, setSuggestions] = useState({ institutes: [], courses: [], locations: [] });
+  const router = useRouter();
+  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const getLocalSuggestions = useCallback((term) => {
+    const t = term.toLowerCase().trim();
+    const matchingInstitutes = centers
+      .filter(c =>
+        c.name.toLowerCase().includes(t) ||
+        c.city?.toLowerCase().includes(t) ||
+        c.courses?.some(course => course.toLowerCase().includes(t))
+      )
+      .slice(0, 4)
+      .map(c => ({ name: c.name, location: `${c.city}, ${c.state}`, slug: c.slug }));
+
+    const allCourses = new Set();
+    centers.forEach(c => {
+      c.courses?.forEach(course => {
+        const name = course.includes(":") ? course.split(":")[1].trim() : course;
+        if (name.toLowerCase().includes(t)) allCourses.add(name);
+      });
+    });
+
+    const allLocations = new Set();
+    centers.forEach(c => {
+      const cs = `${c.city}, ${c.state}`;
+      if (cs.toLowerCase().includes(t)) allLocations.add(cs);
+    });
+
+    return {
+      institutes: matchingInstitutes,
+      courses: Array.from(allCourses).slice(0, 3),
+      locations: Array.from(allLocations).slice(0, 2)
+    };
+  }, [centers]);
+
+  const runAiSearch = useCallback(async (q) => {
+    if (q.length < 3) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q })
+      });
+      const data = await res.json();
+      if (res.ok && data.results?.length > 0) {
+        setAiResults(data.results.slice(0, 5));
+        setAiMode(data.searchType === "ai");
+        setIsOpen(true);
+      }
+    } catch { }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (query.length < 2) {
+      setSuggestions({ institutes: [], courses: [], locations: [] });
+      setAiResults([]);
+      setIsOpen(false);
+      return;
+    }
+    const local = getLocalSuggestions(query);
+    setSuggestions(local);
+    setIsOpen(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => runAiSearch(query), 600);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, getLocalSuggestions, runAiSearch]);
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    setIsOpen(false);
+    setQuery("");
+    router.push(`/centers?q=${encodeURIComponent(query.trim())}`);
+  };
+
+  const handleInstituteClick = (slug) => {
+    setIsOpen(false);
+    setQuery("");
+    router.push(`/centers/${slug}`);
+  };
+
+  const handleCourseClick = (course) => {
+    setIsOpen(false);
+    setQuery("");
+    router.push(`/centers?q=${encodeURIComponent(course)}`);
+  };
+
+  const handleLocationClick = (location) => {
+    setIsOpen(false);
+    setQuery("");
+    router.push(`/centers?city=${encodeURIComponent(location.split(",")[0].trim())}`);
+  };
+
+  const totalLocal = suggestions.institutes.length + suggestions.courses.length + suggestions.locations.length;
+  const hasResults = totalLocal > 0 || aiResults.length > 0;
+
+  return (
+    <div ref={wrapperRef} className="relative w-full max-w-xs lg:max-w-sm">
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") handleSearch(); if (e.key === "Escape") setIsOpen(false); }}
+          onFocus={() => query.length >= 2 && setIsOpen(true)}
+          placeholder="Search institutes, courses..."
+          className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition-all"
+        />
+        {loading
+          ? <Loader2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 animate-spin" />
+          : <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        }
+        {query && (
+          <button
+            onClick={() => { setQuery(""); setIsOpen(false); setAiResults([]); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Dropdown */}
+      {isOpen && query.length >= 2 && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-[999] max-h-[420px] overflow-hidden">
+          {!hasResults && !loading ? (
+            <div className="p-4 text-center text-gray-400 text-sm">No results for "{query}"</div>
+          ) : (
+            <div className="overflow-y-auto max-h-[420px]">
+
+              {/* AI Results */}
+              {aiResults.length > 0 && (
+                <div className="p-2">
+                  <div className="px-2 py-1.5 flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-blue-600" />
+                    <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">
+                      {aiMode ? "AI Matched" : "Top Results"}
+                    </span>
+                    {aiMode && (
+                      <span className="ml-auto text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Smart Search</span>
+                    )}
+                  </div>
+                  {aiResults.map((inst, i) => (
+                    <button key={i} onClick={() => handleInstituteClick(inst.slug)}
+                      className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded-lg flex items-center gap-2.5 group">
+                      <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-900 truncate">{inst.name}</p>
+                        <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                          <MapPin className="w-2.5 h-2.5" />{inst.city}, {inst.state}
+                          {inst.rating > 0 && <span className="ml-1 text-yellow-500">⭐ {inst.rating}</span>}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Local: Institutes */}
+              {suggestions.institutes.length > 0 && (
+                <div className={`p-2 ${aiResults.length > 0 ? "border-t border-gray-100" : ""}`}>
+                  <p className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Institutes</p>
+                  {suggestions.institutes.map((inst, i) => (
+                    <button key={i} onClick={() => handleInstituteClick(inst.slug)}
+                      className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded-lg flex items-center gap-2.5">
+                      <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-900 truncate">{inst.name}</p>
+                        <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                          <MapPin className="w-2.5 h-2.5" />{inst.location}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Local: Courses */}
+              {suggestions.courses.length > 0 && (
+                <div className="p-2 border-t border-gray-100">
+                  <p className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Courses</p>
+                  {suggestions.courses.map((course, i) => (
+                    <button key={i} onClick={() => handleCourseClick(course)}
+                      className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded-lg flex items-center gap-2.5">
+                      <div className="w-7 h-7 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                      </div>
+                      <p className="text-xs text-gray-900">{course}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Local: Locations */}
+              {suggestions.locations.length > 0 && (
+                <div className="p-2 border-t border-gray-100">
+                  <p className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Locations</p>
+                  {suggestions.locations.map((location, i) => (
+                    <button key={i} onClick={() => handleLocationClick(location)}
+                      className="w-full text-left px-2 py-2 hover:bg-gray-50 rounded-lg flex items-center gap-2.5">
+                      <div className="w-7 h-7 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-3.5 h-3.5 text-green-600" />
+                      </div>
+                      <p className="text-xs text-gray-900">{location}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* View All */}
+              <div className="p-2 border-t border-gray-100">
+                <button onClick={handleSearch}
+                  className="w-full px-2 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+                  <Search className="w-3.5 h-3.5" />
+                  View all results for "{query}"
+                </button>
+              </div>
+
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Main Navbar
+// ─────────────────────────────────────────
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isInstituteLoggedIn, setIsInstituteLoggedIn] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [centers, setCenters] = useState([]);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const pathname = usePathname();
+
+  // Fetch centers for search suggestions
+  useEffect(() => {
+    async function loadCenters() {
+      try {
+        const res = await fetch(`${API_URL}/centers?limit=100`, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setCenters(data.centers || []);
+        }
+      } catch { }
+    }
+    loadCenters();
+  }, []);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -44,7 +318,10 @@ export default function Navbar() {
     };
   }, [pathname]);
 
-  useEffect(() => { setIsOpen(false); }, [pathname]);
+  useEffect(() => {
+    setIsOpen(false);
+    setShowMobileSearch(false);
+  }, [pathname]);
 
   const fetchInstituteUnreadCount = async () => {
     try {
@@ -56,7 +333,7 @@ export default function Navbar() {
       if (!res.ok) return;
       const data = await res.json();
       setUnreadCount(data.unreadCount || 0);
-    } catch {}
+    } catch { }
   };
 
   const fetchUserUnreadCount = async () => {
@@ -69,7 +346,7 @@ export default function Navbar() {
       if (!res.ok) return;
       const data = await res.json();
       setUnreadCount(data.unreadCount || 0);
-    } catch {}
+    } catch { }
   };
 
   const handleLogout = () => {
@@ -92,10 +369,10 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-3">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <Image
               src="/Inscovia - 1 2.png"
               alt="Inscovia Logo"
@@ -106,38 +383,39 @@ export default function Navbar() {
             />
           </Link>
 
+          {/* Desktop Search — center */}
+          <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-4">
+            <NavSearch centers={centers} />
+          </div>
+
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-6">
-            <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-4 flex-shrink-0">
+            <div className="flex items-center gap-4">
               <Link href="/"
                 className={`text-sm font-medium transition-colors hover:text-blue-600 ${pathname === '/' ? 'text-blue-600' : 'text-gray-700'}`}>
                 Home
               </Link>
               <Link href="/centers"
-                className={`flex items-center gap-1.5 text-sm transition-colors hover:text-blue-600 ${pathname === '/centers' ? 'text-blue-600' : 'text-gray-700'}`}>
-                <Search className="w-4 h-4" />
+                className={`flex items-center gap-1 text-sm transition-colors hover:text-blue-600 ${pathname === '/centers' ? 'text-blue-600' : 'text-gray-700'}`}>
                 <span>Browse</span>
               </Link>
               <Link href="/previous-year-papers"
-                className={`flex items-center gap-1.5 text-sm transition-colors hover:text-blue-600 ${pathname === '/previous-year-papers' ? 'text-blue-600' : 'text-gray-700'}`}>
+                className={`flex items-center gap-1 text-sm transition-colors hover:text-blue-600 ${pathname === '/previous-year-papers' ? 'text-blue-600' : 'text-gray-700'}`}>
                 <FileText className="w-4 h-4" />
                 <span>Papers</span>
               </Link>
               <Link href="/practice"
-                className={`flex items-center gap-1.5 text-sm transition-colors hover:text-blue-600 ${pathname === '/practice' ? 'text-blue-600' : 'text-gray-700'}`}>
+                className={`flex items-center gap-1 text-sm transition-colors hover:text-blue-600 ${pathname === '/practice' ? 'text-blue-600' : 'text-gray-700'}`}>
                 <Target className="w-4 h-4" />
                 <span>Practice</span>
               </Link>
             </div>
 
-            {/* Auth */}
             {isLoggedIn ? (
               <div className="flex items-center gap-2">
-                {/* Bell — institute or user */}
                 {(isInstituteLoggedIn || isUserLoggedIn) && (
                   <Link href="/notifications"
-                    className="relative p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors"
-                    title="Notifications">
+                    className="relative p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors">
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
@@ -152,8 +430,7 @@ export default function Navbar() {
                   <span>{accountLabel}</span>
                 </Link>
                 <button onClick={handleLogout}
-                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                  title="Logout">
+                  className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
@@ -166,10 +443,17 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="md:hidden flex items-center gap-2">
+          {/* Mobile Right — search icon + bell + menu */}
+          <div className="md:hidden flex items-center gap-1.5">
+            <button
+              onClick={() => { setShowMobileSearch(!showMobileSearch); setIsOpen(false); }}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <Search className="w-5 h-5" />
+            </button>
             {(isInstituteLoggedIn || isUserLoggedIn) && (
               <Link href="/notifications"
-                className="relative p-1.5 text-gray-500 hover:text-blue-600 rounded-md" title="Notifications">
+                className="relative p-1.5 text-gray-500 hover:text-blue-600 rounded-md">
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
@@ -178,12 +462,19 @@ export default function Navbar() {
                 )}
               </Link>
             )}
-            <button onClick={() => setIsOpen(!isOpen)}
+            <button onClick={() => { setIsOpen(!isOpen); setShowMobileSearch(false); }}
               className="p-2 text-gray-700 hover:bg-gray-100 rounded-md">
               {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Search Bar — slides down when search icon tapped */}
+        {showMobileSearch && (
+          <div className="md:hidden pb-3 pt-1 border-t border-gray-100">
+            <NavSearch centers={centers} />
+          </div>
+        )}
 
         {/* Mobile Menu */}
         {isOpen && (
@@ -200,28 +491,24 @@ export default function Navbar() {
                   </svg>
                   <span>Home</span>
                 </Link>
-
                 <Link href="/centers"
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm border-b border-gray-100 ${pathname === '/centers' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => setIsOpen(false)}>
                   <Search className="w-5 h-5" />
                   <span>Browse Centers</span>
                 </Link>
-
                 <Link href="/previous-year-papers"
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm border-b border-gray-100 ${pathname === '/previous-year-papers' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => setIsOpen(false)}>
                   <FileText className="w-5 h-5" />
                   <span>Previous Year Papers</span>
                 </Link>
-
                 <Link href="/practice"
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm border-b border-gray-100 ${pathname === '/practice' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => setIsOpen(false)}>
                   <Target className="w-5 h-5" />
                   <span>Practice Zone 🎯</span>
                 </Link>
-
                 {isLoggedIn ? (
                   <>
                     <Link href={dashboardHref}

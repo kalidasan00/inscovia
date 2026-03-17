@@ -1,27 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import SmartSearch from "./SmartSearch";
 
 export default function HeroSection() {
-  const [centers, setCenters] = useState([]);
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
-  useEffect(() => {
-    async function loadCenters() {
-      try {
-        const res = await fetch(`${API_URL}/centers`, { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          setCenters(data.centers || []);
-        }
-      } catch (err) {
-        console.error("Error loading centers:", err);
-      }
-    }
-    loadCenters();
-  }, [API_URL]);
 
   return (
     <section className="relative py-8 sm:py-16 md:py-20" style={{ backgroundColor: '#1E40AF' }}>
@@ -33,7 +14,7 @@ export default function HeroSection() {
 
       <div className="relative z-10 max-w-6xl mx-auto px-4">
 
-        {/* Header - smaller on mobile */}
+        {/* Header */}
         <div className="text-center mb-5 sm:mb-8">
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-2 sm:mb-4 leading-tight">
             Find Your Perfect
@@ -43,18 +24,25 @@ export default function HeroSection() {
             </span>
           </h1>
           <p className="text-sm sm:text-lg text-blue-100 max-w-2xl mx-auto">
-            Discover training centers with instant search
+            Search from the navbar above — AI-powered instant results
           </p>
         </div>
 
-        {/* Search Box */}
-        <div className="max-w-3xl mx-auto mb-3 sm:mb-4">
-          <div className="bg-white rounded-xl shadow-2xl p-2">
-            <SmartSearch centers={centers} placeholder="Search institutes, courses, locations..." />
-          </div>
+        {/* CTA Buttons */}
+        <div className="max-w-xl mx-auto flex flex-col sm:flex-row gap-3 mb-4 sm:mb-6">
+          <button
+            onClick={() => router.push("/centers")}
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-white text-blue-700 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg text-sm">
+            🏫 Browse All Institutes
+          </button>
+          <button
+            onClick={() => router.push("/centers?category=STUDY_ABROAD")}
+            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all text-sm">
+            🌍 Study Abroad
+          </button>
         </div>
 
-        {/* ✅ Study Abroad CTA */}
+        {/* Study Abroad CTA */}
         <div className="max-w-3xl mx-auto">
           <button
             onClick={() => router.push("/centers?category=STUDY_ABROAD")}
