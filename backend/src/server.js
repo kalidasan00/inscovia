@@ -1,4 +1,4 @@
-// backend/src/server.js - OPTIMIZED VERSION WITH SEO + AI FEATURES
+// backend/src/server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -17,9 +17,11 @@ import searchRouter from "./routes/search.routes.js";
 import analyticsRouter from "./routes/analytics.routes.js";
 import reviewIntelligenceRouter from "./routes/reviewIntelligence.routes.js";
 import auditAgentRouter from "./routes/auditAgent.routes.js";
+import bannerRouter from "./routes/banner.routes.js";
 import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 import aptitudeRouter from "./routes/aptitude.routes.js";
 import { runAudit } from "./controllers/auditAgent.controller.js";
+import { expireOldBanners } from "./controllers/banner.controller.js";
 
 dotenv.config();
 
@@ -29,7 +31,6 @@ const prisma = new PrismaClient();
 registerSlugMiddleware(prisma);
 console.log('✅ Slug middleware registered');
 
-// CORS Configuration
 app.use(cors({
   origin: [
     'https://www.inscovia.com',
@@ -46,7 +47,6 @@ app.use(cors({
 
 app.use(express.json());
 
-// Rate limiting
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -71,7 +71,7 @@ app.use('/api/reviews', (req, res, next) => {
   next();
 });
 
-// ✅ SEO Routes - MUST BE BEFORE OTHER ROUTES
+// ✅ SEO Routes
 app.use('/', sitemapRoutes);
 
 // API Routes
@@ -87,6 +87,7 @@ app.use("/api/search", searchRouter);
 app.use("/api/analytics", analyticsRouter);
 app.use("/api/review-intelligence", reviewIntelligenceRouter);
 app.use("/api/audit", auditAgentRouter);
+app.use("/api/banners", bannerRouter);
 app.use("/api/aptitude", aptitudeRouter);
 
 app.get("/", (req, res) => {
@@ -102,7 +103,6 @@ app.get("/api/keep-alive", async (req, res) => {
   }
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   if (process.env.NODE_ENV === 'production') {
@@ -117,53 +117,42 @@ const BACKEND_URL = process.env.BACKEND_URL || `https://inscovia.onrender.com`;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
-  console.log(`🔒 Rate limiting enabled for auth routes only`);
-  console.log(`🗺️  Sitemap available at: ${BACKEND_URL}/sitemap.xml`);
-  console.log(`🤖 Robots.txt available at: ${BACKEND_URL}/robots.txt`);
-  console.log(`💬 AI Chat available at: ${BACKEND_URL}/api/chat`);
-  console.log(`🔍 AI Search available at: ${BACKEND_URL}/api/search`);
-  console.log(`📊 Analytics available at: ${BACKEND_URL}/api/analytics`);
-  console.log(`🧠 Review Intelligence at: ${BACKEND_URL}/api/review-intelligence`);
-  console.log(`🕵️  Audit Agent at: ${BACKEND_URL}/api/audit`);
-  console.log(`🧠 Aptitude API available at: ${BACKEND_URL}/api/aptitude`);
+  console.log(`💬 AI Chat: ${BACKEND_URL}/api/chat`);
+  console.log(`🔍 AI Search: ${BACKEND_URL}/api/search`);
+  console.log(`📊 Analytics: ${BACKEND_URL}/api/analytics`);
+  console.log(`🧠 Review Intelligence: ${BACKEND_URL}/api/review-intelligence`);
+  console.log(`🕵️  Audit Agent: ${BACKEND_URL}/api/audit`);
+  console.log(`🎯 Banners: ${BACKEND_URL}/api/banners`);
+  console.log(`🧠 Aptitude: ${BACKEND_URL}/api/aptitude`);
 
-  if (process.env.RESEND_API_KEY) {
-    console.log('✅ Resend API configured');
-  } else {
-    console.warn('⚠️  RESEND_API_KEY not configured - email sending will fail');
-  }
+  if (process.env.RESEND_API_KEY) console.log('✅ Resend configured');
+  else console.warn('⚠️  RESEND_API_KEY missing');
 
-  if (process.env.GROQ_API_KEY) {
-    console.log('✅ Groq AI configured and ready');
-  } else {
-    console.warn('⚠️  GROQ_API_KEY not configured - AI features will fail');
-  }
+  if (process.env.GROQ_API_KEY) console.log('✅ Groq AI configured');
+  else console.warn('⚠️  GROQ_API_KEY missing');
 
-  if (process.env.ADMIN_EMAIL) {
-    console.log(`✅ Admin email configured: ${process.env.ADMIN_EMAIL}`);
-  } else {
-    console.warn('⚠️  ADMIN_EMAIL not configured - audit emails will not send');
-  }
+  if (process.env.ADMIN_EMAIL) console.log(`✅ Admin email: ${process.env.ADMIN_EMAIL}`);
+  else console.warn('⚠️  ADMIN_EMAIL missing');
 
-  // ✅ Keep-alive ping every 14 minutes
+  // Keep-alive ping
   setInterval(async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/keep-alive`);
       const data = await response.json();
-      console.log('✅ Keep-alive ping:', data.status, data.timestamp);
+      console.log('✅ Keep-alive:', data.status, data.timestamp);
     } catch (error) {
       console.error('❌ Keep-alive failed:', error.message);
     }
   }, 14 * 60 * 1000);
 
-  // ✅ Weekly audit — runs every 7 days automatically
+  // Weekly audit
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   setInterval(async () => {
-    console.log("🤖 Running scheduled weekly audit...");
+    console.log("🤖 Running weekly audit...");
     try {
       const fakeReq = {};
       const fakeRes = {
-        json: (data) => console.log("✅ Weekly audit complete:", data.summary),
+        json: (data) => console.log("✅ Audit complete:", data.summary),
         status: () => ({ json: (e) => console.error("❌ Audit error:", e) })
       };
       await runAudit(fakeReq, fakeRes);
@@ -172,17 +161,23 @@ app.listen(PORT, '0.0.0.0', () => {
     }
   }, SEVEN_DAYS);
 
-  console.log('🕵️  Weekly audit scheduled — runs every 7 days');
+  // ✅ Banner expiry check — runs every hour
+  setInterval(async () => {
+    await expireOldBanners();
+  }, 60 * 60 * 1000);
+
+  console.log('🕵️  Weekly audit scheduled');
+  console.log('🎯 Banner auto-expiry scheduled (hourly)');
 });
 
 process.on('SIGTERM', async () => {
-  console.log('🛑 SIGTERM received, closing server gracefully...');
+  console.log('🛑 SIGTERM received...');
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('🛑 SIGINT received, closing server gracefully...');
+  console.log('🛑 SIGINT received...');
   await prisma.$disconnect();
   process.exit(0);
 });
