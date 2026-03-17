@@ -4,9 +4,6 @@ import prisma from "../lib/prisma.js";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// ─────────────────────────────────────────
-// GROQ: Extract search intent from query
-// ─────────────────────────────────────────
 async function extractIntentWithGroq(query) {
   const response = await fetch(GROQ_API_URL, {
     method: "POST",
@@ -21,8 +18,7 @@ async function extractIntentWithGroq(query) {
       messages: [
         {
           role: "system",
-          content: `You are a search intent extractor for an Indian training institute platform.
-          Always respond in valid JSON only. No extra text. No markdown.`
+          content: `You are a search intent extractor for an Indian training institute platform. Always respond in valid JSON only. No extra text. No markdown.`
         },
         {
           role: "user",
@@ -44,7 +40,6 @@ Return ONLY this JSON:
 
   if (!response.ok) {
     const err = await response.json();
-    // 429 = rate limit hit
     throw { status: response.status, message: err?.error?.message || "Groq error" };
   }
 
@@ -54,13 +49,9 @@ Return ONLY this JSON:
   return JSON.parse(clean);
 }
 
-// ─────────────────────────────────────────
-// FALLBACK: Basic keyword search (no AI)
-// ─────────────────────────────────────────
 async function keywordSearch(query) {
   const q = query.toLowerCase().trim();
 
-  // Simple location detection
   const locationKeywords = [
     "kozhikode", "calicut", "kochi", "cochin", "trivandrum", "thiruvananthapuram",
     "thrissur", "malappuram", "kannur", "kollam", "palakkad", "kottayam", "alappuzha",
@@ -96,25 +87,17 @@ async function keywordSearch(query) {
       id: true, slug: true, name: true,
       primaryCategory: true, city: true, state: true,
       rating: true, courses: true, teachingMode: true,
-      description: true, fee: true,
+      description: true,
     }
   });
 
-  return {
-    results,
-    intent: null,
-    searchType: "keyword" // tells frontend this was a fallback
-  };
+  return { results, intent: null, searchType: "keyword" };
 }
 
-// ─────────────────────────────────────────
-// AI SEARCH: Uses Groq intent + DB query
-// ─────────────────────────────────────────
 async function aiSearch(intent, originalQuery) {
   const whereClause = {};
   const conditions = [];
 
-  // Category filter
   if (intent.category) {
     conditions.push({
       OR: [
@@ -124,7 +107,6 @@ async function aiSearch(intent, originalQuery) {
     });
   }
 
-  // City filter
   if (intent.city) {
     conditions.push({
       OR: [
@@ -135,7 +117,6 @@ async function aiSearch(intent, originalQuery) {
     });
   }
 
-  // Course/keyword filter
   if (intent.course || intent.keywords?.length > 0) {
     const searchTerms = [
       ...(intent.course ? [intent.course] : []),
@@ -150,15 +131,7 @@ async function aiSearch(intent, originalQuery) {
     });
   }
 
-  // Budget filter
-  if (intent.budget_max) {
-    conditions.push({
-      OR: [
-        { fee: { lte: intent.budget_max } },
-        { fee: null }
-      ]
-    });
-  }
+  // ✅ budget_max removed — no fee field in Center schema
 
   if (conditions.length > 0) {
     whereClause.AND = conditions;
@@ -177,20 +150,13 @@ async function aiSearch(intent, originalQuery) {
       id: true, slug: true, name: true,
       primaryCategory: true, city: true, state: true,
       rating: true, courses: true, teachingMode: true,
-      description: true, fee: true,
+      description: true,
     }
   });
 
-  return {
-    results,
-    intent,
-    searchType: "ai"
-  };
+  return { results, intent, searchType: "ai" };
 }
 
-// ─────────────────────────────────────────
-// MAIN EXPORT: AI → Fallback → Keyword
-// ─────────────────────────────────────────
 export const search = async (req, res) => {
   try {
     const { query } = req.body;
@@ -201,16 +167,13 @@ export const search = async (req, res) => {
 
     const trimmedQuery = query.trim();
 
-    // Try AI search first
     if (GROQ_API_KEY) {
       try {
-        // Try primary model first
         let intent;
         try {
           intent = await extractIntentWithGroq(trimmedQuery);
         } catch (primaryErr) {
           if (primaryErr.status === 429) {
-            // Primary model rate limited → try fast model
             console.warn("⚠️ Primary Groq model rate limited, trying fallback model...");
             const fallbackResponse = await fetch(GROQ_API_URL, {
               method: "POST",
@@ -219,14 +182,11 @@ export const search = async (req, res) => {
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                model: "llama-3.1-8b-instant", // 14,400/day free
+                model: "llama-3.1-8b-instant",
                 max_tokens: 200,
                 temperature: 0.1,
                 messages: [
-                  {
-                    role: "system",
-                    content: "Extract search intent. Return valid JSON only."
-                  },
+                  { role: "system", content: "Extract search intent. Return valid JSON only." },
                   {
                     role: "user",
                     content: `Query: "${trimmedQuery}"
@@ -235,7 +195,6 @@ Return ONLY: {"course":null,"city":null,"budget_max":null,"skill_level":null,"ca
                 ]
               })
             });
-
             if (!fallbackResponse.ok) throw { status: 429 };
             const fallbackData = await fallbackResponse.json();
             const text = fallbackData.choices?.[0]?.message?.content || "{}";
@@ -249,15 +208,12 @@ Return ONLY: {"course":null,"city":null,"budget_max":null,"skill_level":null,"ca
         return res.json(searchResult);
 
       } catch (groqErr) {
-        // Both Groq models failed or rate limited
-        // → Silent fallback to keyword search
         console.warn("⚠️ Groq unavailable, falling back to keyword search:", groqErr.message || groqErr);
         const fallbackResult = await keywordSearch(trimmedQuery);
         return res.json(fallbackResult);
       }
     }
 
-    // No Groq key → keyword search
     const fallbackResult = await keywordSearch(trimmedQuery);
     return res.json(fallbackResult);
 
