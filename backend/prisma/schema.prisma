@@ -264,3 +264,33 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
 }
+
+// ─── Analytics Models ───────────────────
+
+model SearchLog {
+  id        String   @id @default(cuid())
+  query     String
+  city      String?
+  category  String?
+  source    String   @default("browse") // browse, chat, search
+  createdAt DateTime @default(now())
+
+  @@index([query])
+  @@index([city])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model CenterView {
+  id         String   @id @default(cuid())
+  centerId   String
+  centerName String
+  city       String?
+  category   String?
+  createdAt  DateTime @default(now())
+
+  @@index([centerId])
+  @@index([city])
+  @@index([category])
+  @@index([createdAt])
+}

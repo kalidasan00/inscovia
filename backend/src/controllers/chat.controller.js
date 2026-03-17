@@ -4,7 +4,9 @@ import prisma from "../lib/prisma.js";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// ✅ All category values match schema enums exactly
+// Max messages sent to Groq (saves tokens + cost)
+const MAX_HISTORY = 10;
+
 const getRelevantCenters = async (message) => {
   const msg = message.toLowerCase();
 
@@ -101,7 +103,7 @@ const getRelevantCenters = async (message) => {
     }
   });
 
-  return centers;
+  return { centers, locationFilter, categoryFilter };
 };
 
 const formatCentersForContext = (centers) => {
@@ -170,8 +172,19 @@ export const chat = async (req, res) => {
       return res.status(400).json({ error: "No user message found" });
     }
 
-    const relevantCenters = await getRelevantCenters(lastUserMessage.content);
+    // Fetch relevant centers based on last user message
+    const { centers: relevantCenters, locationFilter, categoryFilter } = await getRelevantCenters(lastUserMessage.content);
     const centersContext = formatCentersForContext(relevantCenters);
+
+    // ✅ Log chat search to analytics (silent — never breaks chat)
+    prisma.searchLog.create({
+      data: {
+        query: lastUserMessage.content.substring(0, 200).toLowerCase(),
+        city: locationFilter || null,
+        category: categoryFilter?.[0] || null,
+        source: "chat"
+      }
+    }).catch(() => {});
 
     const systemWithContext = `${SYSTEM_PROMPT}
 
@@ -182,6 +195,9 @@ ${centersContext}
 
 Only recommend institutes listed above. Reference them by name.`;
 
+    // Trim message history to last MAX_HISTORY messages to save tokens
+    const trimmedMessages = messages.slice(-MAX_HISTORY);
+
     const response = await fetch(GROQ_API_URL, {
       method: "POST",
       headers: {
@@ -189,12 +205,12 @@ Only recommend institutes listed above. Reference them by name.`;
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "llama-3.3-70b-versatile",
         max_tokens: 500,
         temperature: 0.7,
         messages: [
           { role: "system", content: systemWithContext },
-          ...messages.map(m => ({ role: m.role, content: m.content }))
+          ...trimmedMessages.map(m => ({ role: m.role, content: m.content }))
         ]
       })
     });

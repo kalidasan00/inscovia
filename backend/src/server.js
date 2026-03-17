@@ -1,4 +1,4 @@
-// backend/src/server.js - OPTIMIZED VERSION WITH SEO
+// backend/src/server.js - OPTIMIZED VERSION WITH SEO + AI FEATURES
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -13,8 +13,13 @@ import passwordResetRouter from "./routes/password-reset.routes.js";
 import papersRouter from "./routes/papers.routes.js";
 import sitemapRoutes from './routes/sitemap.routes.js';
 import chatRouter from "./routes/chat.routes.js";
+import searchRouter from "./routes/search.routes.js";
+import analyticsRouter from "./routes/analytics.routes.js";
+import reviewIntelligenceRouter from "./routes/reviewIntelligence.routes.js";
+import auditAgentRouter from "./routes/auditAgent.routes.js";
 import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 import aptitudeRouter from "./routes/aptitude.routes.js";
+import { runAudit } from "./controllers/auditAgent.controller.js";
 
 dotenv.config();
 
@@ -77,7 +82,11 @@ app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/papers", papersRouter);
-app.use("/api/chat", chatRouter); // ✅ FIXED: now after app is created
+app.use("/api/chat", chatRouter);
+app.use("/api/search", searchRouter);
+app.use("/api/analytics", analyticsRouter);
+app.use("/api/review-intelligence", reviewIntelligenceRouter);
+app.use("/api/audit", auditAgentRouter);
 app.use("/api/aptitude", aptitudeRouter);
 
 app.get("/", (req, res) => {
@@ -112,6 +121,10 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🗺️  Sitemap available at: ${BACKEND_URL}/sitemap.xml`);
   console.log(`🤖 Robots.txt available at: ${BACKEND_URL}/robots.txt`);
   console.log(`💬 AI Chat available at: ${BACKEND_URL}/api/chat`);
+  console.log(`🔍 AI Search available at: ${BACKEND_URL}/api/search`);
+  console.log(`📊 Analytics available at: ${BACKEND_URL}/api/analytics`);
+  console.log(`🧠 Review Intelligence at: ${BACKEND_URL}/api/review-intelligence`);
+  console.log(`🕵️  Audit Agent at: ${BACKEND_URL}/api/audit`);
   console.log(`🧠 Aptitude API available at: ${BACKEND_URL}/api/aptitude`);
 
   if (process.env.RESEND_API_KEY) {
@@ -123,9 +136,16 @@ app.listen(PORT, '0.0.0.0', () => {
   if (process.env.GROQ_API_KEY) {
     console.log('✅ Groq AI configured and ready');
   } else {
-    console.warn('⚠️  GROQ_API_KEY not configured - AI chat will fail');
+    console.warn('⚠️  GROQ_API_KEY not configured - AI features will fail');
   }
 
+  if (process.env.ADMIN_EMAIL) {
+    console.log(`✅ Admin email configured: ${process.env.ADMIN_EMAIL}`);
+  } else {
+    console.warn('⚠️  ADMIN_EMAIL not configured - audit emails will not send');
+  }
+
+  // ✅ Keep-alive ping every 14 minutes
   setInterval(async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/keep-alive`);
@@ -135,6 +155,24 @@ app.listen(PORT, '0.0.0.0', () => {
       console.error('❌ Keep-alive failed:', error.message);
     }
   }, 14 * 60 * 1000);
+
+  // ✅ Weekly audit — runs every 7 days automatically
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  setInterval(async () => {
+    console.log("🤖 Running scheduled weekly audit...");
+    try {
+      const fakeReq = {};
+      const fakeRes = {
+        json: (data) => console.log("✅ Weekly audit complete:", data.summary),
+        status: () => ({ json: (e) => console.error("❌ Audit error:", e) })
+      };
+      await runAudit(fakeReq, fakeRes);
+    } catch (err) {
+      console.error("❌ Weekly audit failed:", err.message);
+    }
+  }, SEVEN_DAYS);
+
+  console.log('🕵️  Weekly audit scheduled — runs every 7 days');
 });
 
 process.on('SIGTERM', async () => {
