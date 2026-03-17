@@ -2,7 +2,9 @@
 import express from "express";
 import {
   getActiveBanners,
+  getSlotAvailability,
   submitBanner,
+  joinWaitlist,
   getInstituteBanners,
   getAllBannersAdmin,
   approveBanner,
@@ -14,9 +16,11 @@ const router = express.Router();
 
 // Public
 router.get("/active", getActiveBanners);
+router.get("/slots", getSlotAvailability);
 
 // Institute
 router.post("/submit", submitBanner);
+router.post("/waitlist", joinWaitlist);
 router.get("/institute/:centerId", getInstituteBanners);
 
 // Admin
