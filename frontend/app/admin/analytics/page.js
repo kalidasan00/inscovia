@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import {
   Building2, Users, MapPin, FileText, Download,
   Star, BookOpen, TrendingUp, TrendingDown, X,
-  ArrowUpRight, BarChart2, PieChart, Activity
+  ArrowUpRight, BarChart2, PieChart, Activity,
+  ShieldAlert, Search, RefreshCw, XCircle,
+  Sparkles, MessageSquare, Eye
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -184,25 +186,50 @@ function RatingBar({ data }) {
 
 export default function AdminAnalytics() {
   const [data, setData] = useState(null);
+  const [trending, setTrending] = useState(null);
+  const [auditReport, setAuditReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [auditRunning, setAuditRunning] = useState(false);
   const [error, setError] = useState(null);
   const [activeGrowth, setActiveGrowth] = useState("users");
+  const [trendingDays, setTrendingDays] = useState(30);
 
-  useEffect(() => { fetchAnalytics(); }, []);
+  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchTrending(); }, [trendingDays]);
 
-  const fetchAnalytics = async () => {
+  const fetchAll = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch(`${API_URL}/admin/analytics`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error();
-      const json = await res.json();
-      setData(json);
+      const [analyticsRes, auditRes] = await Promise.all([
+        fetch(`${API_URL}/admin/analytics`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/audit/last`)
+      ]);
+      if (analyticsRes.ok) setData(await analyticsRes.json());
+      if (auditRes.ok) setAuditReport(await auditRes.json());
     } catch {
       setError("Failed to load analytics");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTrending = async () => {
+    try {
+      const res = await fetch(`${API_URL}/analytics/trending?days=${trendingDays}`);
+      if (res.ok) setTrending(await res.json());
+    } catch {}
+  };
+
+  const handleRunAudit = async () => {
+    setAuditRunning(true);
+    try {
+      const res = await fetch(`${API_URL}/audit/run`, { method: "POST" });
+      const result = await res.json();
+      if (res.ok) setAuditReport({ report: result.summary, runAt: new Date() });
+    } catch {
+      setError("Audit failed.");
+    } finally {
+      setAuditRunning(false);
     }
   };
 
@@ -262,6 +289,201 @@ export default function AdminAnalytics() {
         <StatCard label="Aptitude Questions" value={data?.overview.totalAptitude} icon={BookOpen}
           color={{ bg: "bg-indigo-50", text: "text-indigo-600" }} />
       </div>
+
+      {/* ── NEW: AI Audit + Trending Row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        {/* AI Audit Report */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-indigo-600" />
+              <h3 className="font-semibold text-gray-900">AI Audit Report</h3>
+            </div>
+            <button
+              onClick={handleRunAudit}
+              disabled={auditRunning}
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 ${auditRunning ? "animate-spin" : ""}`} />
+              {auditRunning ? "Running..." : "Run Audit"}
+            </button>
+          </div>
+          <div className="p-5">
+            {!auditReport?.report ? (
+              <div className="text-center py-8">
+                <ShieldAlert className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">No audit run yet</p>
+                <p className="text-xs text-gray-300 mt-1">Click "Run Audit" to start</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+                    <p className="text-2xl font-bold text-red-600">{auditReport.report.critical}</p>
+                    <p className="text-xs text-red-500 mt-0.5">Critical</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-xl p-3 text-center border border-yellow-100">
+                    <p className="text-2xl font-bold text-yellow-600">{auditReport.report.warnings}</p>
+                    <p className="text-xs text-yellow-500 mt-0.5">Warnings</p>
+                  </div>
+                  <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
+                    <p className="text-2xl font-bold text-green-600">{auditReport.report.healthy}</p>
+                    <p className="text-xs text-green-500 mt-0.5">Healthy</p>
+                  </div>
+                </div>
+
+                {auditReport.report.criticalCenters?.length > 0 && (
+                  <div className="space-y-1.5 mb-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Needs Attention</p>
+                    {auditReport.report.criticalCenters.slice(0, 4).map((name, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                        <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[10px] text-gray-400 mt-2">
+                  Last run: {auditReport.runAt ? new Date(auditReport.runAt).toLocaleDateString("en-IN") : "—"}
+                  · Runs automatically every week
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Trending Searches */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-600" />
+              <h3 className="font-semibold text-gray-900">User Search Trends</h3>
+            </div>
+            <select
+              value={trendingDays}
+              onChange={e => setTrendingDays(Number(e.target.value))}
+              className="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none"
+            >
+              <option value={7}>7 days</option>
+              <option value={30}>30 days</option>
+              <option value={90}>90 days</option>
+            </select>
+          </div>
+          <div className="p-5">
+            {!trending || trending.totalSearches === 0 ? (
+              <div className="text-center py-8">
+                <Search className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                <p className="text-sm text-gray-400">No search data yet</p>
+                <p className="text-xs text-gray-300 mt-1">Appears as users browse Inscovia</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-5">
+                  <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+                    <p className="text-2xl font-bold text-blue-600">{trending.totalSearches}</p>
+                    <p className="text-xs text-blue-500 mt-0.5">Searches</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
+                    <p className="text-2xl font-bold text-purple-600">{trending.totalViews}</p>
+                    <p className="text-xs text-purple-500 mt-0.5">Views</p>
+                  </div>
+                  <div className={`rounded-xl p-3 text-center border ${trending.weeklyGrowth >= 0 ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
+                    <p className={`text-2xl font-bold ${trending.weeklyGrowth >= 0 ? "text-green-600" : "text-red-500"}`}>
+                      {trending.weeklyGrowth >= 0 ? "+" : ""}{trending.weeklyGrowth}%
+                    </p>
+                    <p className={`text-xs mt-0.5 ${trending.weeklyGrowth >= 0 ? "text-green-500" : "text-red-400"}`}>Growth</p>
+                  </div>
+                </div>
+
+                {/* AI Insights */}
+                {trending.aiInsights && (
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-3 mb-4">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-xs font-semibold text-indigo-700">AI Insight</span>
+                    </div>
+                    {trending.aiInsights.hot_skill && (
+                      <p className="text-xs text-gray-700">🔥 <strong>Hot:</strong> {trending.aiInsights.hot_skill}</p>
+                    )}
+                    {trending.aiInsights.opportunity && (
+                      <p className="text-xs text-gray-700 mt-1">💡 {trending.aiInsights.opportunity}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Top queries */}
+                {trending.topQueries?.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Top Searches</p>
+                    {trending.topQueries.slice(0, 5).map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs px-3 py-2 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${i === 0 ? "text-yellow-500" : "text-gray-400"}`}>#{i + 1}</span>
+                          <span className="text-gray-700 capitalize">{item.query}</span>
+                        </div>
+                        <span className="text-gray-400 bg-white px-2 py-0.5 rounded-full border">{item.count}x</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── NEW: Top Viewed Centers + Chat Activity ── */}
+      {trending?.topCenters?.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <Eye className="w-4 h-4 text-blue-500" /> Most Viewed Institutes
+            </h3>
+            <p className="text-xs text-gray-400 mb-4">Based on page visits</p>
+            <div className="space-y-2">
+              {trending.topCenters.map((item, i) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2.5 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold w-5 ${i === 0 ? "text-yellow-500" : "text-gray-400"}`}>#{i+1}</span>
+                    <div>
+                      <p className="text-xs font-medium text-gray-800">{item.name}</p>
+                      {item.city && <p className="text-[10px] text-gray-400 capitalize">{item.city}</p>}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400 bg-white px-2 py-1 rounded-full border">{item.count} views</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <h3 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-green-500" /> Most Active Cities
+            </h3>
+            <p className="text-xs text-gray-400 mb-4">Where students are searching from</p>
+            {trending.topCities?.length > 0 ? (
+              <div className="space-y-3">
+                {trending.topCities.map((item, i) => (
+                  <div key={i}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600 capitalize font-medium">{item.city}</span>
+                      <span className="text-xs font-bold text-gray-700">{item.count}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full"
+                        style={{ width: `${(item.count / trending.topCities[0].count) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-4">No city data yet</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Growth Chart */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">

@@ -42,6 +42,7 @@ export default function SchoolTuitionManage() {
   const [feeRange, setFeeRange] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [newClass, setNewClass] = useState("");
+  const [newProgram, setNewProgram] = useState("");
 
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -64,9 +65,12 @@ export default function SchoolTuitionManage() {
         return;
       }
 
-      // Load from courseDetails JSON field
-      const cd = data.center?.courseDetails || [];
-      const meta = data.center?.schoolMeta || {};
+      const cd = data.center?.courseDetails;
+      const meta = (cd && typeof cd === "object" && !Array.isArray(cd))
+        ? cd
+        : (cd && typeof cd === "string")
+          ? (() => { try { return JSON.parse(cd); } catch { return {}; } })()
+          : {};
 
       setCenter(data.center);
       setBoards(meta.boards || []);
@@ -97,7 +101,7 @@ export default function SchoolTuitionManage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          courses: [...classes, ...subjects], // for search indexing
+          courses: [...classes, ...subjects],
           services: specialPrograms,
           courseDetails: {
             boards,
@@ -282,8 +286,9 @@ export default function SchoolTuitionManage() {
 
           {/* Special Programs */}
           <div className="bg-white border rounded-xl p-4">
-            <h2 className="text-sm font-bold text-gray-900 mb-3">Special Programs</h2>
-            <div className="grid grid-cols-2 gap-2">
+            <h2 className="text-sm font-bold text-gray-900 mb-3">Special Programs & Services</h2>
+
+            <div className="grid grid-cols-2 gap-2 mb-3">
               {SPECIAL_PROGRAMS.map(p => (
                 <button key={p} onClick={() => toggle(specialPrograms, setSpecialPrograms, p)}
                   className={`px-3 py-2.5 border-2 rounded-lg text-xs font-medium text-left transition-all ${
@@ -301,6 +306,32 @@ export default function SchoolTuitionManage() {
                   </div>
                 </button>
               ))}
+            </div>
+
+            {/* Custom programs added */}
+            {specialPrograms.filter(p => !SPECIAL_PROGRAMS.includes(p)).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {specialPrograms.filter(p => !SPECIAL_PROGRAMS.includes(p)).map(p => (
+                  <span key={p} className="flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                    {p}
+                    <button onClick={() => remove(specialPrograms, setSpecialPrograms, p)} className="hover:text-amber-900 ml-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Add custom program */}
+            <div className="flex gap-2">
+              <input type="text" value={newProgram} onChange={e => setNewProgram(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addCustom(newProgram, specialPrograms, setSpecialPrograms, setNewProgram)}
+                placeholder="Add custom program or service..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <button onClick={() => addCustom(newProgram, specialPrograms, setSpecialPrograms, setNewProgram)}
+                className="px-3 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
           </div>
 

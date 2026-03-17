@@ -1,14 +1,14 @@
-// app/centers/[slug]/center-detail-client.jsx - WITH SEO BREADCRUMBS + STUDY ABROAD
+// app/centers/[slug]/center-detail-client.jsx - WITH SEO BREADCRUMBS + STUDY ABROAD + AI REVIEW INTELLIGENCE + ANALYTICS
 "use client";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import Footer from "../../../components/Footer";
-import Navbar from "../../../components/Navbar";
 import { CenterDetailSkeleton } from "../../../components/LoadingSkeleton";
 import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
+import { useAnalytics } from "../../../hooks/useAnalytics";
 import { Heart, GitCompare, ChevronDown, Phone, Mail, Globe, MapPin } from "lucide-react";
 
 const ReviewSection = dynamic(() => import("../../../components/ReviewSection"), {
@@ -18,6 +18,11 @@ const ReviewSection = dynamic(() => import("../../../components/ReviewSection"),
 
 const CourseList = dynamic(() => import("../../../components/CourseList"), {
   loading: () => <div className="animate-pulse h-16 bg-gray-200 rounded"></div>,
+});
+
+const ReviewIntelligenceCard = dynamic(() => import("../../../components/ReviewIntelligenceCard"), {
+  loading: () => <div className="animate-pulse h-24 bg-gray-200 rounded"></div>,
+  ssr: false,
 });
 
 export default function CenterDetailClient() {
@@ -31,10 +36,10 @@ export default function CenterDetailClient() {
 
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isInCompare, toggleCompare, canAddMore } = useCompare();
+  const { logView } = useAnalytics();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-  // ✅ Check if study abroad consultant
   const isStudyAbroad = center?.primaryCategory === "STUDY_ABROAD";
 
   useEffect(() => {
@@ -58,6 +63,13 @@ export default function CenterDetailClient() {
     }
     loadCenter();
   }, [slug, API_URL]);
+
+  // ✅ Log center view for analytics
+  useEffect(() => {
+    if (center) {
+      logView(center.id, center.name, center.city, center.primaryCategory);
+    }
+  }, [center]);
 
   const handleFavoriteClick = () => {
     if (!isLoggedIn) {
@@ -85,9 +97,8 @@ export default function CenterDetailClient() {
     setTimeout(() => setShowToast(null), 2000);
   };
 
-  const formatCategory = (category) => {
-    return category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
-  };
+  const formatCategory = (category) =>
+    category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
 
   const shouldShowReadMore = (text) => text && text.length > 150;
   const getTruncatedText = (text) => {
@@ -98,7 +109,6 @@ export default function CenterDetailClient() {
   if (loading) {
     return (
       <>
-        <Navbar />
         <CenterDetailSkeleton />
         <Footer />
       </>
@@ -108,7 +118,6 @@ export default function CenterDetailClient() {
   if (!center) {
     return (
       <>
-        <Navbar />
         <main className="max-w-5xl mx-auto px-4 py-8">
           <div className="text-center py-8">
             <h2 className="text-xl font-semibold mb-2">Center Not Found</h2>
@@ -126,8 +135,6 @@ export default function CenterDetailClient() {
 
   return (
     <>
-      <Navbar />
-
       {/* Breadcrumb */}
       <nav className="max-w-5xl mx-auto px-3 sm:px-4 py-2 text-xs border-b bg-gray-50" aria-label="Breadcrumb">
         <ol className="flex items-center gap-2 text-gray-600 flex-wrap">
@@ -168,13 +175,11 @@ export default function CenterDetailClient() {
 
             <div className="absolute top-2 right-2 flex gap-2">
               <button onClick={handleFavoriteClick}
-                className={`p-2 rounded-lg backdrop-blur-md transition-all shadow-lg ${isLiked ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-700'}`}
-                aria-label={isLiked ? "Remove from favorites" : "Add to favorites"}>
+                className={`p-2 rounded-lg backdrop-blur-md transition-all shadow-lg ${isLiked ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-700'}`}>
                 <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
               </button>
               <button onClick={handleCompareClick} disabled={!canAddMore() && !isComparing}
-                className={`p-2 rounded-lg backdrop-blur-md transition-all shadow-lg ${isComparing ? 'bg-blue-500 text-white' : 'bg-white/95 text-gray-700 disabled:opacity-50'}`}
-                aria-label={isComparing ? "Remove from compare" : "Add to compare"}>
+                className={`p-2 rounded-lg backdrop-blur-md transition-all shadow-lg ${isComparing ? 'bg-blue-500 text-white' : 'bg-white/95 text-gray-700 disabled:opacity-50'}`}>
                 <GitCompare className="w-4 h-4" />
               </button>
             </div>
@@ -194,11 +199,9 @@ export default function CenterDetailClient() {
 
           <div className="pt-12 px-3 sm:px-4 pb-4">
 
-            {/* Name */}
             <div className="mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">{center.name}</h1>
-                {/* ✅ Study abroad badge */}
                 {isStudyAbroad && (
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">🌍 Study Abroad Consultant</span>
                 )}
@@ -217,7 +220,6 @@ export default function CenterDetailClient() {
               </div>
             </div>
 
-            {/* Tags */}
             <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b">
               <span className="px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
                 {formatCategory(center.primaryCategory)}
@@ -227,7 +229,6 @@ export default function CenterDetailClient() {
                   {formatCategory(cat)}
                 </span>
               ))}
-              {/* ✅ Hide teaching mode for study abroad */}
               {!isStudyAbroad && center.teachingMode && (
                 <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
                   {center.teachingMode}
@@ -235,7 +236,6 @@ export default function CenterDetailClient() {
               )}
             </div>
 
-            {/* ✅ STUDY ABROAD: Stats */}
             {isStudyAbroad && (center.studentsPlaced || center.successRate || center.avgScholarship) && (
               <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b">
                 {center.studentsPlaced && (
@@ -259,7 +259,6 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* About */}
             <div className="mb-3">
               <h2 className="text-sm font-bold text-gray-900 mb-1.5">About</h2>
               <p className="text-gray-700 leading-relaxed text-sm">
@@ -276,7 +275,6 @@ export default function CenterDetailClient() {
               )}
             </div>
 
-            {/* ✅ STUDY ABROAD: Countries */}
             {isStudyAbroad && center.countries?.length > 0 && (
               <div className="mb-3 pb-3 border-b">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Countries</h2>
@@ -290,7 +288,6 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* ✅ STUDY ABROAD: Services */}
             {isStudyAbroad && center.services?.length > 0 && (
               <div className="mb-3 pb-3 border-b">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Services</h2>
@@ -307,7 +304,6 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* ✅ STUDY ABROAD: Top Universities */}
             {isStudyAbroad && center.topUniversities?.length > 0 && (
               <div className="mb-3 pb-3 border-b">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Top Universities</h2>
@@ -321,7 +317,6 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* Social */}
             {(center.facebook || center.instagram || center.linkedin) && (
               <div className="mb-3 pb-3 border-b">
                 <div className="flex items-center gap-2">
@@ -353,7 +348,6 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* Contact */}
             {(center.phone || center.whatsapp || center.email || center.website) && (
               <div className="mb-3">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Contact</h2>
@@ -388,10 +382,8 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* ✅ Courses only for non-study-abroad */}
             {!isStudyAbroad && <CourseList center={center} />}
 
-            {/* Gallery */}
             {center.gallery && center.gallery.length > 0 && (
               <div className="mb-3">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Gallery</h2>
@@ -405,6 +397,11 @@ export default function CenterDetailClient() {
                 </div>
               </div>
             )}
+
+            {/* ✅ AI Review Intelligence — shows above reviews */}
+            <div className="mb-3">
+              <ReviewIntelligenceCard centerId={center.id} />
+            </div>
 
             <ReviewSection centerSlug={center.slug} />
 
