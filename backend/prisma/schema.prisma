@@ -55,6 +55,12 @@ enum NotificationType {
   ALERT
 }
 
+// ✅ NEW: Banner placement enum
+enum BannerPlacement {
+  HERO
+  FEATURED
+}
+
 model InstituteUser {
   id       String   @id @default(cuid())
   email    String   @unique
@@ -134,6 +140,7 @@ model Center {
   owner  InstituteUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   reviews Review[]
+  banners Banner[] // ✅ NEW: relation to Banner
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -249,11 +256,9 @@ model Notification {
   type    NotificationType @default(INFO)
   isRead  Boolean          @default(false)
 
-  // Institute notification — null = broadcast to all institutes
   instituteId String?
   institute   InstituteUser? @relation(fields: [instituteId], references: [id], onDelete: Cascade)
 
-  // User notification — null = broadcast to all users
   userId String?
   user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -272,7 +277,7 @@ model SearchLog {
   query     String
   city      String?
   category  String?
-  source    String   @default("browse") // browse, chat, search
+  source    String   @default("browse")
   createdAt DateTime @default(now())
 
   @@index([query])
@@ -293,4 +298,52 @@ model CenterView {
   @@index([city])
   @@index([category])
   @@index([createdAt])
+}
+
+// ─── Banner / Promotion Model ───────────────────
+
+// ✅ NEW: Banner model for institute promotions
+model Banner {
+  id       String          @id @default(cuid())
+  centerId String
+  center   Center          @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  title     String
+  tagline   String?
+  imageUrl  String?
+  ctaText   String          @default("View Institute")
+
+  placement BannerPlacement
+  duration  Int             // 7, 15, or 30 days
+
+  isActive  Boolean         @default(false) // false until admin approves
+  startDate DateTime?
+  endDate   DateTime?
+
+  // Pricing in paise (₹ × 100)
+  pricePaise Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([centerId])
+  @@index([placement])
+  @@index([isActive])
+  @@index([endDate])
+  @@index([placement, isActive])
+}
+
+// ✅ NEW: Waitlist for when banner slots are full
+model BannerWaitlist {
+  id         String          @id @default(cuid())
+  centerId   String
+  centerName String
+  placement  BannerPlacement
+  duration   Int
+  email      String
+
+  createdAt  DateTime @default(now())
+
+  @@index([placement])
+  @@index([centerId])
 }
