@@ -13,9 +13,6 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-// ─────────────────────────────────────────
-// Inline SmartSearch for Navbar
-// ─────────────────────────────────────────
 function NavSearch({ centers }) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -108,7 +105,6 @@ function NavSearch({ centers }) {
     if (!query.trim()) return;
     setIsOpen(false);
     setQuery("");
-    // ✅ ADDED: include userCity in search
     const city = localStorage.getItem("userCity");
     const cityParam = city ? `&city=${encodeURIComponent(city)}` : "";
     router.push(`/centers?q=${encodeURIComponent(query.trim())}${cityParam}`);
@@ -123,7 +119,6 @@ function NavSearch({ centers }) {
   const handleCourseClick = (course) => {
     setIsOpen(false);
     setQuery("");
-    // ✅ ADDED: include userCity in course search
     const city = localStorage.getItem("userCity");
     const cityParam = city ? `&city=${encodeURIComponent(city)}` : "";
     router.push(`/centers?q=${encodeURIComponent(course)}${cityParam}`);
@@ -260,9 +255,6 @@ function NavSearch({ centers }) {
   );
 }
 
-// ─────────────────────────────────────────
-// ✅ ADDED: City Selector Dropdown
-// ─────────────────────────────────────────
 function CitySelector({ city, onCityChange }) {
   const [open, setOpen] = useState(false);
   const [detecting, setDetecting] = useState(false);
@@ -367,9 +359,6 @@ function CitySelector({ city, onCityChange }) {
   );
 }
 
-// ─────────────────────────────────────────
-// Main Navbar
-// ─────────────────────────────────────────
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isInstituteLoggedIn, setIsInstituteLoggedIn] = useState(false);
@@ -377,12 +366,10 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [centers, setCenters] = useState([]);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  // ✅ ADDED: city state
   const [userCity, setUserCity] = useState(null);
   const pathname = usePathname();
   const router = useRouter();
 
-  // ✅ ADDED: load saved city + listen for changes
   useEffect(() => {
     try {
       const saved = localStorage.getItem("userCity");
@@ -402,7 +389,6 @@ export default function Navbar() {
     };
   }, []);
 
-  // ✅ ADDED: save city + re-filter centers page if open
   const handleCityChange = (city) => {
     setUserCity(city);
     try {
@@ -498,7 +484,6 @@ export default function Navbar() {
       localStorage.removeItem("userLoggedIn");
       localStorage.removeItem("userData");
       localStorage.removeItem("userToken");
-      // ✅ Clear city on user logout
       localStorage.removeItem("userCity");
       setUserCity(null);
     }
@@ -535,7 +520,6 @@ export default function Navbar() {
 
           {/* Desktop: City + Search */}
           <div className="hidden md:flex flex-1 max-w-sm lg:max-w-md mx-4 items-center gap-2">
-            {/* ✅ ADDED: city selector — users only, not institutes */}
             {isUserLoggedIn && (
               <CitySelector city={userCity} onCityChange={handleCityChange} />
             )}
@@ -595,7 +579,6 @@ export default function Navbar() {
 
           {/* Mobile Right */}
           <div className="md:hidden flex items-center gap-1.5">
-            {/* ✅ ADDED: city selector on mobile — users only */}
             {isUserLoggedIn && (
               <CitySelector city={userCity} onCityChange={handleCityChange} />
             )}
@@ -629,11 +612,11 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu — ✅ FIXED: max-h so it never goes outside screen + overflow-y-auto to scroll inside */}
         {isOpen && (
           <>
             <div className="md:hidden fixed inset-0 top-16 bg-black/20 z-40" onClick={() => setIsOpen(false)} />
-            <div className="md:hidden fixed left-0 right-0 top-16 z-50 bg-white border-t shadow-lg rounded-b-2xl overflow-hidden">
+            <div className="md:hidden fixed left-0 right-0 top-16 z-50 bg-white border-t shadow-lg rounded-b-2xl overflow-hidden max-h-[calc(100vh-4rem)] overflow-y-auto">
               <div className="space-y-0">
                 <Link href="/"
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm border-b border-gray-100 ${pathname === '/' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}

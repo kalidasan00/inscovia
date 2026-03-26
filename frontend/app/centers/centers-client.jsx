@@ -27,6 +27,17 @@ export default function CentersClient() {
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
+  // ✅ ADDED: auto-apply saved city from localStorage if no city in URL
+  useEffect(() => {
+    const savedCity = localStorage.getItem("userCity");
+    const urlCity = searchParams.get("city");
+    if (savedCity && !urlCity) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("city", savedCity);
+      router.replace(`/centers?${params.toString()}`);
+    }
+  }, []);
+
   useEffect(() => {
     async function loadCenters() {
       try {
@@ -58,7 +69,6 @@ export default function CentersClient() {
 
   let filtered = centers;
 
-  // ✅ Hide STUDY_ABROAD from main list unless explicitly filtering for it
   if (!isStudyAbroadMode) {
     filtered = filtered.filter((c) => c.primaryCategory !== "STUDY_ABROAD");
   }
@@ -126,7 +136,15 @@ export default function CentersClient() {
     router.push(`/centers${params.toString() ? '?' + params.toString() : ''}`);
   };
 
-  const clearAllFilters = () => router.push('/centers');
+  // ✅ UPDATED: clear all filters but keep city from localStorage
+  const clearAllFilters = () => {
+    const savedCity = localStorage.getItem("userCity");
+    if (savedCity) {
+      router.push(`/centers?city=${encodeURIComponent(savedCity)}`);
+    } else {
+      router.push('/centers');
+    }
+  };
 
   return (
     <>
@@ -139,10 +157,23 @@ export default function CentersClient() {
                   ? "🌍 Study Abroad Consultants"
                   : category ? formatCategory(category)
                   : searchQuery ? `Search: ${searchQuery}`
+                  : city ? `Training Centers in ${city}`
                   : "Training Centers"}
               </h1>
               {isStudyAbroadMode && (
                 <p className="text-xs text-gray-500 mt-0.5">Find trusted consultants for studying abroad</p>
+              )}
+              {/* ✅ ADDED: show active city with clear option */}
+              {city && !isStudyAbroadMode && (
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  Showing results in <span className="font-medium text-blue-600">{city}</span>
+                  <button
+                    onClick={() => router.push('/centers')}
+                    className="ml-1 text-gray-400 hover:text-red-500 transition-colors text-xs underline"
+                  >
+                    (show all)
+                  </button>
+                </p>
               )}
             </div>
 
@@ -188,6 +219,7 @@ export default function CentersClient() {
                 ? (filtered.length === 1 ? "consultant" : "consultants")
                 : (filtered.length === 1 ? "center" : "centers")} found
               {searchQuery && ` for "${searchQuery}"`}
+              {city && ` in ${city}`}
             </p>
           )}
 
@@ -202,19 +234,17 @@ export default function CentersClient() {
                 {isStudyAbroadMode ? "No consultants found" : "No centers found"}
               </p>
               <p className="text-sm text-gray-500 mb-3">
-                {searchQuery ? `No results for "${searchQuery}"` : "Try different filters"}
+                {city ? `No results in ${city}. Try showing all cities.` : searchQuery ? `No results for "${searchQuery}"` : "Try different filters"}
               </p>
-              <button onClick={clearAllFilters} className="text-accent hover:text-accent/80 font-medium text-sm">Clear all filters</button>
+              <button onClick={() => router.push('/centers')} className="text-accent hover:text-accent/80 font-medium text-sm">Clear all filters</button>
             </div>
           ) : isStudyAbroadMode ? (
-            // ✅ Study abroad: single column consultant cards
             <div className="flex flex-col gap-3 max-w-2xl mx-auto">
               {filtered.map((center) => (
                 <ConsultantCard key={center.id} center={center} />
               ))}
             </div>
           ) : (
-            // Normal: 2/3/4 column grid
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
               {filtered.map((center) => (
                 <CenterCard key={center.id} center={center} />

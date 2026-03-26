@@ -1,139 +1,143 @@
 // components/LoginPromptModal.jsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { X, UserPlus, LogIn } from "lucide-react";
+import { X, UserPlus, LogIn, BookOpen, Star, Heart } from "lucide-react";
+
+const SESSION_KEY = "loginPromptDismissed";
+const PAGE_COUNT_KEY = "centerPagesViewed";
 
 export default function LoginPromptModal() {
   const [showModal, setShowModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const timerRef = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check login
     const userLoggedIn = localStorage.getItem("userLoggedIn") === "true";
     const instituteLoggedIn = localStorage.getItem("instituteLoggedIn") === "true";
     const loggedIn = userLoggedIn || instituteLoggedIn;
-
     setIsLoggedIn(loggedIn);
 
-    // Don't show modal if already logged in or on auth pages
-    if (loggedIn || pathname?.includes('/user-menu') || pathname?.includes('/login') || pathname?.includes('/register')) {
-      return;
+    // Don't show if logged in or on auth pages
+    if (
+      loggedIn ||
+      pathname?.includes("/user-menu") ||
+      pathname?.includes("/login") ||
+      pathname?.includes("/register") ||
+      pathname?.includes("/admin")
+    ) return;
+
+    // Don't show if already dismissed this session
+    if (sessionStorage.getItem(SESSION_KEY)) return;
+
+    // ── Trigger 1: count center detail page views ──
+    if (pathname?.startsWith("/centers/")) {
+      const count = parseInt(sessionStorage.getItem(PAGE_COUNT_KEY) || "0") + 1;
+      sessionStorage.setItem(PAGE_COUNT_KEY, String(count));
+      if (count >= 2) {
+        // Slight delay so page loads first
+        const t = setTimeout(() => setShowModal(true), 800);
+        return () => clearTimeout(t);
+      }
     }
 
-    // Check if modal was dismissed in this session
-    const dismissed = sessionStorage.getItem("loginPromptDismissed");
-    if (dismissed) return;
+    // ── Trigger 2: 3 minutes on site ──
+    timerRef.current = setTimeout(() => {
+      if (!sessionStorage.getItem(SESSION_KEY)) {
+        setShowModal(true);
+      }
+    }, 3 * 60 * 1000);
 
-    // Show modal after 2 minutes (120000ms)
-    const timer = setTimeout(() => {
-      setShowModal(true);
-    }, 120000); // 2 minutes
-
-    return () => clearTimeout(timer);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [pathname]);
 
   const handleClose = () => {
     setShowModal(false);
-    // Remember dismissal for this session only
-    sessionStorage.setItem("loginPromptDismissed", "true");
+    sessionStorage.setItem(SESSION_KEY, "true");
+    if (timerRef.current) clearTimeout(timerRef.current);
   };
 
-  const handleLogin = () => {
+  const handleGoToMenu = () => {
     setShowModal(false);
+    sessionStorage.setItem(SESSION_KEY, "true");
     router.push("/user-menu");
   };
 
-  const handleRegister = () => {
-    setShowModal(false);
-    router.push("/user-menu");
-  };
-
-  // Don't render if logged in or modal not shown
   if (isLoggedIn || !showModal) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-fade-in"
+        className="fixed inset-0 bg-black/50 z-[9998]"
         onClick={handleClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
         <div
-          className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 pointer-events-auto animate-slide-up"
-          onClick={(e) => e.stopPropagation()}
+          className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 pointer-events-auto"
+          style={{ animation: "slideUp 0.3s ease-out" }}
+          onClick={e => e.stopPropagation()}
         >
-          {/* Close Button */}
+          {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
 
           {/* Icon */}
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <UserPlus className="w-8 h-8 text-white" />
+          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <UserPlus className="w-7 h-7 text-white" />
           </div>
 
           {/* Content */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Join Inscovia Today! 🎓
+          <div className="text-center mb-5">
+            <h2 className="text-xl font-bold text-gray-900 mb-1.5">
+              Join Inscovia Free
             </h2>
-            <p className="text-gray-600">
-              Create a free account to save your favorite centers, compare courses, and write reviews to help others!
+            <p className="text-sm text-gray-500">
+              Save centers, compare courses, and get personalized recommendations.
             </p>
           </div>
 
           {/* Benefits */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6 space-y-2">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          <div className="bg-blue-50 rounded-xl p-4 mb-5 space-y-2.5">
+            {[
+              { icon: Heart,    text: "Save & shortlist your favourite centers" },
+              { icon: BookOpen, text: "Compare courses side by side" },
+              { icon: Star,     text: "Write reviews and help others" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3 text-sm">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="text-gray-700">{text}</span>
               </div>
-              <span className="text-gray-700">Save & compare training centers</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <span className="text-gray-700">Write & manage reviews</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <span className="text-gray-700">Get personalized recommendations</span>
-            </div>
+            ))}
           </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
+          {/* Buttons */}
+          <div className="space-y-2.5">
             <button
-              onClick={handleRegister}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              onClick={handleGoToMenu}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
             >
-              <UserPlus className="w-5 h-5" />
+              <UserPlus className="w-4 h-4" />
               Create Free Account
             </button>
-
             <button
-              onClick={handleLogin}
-              className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+              onClick={handleGoToMenu}
+              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
             >
-              <LogIn className="w-5 h-5" />
+              <LogIn className="w-4 h-4" />
               Already have an account? Sign In
             </button>
           </div>
@@ -141,27 +145,17 @@ export default function LoginPromptModal() {
           {/* Skip */}
           <button
             onClick={handleClose}
-            className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className="w-full mt-3 text-xs text-gray-400 hover:text-gray-600 transition-colors"
           >
             Maybe later
           </button>
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
+      <style jsx global>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </>

@@ -2,8 +2,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "../../../components/Navbar";
-import Footer from "../../../components/Footer";
 import Link from "next/link";
 import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
@@ -45,49 +43,40 @@ export default function UserDashboard() {
     localStorage.removeItem("userLoggedIn");
     localStorage.removeItem("userData");
     localStorage.removeItem("userToken");
+    localStorage.removeItem("userCity");
     setShowLogoutModal(false);
     router.push("/");
   };
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-6">
-          <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent"></div>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-6">
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent"></div>
+        </div>
+      </main>
     );
   }
 
   if (!user) {
     return (
-      <>
-        <Navbar />
-        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-6">
-          <div className="text-center py-16">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
-            <p className="text-sm text-gray-600 mb-4">Please login to access your dashboard.</p>
-            <Link
-              href="/user-menu"
-              className="inline-flex px-5 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm font-medium"
-            >
-              Go to Login
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-6">
+        <div className="text-center py-16">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-sm text-gray-600 mb-4">Please login to access your dashboard.</p>
+          <Link
+            href="/user-menu"
+            className="inline-flex px-5 py-2.5 bg-accent text-white rounded-lg hover:bg-accent/90 text-sm font-medium"
+          >
+            Go to Login
+          </Link>
+        </div>
+      </main>
     );
   }
 
   return (
     <>
-      <Navbar />
-
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-8">
         {/* Header */}
         <div className="bg-white rounded-lg border shadow-sm p-4 sm:p-5 mb-4">
@@ -117,7 +106,6 @@ export default function UserDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-4">
-          {/* Saved Centers */}
           <Link
             href="/user/saved"
             className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-red-200 transition-all"
@@ -133,7 +121,6 @@ export default function UserDashboard() {
             </div>
           </Link>
 
-          {/* Compare */}
           <Link
             href="/user/compare"
             className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-blue-200 transition-all"
@@ -149,7 +136,6 @@ export default function UserDashboard() {
             </div>
           </Link>
 
-          {/* Reviews */}
           <Link
             href="/user/reviews"
             className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-purple-200 transition-all"
@@ -165,7 +151,6 @@ export default function UserDashboard() {
             </div>
           </Link>
 
-          {/* Browse */}
           <Link
             href="/centers"
             className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-accent transition-all"
@@ -301,42 +286,34 @@ export default function UserDashboard() {
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <>
-          {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-fade-in"
+            className="fixed inset-0 bg-black/50 z-50"
             onClick={() => setShowLogoutModal(false)}
           />
-
-          {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-slide-up"
-              onClick={(e) => e.stopPropagation()}
+              className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6"
+              style={{ animation: "slideUp 0.3s ease-out" }}
+              onClick={e => e.stopPropagation()}
             >
-              {/* Close Button */}
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
 
-              {/* Icon */}
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
 
-              {/* Content */}
               <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Logout?
-                </h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Logout?</h3>
                 <p className="text-gray-600 text-sm">
                   Are you sure you want to logout from your account?
                 </p>
               </div>
 
-              {/* Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowLogoutModal(false)}
@@ -356,33 +333,12 @@ export default function UserDashboard() {
         </>
       )}
 
-      <style jsx>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
+      <style jsx global>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-
-      <Footer />
     </>
   );
 }
