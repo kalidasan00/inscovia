@@ -1,13 +1,28 @@
-// app/centers/[slug]/page.js - FIXED: single fetch, no double API call
+// app/centers/[slug]/page.js - FIXED: XSS sanitization in JSON-LD
 import CenterDetailClient from './center-detail-client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-// ── Shared fetch with ISR caching (revalidates every 60s, not on every request)
+// ✅ FIX #1: Sanitize strings going into JSON-LD to prevent XSS
+function sanitizeForJsonLd(str) {
+  if (typeof str !== "string") return str;
+  return str.replace(/<\/script>/gi, "<\\/script>").replace(/<!--/g, "<\\!--");
+}
+
+function sanitizeCenter(center) {
+  return {
+    ...center,
+    name: sanitizeForJsonLd(center.name),
+    description: sanitizeForJsonLd(center.description),
+    city: sanitizeForJsonLd(center.city),
+    state: sanitizeForJsonLd(center.state),
+  };
+}
+
 async function getCenter(slug) {
   try {
     const res = await fetch(`${API_URL}/centers/${slug}`, {
-      next: { revalidate: 60 }, // ✅ was: cache: 'no-store' (hammered backend every request)
+      next: { revalidate: 60 },
     });
     if (!res.ok) return null;
     return await res.json();
@@ -17,9 +32,8 @@ async function getCenter(slug) {
   }
 }
 
-// 🎯 DYNAMIC SEO FOR EACH CENTER
 export async function generateMetadata({ params }) {
-  const center = await getCenter(params.slug); // ✅ uses shared cached fetch
+  const center = await getCenter(params.slug);
 
   if (!center) {
     return {
@@ -81,34 +95,36 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// ── Build all schemas from already-fetched center data (no extra fetch)
 function buildSchemas(center) {
+  // ✅ FIX #1: sanitize center data before injecting into JSON-LD
+  const c = sanitizeCenter(center);
+
   const localBusinessSchema = {
     '@context': 'https://schema.org',
     '@type': 'EducationalOrganization',
-    name: center.name,
-    description: center.description,
-    url: `https://inscovia.com/centers/${center.slug}`,
-    image: center.image || center.logo,
-    logo: center.logo,
-    telephone: center.phone,
-    email: center.email,
+    name: c.name,
+    description: c.description,
+    url: `https://inscovia.com/centers/${c.slug}`,
+    image: c.image || c.logo,
+    logo: c.logo,
+    telephone: c.phone,
+    email: c.email,
     address: {
       '@type': 'PostalAddress',
-      addressLocality: center.city,
-      addressRegion: center.state,
+      addressLocality: c.city,
+      addressRegion: c.state,
       addressCountry: 'IN',
     },
-    ...(center.rating > 0 && {
+    ...(c.rating > 0 && {
       aggregateRating: {
         '@type': 'AggregateRating',
-        ratingValue: center.rating,
-        reviewCount: center.reviewCount || 1, // ✅ added reviewCount (required for Google rich results)
+        ratingValue: c.rating,
+        reviewCount: c.reviewCount || 1,
         bestRating: 5,
         worstRating: 1,
       },
     }),
-    ...(center.website && { sameAs: [center.website] }),
+    ...(c.website && { sameAs: [c.website] }),
   };
 
   const breadcrumbSchema = {
@@ -117,19 +133,19 @@ function buildSchemas(center) {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://inscovia.com' },
       { '@type': 'ListItem', position: 2, name: 'Centers', item: 'https://inscovia.com/centers' },
-      { '@type': 'ListItem', position: 3, name: center.city, item: `https://inscovia.com/centers?city=${center.city}` },
-      { '@type': 'ListItem', position: 4, name: center.name, item: `https://inscovia.com/centers/${center.slug}` },
+      { '@type': 'ListItem', position: 3, name: c.city, item: `https://inscovia.com/centers?city=${c.city}` },
+      { '@type': 'ListItem', position: 4, name: c.name, item: `https://inscovia.com/centers/${c.slug}` },
     ],
   };
 
   const courseSchemas = center.courseDetails?.slice(0, 5).map((course) => ({
     '@context': 'https://schema.org',
     '@type': 'Course',
-    name: course.name,
+    name: sanitizeForJsonLd(course.name),
     provider: {
       '@type': 'Organization',
-      name: center.name,
-      url: `https://inscovia.com/centers/${center.slug}`,
+      name: c.name,
+      url: `https://inscovia.com/centers/${c.slug}`,
     },
     ...(course.fees && {
       offers: { '@type': 'Offer', price: course.fees, priceCurrency: 'INR' },
@@ -154,7 +170,6 @@ function buildSchemas(center) {
 }
 
 export default async function CenterDetailPage({ params }) {
-  // ✅ FIXED: single fetch — Next.js deduplicates this across generateMetadata + here
   const center = await getCenter(params.slug);
   const schemas = center ? buildSchemas(center) : null;
 
@@ -184,7 +199,8 @@ export default async function CenterDetailPage({ params }) {
         </>
       )}
 
-      <CenterDetailClient />
+      {/* ✅ FIX #5: pass center data as prop so client doesn't fetch again */}
+      <CenterDetailClient initialCenter={center} />
     </>
   );
 }

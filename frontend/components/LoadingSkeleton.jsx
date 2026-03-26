@@ -1,12 +1,13 @@
-// frontend/components/LoadingSkeleton.jsx - BEAUTIFUL LOADING STATES
+// frontend/components/LoadingSkeleton.jsx
 export function CenterCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl shadow-md border overflow-hidden animate-pulse">
+    // ✅ FIX #1: added relative so absolute logo positions correctly inside card
+    <div className="relative bg-white rounded-xl shadow-md border overflow-hidden animate-pulse">
       {/* Cover image skeleton */}
       <div className="h-32 sm:h-40 bg-gray-200"></div>
 
       <div className="pt-12 px-3 sm:px-4 pb-4">
-        {/* Logo skeleton */}
+        {/* Logo skeleton — ✅ FIX #1: now correctly positioned inside relative parent */}
         <div className="absolute -top-10 left-3">
           <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-300 rounded-xl"></div>
         </div>
@@ -35,7 +36,8 @@ export function CenterCardSkeleton() {
 
 export function CenterListSkeleton({ count = 6 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    // ✅ FIX #2: matches actual centers grid — cols-2 mobile, 3 on lg, 4 on xl
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
       {Array.from({ length: count }).map((_, i) => (
         <CenterCardSkeleton key={i} />
       ))}
@@ -107,8 +109,3 @@ export function ReviewSkeleton() {
     </div>
   );
 }
-
-// ✅ USAGE:
-// import { CenterListSkeleton, CenterDetailSkeleton } from './LoadingSkeleton';
-//
-// if (loading) return <CenterListSkeleton count={6} />;

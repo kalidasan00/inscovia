@@ -1,10 +1,9 @@
-// app/centers/[slug]/center-detail-client.jsx - FIXED: max retries on fetch + logView dep
+// app/centers/[slug]/center-detail-client.jsx
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import Footer from "../../../components/Footer";
 import { CenterDetailSkeleton } from "../../../components/LoadingSkeleton";
 import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
@@ -25,21 +24,22 @@ const ReviewIntelligenceCard = dynamic(() => import("../../../components/ReviewI
   ssr: false,
 });
 
-// ── WhatsApp icon SVG ──
 const WhatsAppIcon = ({ className }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
   </svg>
 );
 
-const MAX_RETRIES = 3; // ✅ FIXED: was infinite retry loop
+const MAX_RETRIES = 3;
 
-export default function CenterDetailClient() {
+// ✅ FIX #5: accept initialCenter from server component to avoid double fetch
+export default function CenterDetailClient({ initialCenter = null }) {
   const { slug } = useParams();
   const router = useRouter();
-  const [center, setCenter] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false); // ✅ NEW: track failed state
+  // ✅ FIX #5: use initialCenter as starting state — no extra fetch needed on first load
+  const [center, setCenter] = useState(initialCenter);
+  const [loading, setLoading] = useState(!initialCenter); // skip loading if we have data
+  const [fetchError, setFetchError] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showToast, setShowToast] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -50,7 +50,6 @@ export default function CenterDetailClient() {
   const { logView } = useAnalytics();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
   const isStudyAbroad = center?.primaryCategory === "STUDY_ABROAD";
 
   useEffect(() => {
@@ -63,45 +62,52 @@ export default function CenterDetailClient() {
     setIsLoggedIn(userLoggedIn);
   }, []);
 
+  // ✅ FIX #5: only fetch from client if server didn't provide data (e.g. direct navigation)
+  // ✅ FIX #10: finally block logic fixed — loading cleared correctly on every path
   useEffect(() => {
-    let retryCount = 0; // ✅ FIXED: counter scoped to this effect run
+    if (initialCenter) return; // ✅ skip fetch — already have data from server
+
+    let retryCount = 0;
+    let cancelled = false;
 
     async function loadCenter() {
       try {
         const res = await fetch(`${API_URL}/centers/${slug}`, { cache: "no-store" });
+        if (cancelled) return;
+
         if (!res.ok) {
           if (retryCount < MAX_RETRIES) {
             retryCount++;
-            setTimeout(loadCenter, 2000 * retryCount); // ✅ exponential backoff
+            setTimeout(loadCenter, 2000 * retryCount);
           } else {
-            setFetchError(true); // ✅ give up gracefully after 3 tries
-            setLoading(false);
+            setFetchError(true);
+            setLoading(false); // ✅ FIX #10: always clear loading on give-up
           }
           return;
         }
+
         const data = await res.json();
-        setCenter(data);
+        if (!cancelled) {
+          setCenter(data);
+          setLoading(false); // ✅ FIX #10: clear loading on success
+        }
       } catch (err) {
+        if (cancelled) return;
         console.error("Error loading center:", err);
         if (retryCount < MAX_RETRIES) {
           retryCount++;
           setTimeout(loadCenter, 2000 * retryCount);
         } else {
           setFetchError(true);
-          setLoading(false);
-        }
-      } finally {
-        // Only clear loading when we have data or gave up
-        if (retryCount === 0 || retryCount >= MAX_RETRIES) {
-          setLoading(false);
+          setLoading(false); // ✅ FIX #10: clear loading on error give-up
         }
       }
     }
 
     loadCenter();
-  }, [slug, API_URL]);
+    return () => { cancelled = true; }; // cleanup on unmount
+  }, [slug, API_URL, initialCenter]);
 
-  // ✅ FIXED: logView wrapped in useCallback so it's stable, no missing dep warning
   const stableLogView = useCallback(logView, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -145,7 +151,6 @@ export default function CenterDetailClient() {
     return text.length > 150 ? text.substring(0, 150) + '...' : text;
   };
 
-  // ✅ Build WhatsApp URL — strips non-digits (used in BOTH floating btn and contact section)
   const getWhatsAppUrl = (withMessage = true) => {
     if (!center?.whatsapp) return null;
     const number = center.whatsapp.replace(/\D/g, "");
@@ -156,48 +161,38 @@ export default function CenterDetailClient() {
     return `https://wa.me/${number}?text=${message}`;
   };
 
-  if (loading) {
-    return (
-      <>
-        <CenterDetailSkeleton />
-        <Footer />
-      </>
-    );
-  }
+  if (loading) return <CenterDetailSkeleton />;
+  // ✅ FIX #11: Footer removed — already rendered in RootLayoutInner
 
-  // ✅ FIXED: shows proper error UI after max retries, not blank screen
   if (fetchError || !center) {
     return (
-      <>
-        <main className="max-w-5xl mx-auto px-4 py-8">
-          <div className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">
-              {fetchError ? "Unable to Load Center" : "Center Not Found"}
-            </h2>
-            <p className="text-gray-600 mb-4">
-              {fetchError
-                ? "Something went wrong. Please check your connection and try again."
-                : "The center you're looking for doesn't exist."}
-            </p>
-            {fetchError && (
-              <button
-                onClick={() => { setFetchError(false); setLoading(true); }}
-                className="mr-3 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Try Again
-              </button>
-            )}
-            <Link href="/centers" className="text-accent hover:text-accent/80">← Back to Centers</Link>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        <div className="text-center py-8">
+          <h2 className="text-xl font-semibold mb-2">
+            {fetchError ? "Unable to Load Center" : "Center Not Found"}
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {fetchError
+              ? "Something went wrong. Please check your connection and try again."
+              : "The center you're looking for doesn't exist."}
+          </p>
+          {fetchError && (
+            <button
+              onClick={() => { setFetchError(false); setLoading(true); }}
+              className="mr-3 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Try Again
+            </button>
+          )}
+          <Link href="/centers" className="text-accent hover:text-accent/80">← Back to Centers</Link>
+        </div>
+      </main>
     );
   }
 
   const isLiked = isFavorite(center.id);
   const isComparing = isInCompare(center.id);
-  const whatsappUrl = getWhatsAppUrl(true); // with message — for floating button
+  const whatsappUrl = getWhatsAppUrl(true);
 
   return (
     <>
@@ -267,7 +262,10 @@ export default function CenterDetailClient() {
                 src={center.image}
                 alt={`${center.name} cover`}
                 className="w-full h-full object-cover"
-                fetchpriority="high" // ✅ LCP image — load early
+                fetchpriority="high"
+                // ✅ FIX #8: explicit dimensions prevent layout shift
+                width={1200}
+                height={160}
               />
             )}
 
@@ -285,7 +283,8 @@ export default function CenterDetailClient() {
             <div className="absolute -bottom-10 left-3">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-xl border-4 border-white overflow-hidden flex items-center justify-center">
                 {center.logo ? (
-                  <img src={center.logo} className="w-full h-full object-cover" alt={`${center.name} logo`} />
+                  // ✅ FIX #8: explicit dimensions on logo
+                  <img src={center.logo} className="w-full h-full object-cover" alt={`${center.name} logo`} width={96} height={96} />
                 ) : (
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -296,7 +295,6 @@ export default function CenterDetailClient() {
           </div>
 
           <div className="pt-12 px-3 sm:px-4 pb-4">
-
             <div className="mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">{center.name}</h1>
@@ -457,7 +455,6 @@ export default function CenterDetailClient() {
                     </a>
                   )}
                   {center.whatsapp && (
-                    // ✅ FIXED: uses getWhatsAppUrl() so number is cleaned (no raw spaces/dashes)
                     <a href={getWhatsAppUrl(false)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <WhatsAppIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
                       <p className="text-xs text-gray-900 font-medium truncate">{center.whatsapp}</p>
@@ -487,8 +484,13 @@ export default function CenterDetailClient() {
                 <div className="grid grid-cols-3 gap-2">
                   {center.gallery.map((img, i) => (
                     <div key={i} className="aspect-square">
+                      {/* ✅ FIX #8: explicit width/height on gallery images */}
                       <img src={img} alt={`${center.name} - Gallery image ${i + 1}`}
-                        className="w-full h-full object-cover rounded-lg border" loading="lazy" />
+                        className="w-full h-full object-cover rounded-lg border"
+                        loading="lazy"
+                        width={200}
+                        height={200}
+                      />
                     </div>
                   ))}
                 </div>
@@ -512,7 +514,6 @@ export default function CenterDetailClient() {
           </div>
         </div>
       </main>
-      <Footer />
     </>
   );
 }
