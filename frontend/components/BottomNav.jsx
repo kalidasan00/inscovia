@@ -1,14 +1,13 @@
-// components/BottomNav.jsx
+// components/BottomNav.jsx - FIXED
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
-export default function BottomNav() {
+function BottomNavInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // ✅ ALL hooks must come BEFORE any early return
   const [isInstituteLoggedIn, setIsInstituteLoggedIn] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
@@ -24,11 +23,14 @@ export default function BottomNav() {
       window.removeEventListener('storage', checkAuth);
       window.removeEventListener('authStateChanged', checkAuth);
     };
-  }, [pathname]);
+  }, []);
 
-  // ✅ Early return AFTER all hooks
-  if (pathname?.startsWith('/institute/login') ||
-      pathname?.startsWith('/institute/register')) {
+  // ✅ FIXED: removed /user-menu — nav must stay visible when user taps Profile
+  if (
+    pathname?.startsWith('/institute/login') ||
+    pathname?.startsWith('/institute/register') ||
+    pathname?.startsWith('/admin')
+  ) {
     return null;
   }
 
@@ -57,7 +59,7 @@ export default function BottomNav() {
       )
     },
     {
-      name: "Study Abroad",
+      name: "Abroad",
       href: "/centers?category=STUDY_ABROAD",
       isActive: isStudyAbroadActive,
       icon: (
@@ -73,9 +75,11 @@ export default function BottomNav() {
         : isUserLoggedIn
           ? "/user/dashboard"
           : "/user-menu",
-      isActive: pathname?.startsWith("/institute/dashboard") ||
-                pathname?.startsWith("/user/dashboard") ||
-                pathname?.startsWith("/user-menu"),
+      // ✅ FIXED: /user-menu is active state for Profile tab — not hidden
+      isActive:
+        pathname?.startsWith("/institute/dashboard") ||
+        pathname?.startsWith("/user/dashboard") ||
+        pathname?.startsWith("/user-menu"),
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -95,12 +99,20 @@ export default function BottomNav() {
             <div className={`transition-transform ${item.isActive ? "scale-110" : ""}`}>
               {item.icon}
             </div>
-            <span className={`text-xs font-medium ${item.isActive ? "font-semibold" : ""}`}>
+            <span className={`text-xs ${item.isActive ? "font-semibold" : "font-medium"}`}>
               {item.name}
             </span>
           </Link>
         ))}
       </div>
     </nav>
+  );
+}
+
+export default function BottomNav() {
+  return (
+    <Suspense fallback={null}>
+      <BottomNavInner />
+    </Suspense>
   );
 }

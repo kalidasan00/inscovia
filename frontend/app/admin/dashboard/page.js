@@ -1,5 +1,5 @@
-// app/admin/dashboard/page.js
 "use client";
+// app/admin/dashboard/page.js
 import { useState, useEffect } from "react";
 import {
   Building2, Users, MapPin, Clock, ArrowRight, X,
@@ -18,8 +18,14 @@ export default function AdminDashboard() {
   const [auditRunning, setAuditRunning] = useState(false);
   const [error, setError] = useState(null);
 
+  // ✅ NEW: banner state
+  const [pendingBanners, setPendingBanners] = useState([]);
+  const [bannerLoading, setBannerLoading] = useState(true);
+  const [bannerAction, setBannerAction] = useState(null); // id being approved/rejected
+
   useEffect(() => {
     fetchAll();
+    fetchPendingBanners();
   }, []);
 
   const fetchAll = async () => {
@@ -38,21 +44,71 @@ export default function AdminDashboard() {
         setStats(data.stats);
         setRecentCenters(data.recentCenters || []);
       }
-
-      if (auditRes.ok) {
-        const data = await auditRes.json();
-        setAuditReport(data);
-      }
-
-      if (trendingRes.ok) {
-        const data = await trendingRes.json();
-        setTrending(data);
-      }
-
+      if (auditRes.ok) setAuditReport(await auditRes.json());
+      if (trendingRes.ok) setTrending(await trendingRes.json());
     } catch {
       setError("Failed to load dashboard");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ NEW: fetch all banners, filter pending
+  const fetchPendingBanners = async () => {
+    setBannerLoading(true);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/banners/admin/all`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const pending = (data.banners || []).filter(b => !b.isActive && new Date(b.endDate) >= new Date());
+      setPendingBanners(pending);
+    } catch { }
+    finally { setBannerLoading(false); }
+  };
+
+  // ✅ NEW: approve banner
+  const handleApprove = async (id) => {
+    setBannerAction(id);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/banners/admin/${id}/approve`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setPendingBanners(prev => prev.filter(b => b.id !== id));
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to approve");
+      }
+    } catch {
+      setError("Failed to approve banner");
+    } finally {
+      setBannerAction(null);
+    }
+  };
+
+  // ✅ NEW: reject banner
+  const handleReject = async (id) => {
+    setBannerAction(id);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/banners/admin/${id}/reject`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setPendingBanners(prev => prev.filter(b => b.id !== id));
+      } else {
+        setError("Failed to reject banner");
+      }
+    } catch {
+      setError("Failed to reject banner");
+    } finally {
+      setBannerAction(null);
     }
   };
 
@@ -61,9 +117,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`${API_URL}/audit/run`, { method: "POST" });
       const data = await res.json();
-      if (res.ok) {
-        setAuditReport({ report: data.summary, runAt: new Date() });
-      }
+      if (res.ok) setAuditReport({ report: data.summary, runAt: new Date() });
     } catch {
       setError("Audit failed. Try again.");
     } finally {
@@ -94,10 +148,10 @@ export default function AdminDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Total Institutes", value: stats?.totalInstitutes, color: "text-blue-600", bg: "bg-blue-50", icon: Building2 },
+          { label: "Total Institutes", value: stats?.totalInstitutes, color: "text-blue-600",   bg: "bg-blue-50",   icon: Building2 },
           { label: "Pending Approval", value: stats?.pendingInstitutes, color: "text-yellow-600", bg: "bg-yellow-50", icon: Clock },
-          { label: "Total Centers", value: stats?.totalCenters, color: "text-green-600", bg: "bg-green-50", icon: MapPin },
-          { label: "Total Users", value: stats?.totalUsers, color: "text-purple-600", bg: "bg-purple-50", icon: Users },
+          { label: "Total Centers",    value: stats?.totalCenters,     color: "text-green-600",  bg: "bg-green-50",  icon: MapPin },
+          { label: "Total Users",      value: stats?.totalUsers,       color: "text-purple-600", bg: "bg-purple-50", icon: Users },
         ].map(({ label, value, color, bg, icon: Icon }) => (
           <div key={label} className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
@@ -111,26 +165,86 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* AI Audit Card + Trending side by side */}
+      {/* ✅ NEW: Banner Approvals Section */}
+      <div className="bg-white rounded-xl border border-gray-200 mb-6 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <h3 className="font-semibold text-gray-900 text-sm">Banner Approvals</h3>
+            {pendingBanners.length > 0 && (
+              <span className="text-[10px] font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+                {pendingBanners.length}
+              </span>
+            )}
+          </div>
+          <a href="/admin/banners" className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+            View all <ArrowRight className="w-3 h-3" />
+          </a>
+        </div>
+
+        <div className="p-4">
+          {bannerLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map(i => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}
+            </div>
+          ) : pendingBanners.length === 0 ? (
+            <div className="text-center py-6">
+              <CheckCircle className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No pending banner requests</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingBanners.slice(0, 5).map(banner => (
+                <div key={banner.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{banner.title}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {banner.placement} · {banner.duration} days ·{" "}
+                      {banner.pricePaise ? `₹${(banner.pricePaise / 100).toLocaleString("en-IN")}` : "—"} ·{" "}
+                      {banner.center?.name || banner.centerId}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                    <button
+                      onClick={() => handleApprove(banner.id)}
+                      disabled={bannerAction === banner.id}
+                      className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <CheckCircle className="w-3 h-3" />
+                      {bannerAction === banner.id ? "..." : "Approve"}
+                    </button>
+                    <button
+                      onClick={() => handleReject(banner.id)}
+                      disabled={bannerAction === banner.id}
+                      className="flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <XCircle className="w-3 h-3" />
+                      {bannerAction === banner.id ? "..." : "Reject"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* AI Audit + Trending */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
-        {/* ── AI Audit Report ── */}
+        {/* AI Audit */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-indigo-600" />
               <h3 className="font-semibold text-gray-900 text-sm">AI Audit Agent</h3>
             </div>
-            <button
-              onClick={handleRunAudit}
-              disabled={auditRunning}
-              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-            >
+            <button onClick={handleRunAudit} disabled={auditRunning}
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
               <RefreshCw className={`w-3 h-3 ${auditRunning ? "animate-spin" : ""}`} />
               {auditRunning ? "Running..." : "Run Now"}
             </button>
           </div>
-
           <div className="p-4">
             {!auditReport?.report ? (
               <div className="text-center py-6">
@@ -154,7 +268,6 @@ export default function AdminDashboard() {
                     <p className="text-xs text-green-500 mt-0.5">Healthy</p>
                   </div>
                 </div>
-
                 {auditReport.report.criticalCenters?.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Critical Institutes</p>
@@ -166,17 +279,15 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 )}
-
                 <p className="text-[10px] text-gray-400 mt-3">
-                  Last run: {auditReport.runAt ? new Date(auditReport.runAt).toLocaleDateString("en-IN") : "—"}
-                  · Next: Weekly auto
+                  Last run: {auditReport.runAt ? new Date(auditReport.runAt).toLocaleDateString("en-IN") : "—"} · Next: Weekly auto
                 </p>
               </>
             )}
           </div>
         </div>
 
-        {/* ── Trending This Week ── */}
+        {/* Trending */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2">
@@ -187,7 +298,6 @@ export default function AdminDashboard() {
               View all <ArrowRight className="w-3 h-3" />
             </a>
           </div>
-
           <div className="p-4">
             {!trending || trending.totalSearches === 0 ? (
               <div className="text-center py-6">
@@ -209,7 +319,6 @@ export default function AdminDashboard() {
                     <p className={`text-xs mt-0.5 ${trending.weeklyGrowth >= 0 ? "text-green-500" : "text-red-400"}`}>Growth</p>
                   </div>
                 </div>
-
                 {trending.topQueries?.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Top Searches</p>
@@ -255,15 +364,16 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Quick Links */}
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+      {/* Quick Links — ✅ Banners added */}
+      <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
         {[
-          { label: "Analytics", href: "/admin/analytics", color: "bg-blue-50 text-blue-700 hover:bg-blue-100" },
-          { label: "Institutes", href: "/admin/institutes", color: "bg-indigo-50 text-indigo-700 hover:bg-indigo-100" },
-          { label: "Centers", href: "/admin/centers", color: "bg-green-50 text-green-700 hover:bg-green-100" },
-          { label: "Users", href: "/admin/users", color: "bg-purple-50 text-purple-700 hover:bg-purple-100" },
-          { label: "Papers", href: "/admin/papers", color: "bg-orange-50 text-orange-700 hover:bg-orange-100" },
+          { label: "Analytics",     href: "/admin/analytics",     color: "bg-blue-50 text-blue-700 hover:bg-blue-100" },
+          { label: "Institutes",    href: "/admin/institutes",    color: "bg-indigo-50 text-indigo-700 hover:bg-indigo-100" },
+          { label: "Centers",       href: "/admin/centers",       color: "bg-green-50 text-green-700 hover:bg-green-100" },
+          { label: "Users",         href: "/admin/users",         color: "bg-purple-50 text-purple-700 hover:bg-purple-100" },
+          { label: "Papers",        href: "/admin/papers",        color: "bg-orange-50 text-orange-700 hover:bg-orange-100" },
           { label: "Notifications", href: "/admin/notifications", color: "bg-pink-50 text-pink-700 hover:bg-pink-100" },
+          { label: "Banners",       href: "/admin/banners",       color: "bg-yellow-50 text-yellow-700 hover:bg-yellow-100" },
         ].map(({ label, href, color }) => (
           <a key={label} href={href}
             className={`px-4 py-3 rounded-xl text-sm font-medium text-center transition-colors ${color}`}>

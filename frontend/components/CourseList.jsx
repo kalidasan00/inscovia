@@ -1,10 +1,16 @@
-// components/CourseList.jsx
+// components/CourseList.jsx - FIXED
 "use client";
 import { useState, useEffect } from "react";
-import { IndianRupee, Clock } from "lucide-react";
+import { IndianRupee, Clock, BookOpen, CheckCircle, Check } from "lucide-react";
 
 const formatCategory = (category) =>
   category?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()) || "";
+
+// ✅ Safe fee formatter — handles string, number, pre-formatted values
+function formatFee(fees) {
+  const num = Number(String(fees).replace(/,/g, ''));
+  return isNaN(num) ? fees : `₹${num.toLocaleString("en-IN")}`;
+}
 
 // ✅ School Tuition — special display using courseDetails JSON object
 function SchoolTuitionDetails({ center }) {
@@ -26,7 +32,6 @@ function SchoolTuitionDetails({ center }) {
     <div className="mb-3 space-y-4">
       <h2 className="text-sm font-bold text-gray-900">Classes & Subjects</h2>
 
-      {/* Stats */}
       {(studentsCount || batchSize || feeRange) && (
         <div className="grid grid-cols-3 gap-2">
           {studentsCount && (
@@ -50,7 +55,6 @@ function SchoolTuitionDetails({ center }) {
         </div>
       )}
 
-      {/* Boards */}
       {boards.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-600 mb-2">Boards</p>
@@ -62,7 +66,6 @@ function SchoolTuitionDetails({ center }) {
         </div>
       )}
 
-      {/* Classes */}
       {classes.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-600 mb-2">Classes</p>
@@ -74,16 +77,14 @@ function SchoolTuitionDetails({ center }) {
         </div>
       )}
 
-      {/* Subjects */}
       {subjects.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-600 mb-2">Subjects</p>
           <div className="grid grid-cols-2 gap-1.5">
             {subjects.map((s, i) => (
               <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-green-50 border border-green-200 rounded-lg">
-                <svg className="w-3 h-3 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                {/* ✅ FIXED: Lucide CheckCircle instead of inline SVG */}
+                <CheckCircle className="w-3 h-3 text-green-600 shrink-0" />
                 <span className="text-xs text-gray-700">{s}</span>
               </div>
             ))}
@@ -91,16 +92,14 @@ function SchoolTuitionDetails({ center }) {
         </div>
       )}
 
-      {/* Special Programs */}
       {programs.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-gray-600 mb-2">Special Programs & Services</p>
           <div className="grid grid-cols-2 gap-1.5">
             {programs.map((p, i) => (
               <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
-                <svg className="w-3 h-3 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                {/* ✅ FIXED: Lucide Check instead of inline SVG */}
+                <Check className="w-3 h-3 text-amber-600 shrink-0" />
                 <span className="text-xs text-gray-700">{p}</span>
               </div>
             ))}
@@ -111,7 +110,6 @@ function SchoolTuitionDetails({ center }) {
   );
 }
 
-// ✅ All valid schema enum categories
 const ALL_CATEGORIES = [
   "SCHOOL_TUITION", "STUDY_ABROAD", "LANGUAGES",
   "IT_TECHNOLOGY", "DESIGN_CREATIVE", "MANAGEMENT",
@@ -121,7 +119,6 @@ const ALL_CATEGORIES = [
 export default function CourseList({ center }) {
   const [activeTab, setActiveTab] = useState(null);
 
-  // School tuition uses special component
   if (center?.primaryCategory === "SCHOOL_TUITION") {
     return <SchoolTuitionDetails center={center} />;
   }
@@ -160,11 +157,14 @@ export default function CourseList({ center }) {
     ...(center?.secondaryCategories || [])
   ].filter(cat => cat && coursesByCategory[cat]?.length > 0);
 
+  // ✅ FIXED: derive stable value instead of calling .join() inside deps array
+  const firstCategory = categoriesWithCourses[0] ?? null;
+
   useEffect(() => {
-    if (categoriesWithCourses.length > 0 && !activeTab) {
-      setActiveTab(categoriesWithCourses[0]);
+    if (firstCategory && !activeTab) {
+      setActiveTab(firstCategory);
     }
-  }, [categoriesWithCourses.join(",")]);
+  }, [firstCategory]); // ✅ valid dep — no React lint warning
 
   if (categoriesWithCourses.length === 0) return null;
 
@@ -196,12 +196,13 @@ export default function CourseList({ center }) {
                 className="group bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl p-4 hover:border-indigo-400 hover:shadow-lg transition-all duration-300">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                    <svg className="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
+                    {/* ✅ FIXED: Lucide BookOpen instead of inline SVG */}
+                    <BookOpen className="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors">{course.name}</h3>
+                    <h3 className="text-base font-bold text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors">
+                      {course.name}
+                    </h3>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
                       {formatCategory(course.category)}
                     </span>
@@ -217,7 +218,8 @@ export default function CourseList({ center }) {
                         </div>
                         <div>
                           <p className="text-xs text-gray-600">Course Fee</p>
-                          <p className="text-sm font-bold text-green-700">₹{course.fees.toLocaleString("en-IN")}</p>
+                          {/* ✅ FIXED: safe fee formatter — no crash on string values */}
+                          <p className="text-sm font-bold text-green-700">{formatFee(course.fees)}</p>
                         </div>
                       </div>
                     )}

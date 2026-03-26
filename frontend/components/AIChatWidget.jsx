@@ -1,8 +1,9 @@
-// components/AIChatWidget.js
+// components/AIChatWidget.js - FINAL
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { X, Send, Loader2, RotateCcw, Sparkles, Star, AlertCircle } from "lucide-react";
+// ✅ Sparkles removed, Bot added
+import { X, Send, Loader2, RotateCcw, Bot, Star, AlertCircle } from "lucide-react";
 
 const SUGGESTED_QUESTIONS = [
   "Best JEE coaching in Kerala?",
@@ -17,8 +18,6 @@ const INITIAL_MESSAGE = {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
-// Max messages kept in memory (user + assistant combined)
 const MAX_MESSAGES = 20;
 
 export default function AIChatWidget() {
@@ -29,11 +28,9 @@ export default function AIChatWidget() {
   const [centerCards, setCenterCards] = useState([]);
   const [error, setError] = useState(null);
   const [retryMsg, setRetryMsg] = useState(null);
-  const [panelHeight, setPanelHeight] = useState("100dvh");
   const [navbarHeight, setNavbarHeight] = useState(64);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const chatBodyRef = useRef(null);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -44,30 +41,12 @@ export default function AIChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, centerCards]);
 
-  // iOS Safari keyboard fix — mobile only
   useEffect(() => {
     if (!isOpen) return;
-
-    const updateHeight = () => {
-      const nav = document.querySelector("nav");
-      const navH = nav?.offsetHeight || 64;
-      setNavbarHeight(navH);
-      if (window.visualViewport) {
-        setPanelHeight(`${window.visualViewport.height - navH}px`);
-      }
-    };
-
-    updateHeight();
-    window.visualViewport?.addEventListener("resize", updateHeight);
-    window.visualViewport?.addEventListener("scroll", updateHeight);
-
-    return () => {
-      window.visualViewport?.removeEventListener("resize", updateHeight);
-      window.visualViewport?.removeEventListener("scroll", updateHeight);
-    };
+    const nav = document.querySelector("nav");
+    setNavbarHeight(nav?.offsetHeight || 64);
   }, [isOpen]);
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
   }, []);
@@ -81,19 +60,19 @@ export default function AIChatWidget() {
     setInput("");
     setCenterCards([]);
 
-    // Add user message immediately so bubble shows instantly
     const updatedMessages = isRetry
       ? messages
       : [...messages, { role: "user", content: userText }];
 
     if (!isRetry) setMessages(updatedMessages);
 
-    // Trim to last MAX_MESSAGES to prevent memory bloat
-    const trimmedMessages = updatedMessages.slice(-MAX_MESSAGES);
+    const trimmedMessages = [
+      INITIAL_MESSAGE,
+      ...updatedMessages.slice(1).slice(-MAX_MESSAGES),
+    ];
 
     setLoading(true);
 
-    // Auto-timeout after 15 seconds
     timeoutRef.current = setTimeout(() => {
       setLoading(false);
       setError("Request timed out. Please try again.");
@@ -104,20 +83,17 @@ export default function AIChatWidget() {
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: trimmedMessages })
+        body: JSON.stringify({ messages: trimmedMessages }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setMessages(prev => {
         const updated = [...prev, { role: "assistant", content: data.reply }];
-        // Keep only last MAX_MESSAGES
-        return updated.slice(-MAX_MESSAGES);
+        return [INITIAL_MESSAGE, ...updated.slice(1).slice(-MAX_MESSAGES)];
       });
 
       if (data.centers?.length > 0) setCenterCards(data.centers);
-
     } catch (err) {
       if (err.name !== "AbortError") {
         setError("Something went wrong.");
@@ -149,26 +125,23 @@ export default function AIChatWidget() {
     ));
 
   const showSuggestions = messages.length === 1 && !loading;
-  const messageCount = messages.filter(m => m.role === "user").length;
-  const nearLimit = messageCount >= Math.floor(MAX_MESSAGES / 2);
+  const userMessageCount = messages.filter(m => m.role === "user").length;
+  const remainingMessages = MAX_MESSAGES - userMessageCount;
+  const nearLimit = remainingMessages <= 5 && remainingMessages > 0;
 
   return (
     <>
-      {/* Floating Button */}
+      {/* ── Floating Button ── */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
           aria-label="Open AI Chat"
-          className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 group"
+          className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-transform duration-200 hover:scale-110 bg-gradient-to-br from-indigo-600 to-purple-600"
         >
-          <span className="absolute inset-0 rounded-full animate-ping bg-blue-500 opacity-20" />
-          <div
-            className="relative w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-transform duration-200 group-hover:scale-110"
-            style={{ background: "linear-gradient(135deg, #1d4ed8, #4f46e5)" }}
-          >
-            <Sparkles className="w-6 h-6 text-white" />
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white" />
-          </div>
+          <span className="absolute w-14 h-14 rounded-full animate-ping bg-indigo-500 opacity-20" />
+          {/* ✅ Bot icon */}
+          <Bot className="relative w-7 h-7 text-white" />
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white" />
         </button>
       )}
 
@@ -179,70 +152,11 @@ export default function AIChatWidget() {
             className="md:hidden fixed inset-x-0 z-[60] flex flex-col overflow-hidden"
             style={{
               top: `${navbarHeight}px`,
-              height: panelHeight,
+              height: `calc(100dvh - ${navbarHeight}px)`,
               background: "#0f0f13",
             }}
           >
             <ChatHeader onReset={resetChat} onClose={() => setIsOpen(false)} />
-
-            <div
-              ref={chatBodyRef}
-              className="flex-1 overflow-y-auto px-3 py-4 space-y-3 overscroll-contain"
-            >
-              <MessageList
-                messages={messages}
-                loading={loading}
-                error={error}
-                retryMsg={retryMsg}
-                centerCards={centerCards}
-                sendMessage={sendMessage}
-                formatMessage={formatMessage}
-                setIsOpen={setIsOpen}
-                messagesEndRef={messagesEndRef}
-                dark
-              />
-            </div>
-
-            {showSuggestions && <SuggestedQuestions onSelect={sendMessage} />}
-
-            {nearLimit && (
-              <p className="text-[10px] text-yellow-400/60 text-center pb-1">
-                {MAX_MESSAGES - messageCount * 2} messages remaining · Reset to start fresh
-              </p>
-            )}
-
-            <ChatInput
-              inputRef={inputRef}
-              input={input}
-              setInput={setInput}
-              loading={loading}
-              onSend={sendMessage}
-              mobile
-            />
-          </div>
-
-          {/* ====== DESKTOP ====== */}
-          {/*
-            DESKTOP KEYBOARD FIX:
-            - Use top instead of bottom so keyboard cannot push it
-            - Anchored from top-right, fixed height
-            - Keyboard opening does NOT affect top-anchored fixed elements
-          */}
-          <div
-            className="hidden md:flex fixed right-8 z-50 w-[380px] flex-col rounded-2xl overflow-hidden shadow-2xl"
-            style={{
-              top: "auto",
-              bottom: "32px",
-              height: "560px",
-              background: "#0f0f13",
-              border: "1px solid rgba(255,255,255,0.1)",
-              // Prevents layout shift when keyboard opens on desktop
-              willChange: "transform",
-              transform: "translateZ(0)",
-            }}
-          >
-            <ChatHeader onReset={resetChat} onClose={() => setIsOpen(false)} />
-
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 overscroll-contain">
               <MessageList
                 messages={messages}
@@ -254,18 +168,53 @@ export default function AIChatWidget() {
                 formatMessage={formatMessage}
                 setIsOpen={setIsOpen}
                 messagesEndRef={messagesEndRef}
-                dark
               />
             </div>
-
             {showSuggestions && <SuggestedQuestions onSelect={sendMessage} />}
-
             {nearLimit && (
               <p className="text-[10px] text-yellow-400/60 text-center pb-1">
-                {MAX_MESSAGES - messageCount * 2} messages remaining · Reset to start fresh
+                {remainingMessages} messages remaining · Reset to start fresh
               </p>
             )}
+            <ChatInput
+              inputRef={inputRef}
+              input={input}
+              setInput={setInput}
+              loading={loading}
+              onSend={sendMessage}
+              mobile
+            />
+          </div>
 
+          {/* ====== DESKTOP ====== */}
+          <div
+            className="hidden md:flex fixed right-8 bottom-8 z-50 w-[380px] flex-col rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              height: "560px",
+              background: "#0f0f13",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <ChatHeader onReset={resetChat} onClose={() => setIsOpen(false)} />
+            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 overscroll-contain">
+              <MessageList
+                messages={messages}
+                loading={loading}
+                error={error}
+                retryMsg={retryMsg}
+                centerCards={centerCards}
+                sendMessage={sendMessage}
+                formatMessage={formatMessage}
+                setIsOpen={setIsOpen}
+                messagesEndRef={messagesEndRef}
+              />
+            </div>
+            {showSuggestions && <SuggestedQuestions onSelect={sendMessage} />}
+            {nearLimit && (
+              <p className="text-[10px] text-yellow-400/60 text-center pb-1">
+                {remainingMessages} messages remaining · Reset to start fresh
+              </p>
+            )}
             <ChatInput
               input={input}
               setInput={setInput}
@@ -279,38 +228,32 @@ export default function AIChatWidget() {
   );
 }
 
-// ─── Reusable Sub-components ───────────────────────────
+// ─── Sub-components ───────────────────────────────────
 
 function ChatHeader({ onReset, onClose }) {
   return (
-    <div
-      className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10"
-      style={{ background: "linear-gradient(135deg, #1e3a8a, #312e81)" }}
-    >
+    <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10 bg-gradient-to-r from-indigo-600 to-purple-600">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-white" />
+          {/* ✅ Bot icon in header */}
+          <Bot className="w-4 h-4 text-white" />
         </div>
         <div>
           <p className="text-white font-semibold text-sm tracking-tight">AI Course Counsellor</p>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-            <span className="text-blue-200 text-[10px]">Online · Powered by AI</span>
+            <span className="text-indigo-200 text-[10px]">Online · Powered by AI</span>
           </div>
         </div>
       </div>
       <div className="flex items-center gap-1">
-        <button
-          onClick={onReset}
+        <button onClick={onReset}
           className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          title="Reset chat"
-        >
+          title="Reset chat">
           <RotateCcw className="w-4 h-4 text-white/70" />
         </button>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-        >
+        <button onClick={onClose}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors">
           <X className="w-4 h-4 text-white" />
         </button>
       </div>
@@ -324,11 +267,8 @@ function SuggestedQuestions({ onSelect }) {
       <p className="text-[10px] text-white/30 mb-2">💡 Try asking:</p>
       <div className="grid grid-cols-2 gap-1.5">
         {SUGGESTED_QUESTIONS.map((q, i) => (
-          <button
-            key={i}
-            onClick={() => onSelect(q)}
-            className="text-left text-[11px] text-blue-300 bg-white/5 hover:bg-white/10 px-2.5 py-2 rounded-xl border border-white/10 truncate transition-colors"
-          >
+          <button key={i} onClick={() => onSelect(q)}
+            className="text-left text-[11px] text-indigo-300 bg-white/5 hover:bg-white/10 px-2.5 py-2 rounded-xl border border-white/10 truncate transition-colors">
             {q}
           </button>
         ))}
@@ -352,18 +292,17 @@ function ChatInput({ inputRef, input, setInput, loading, onSend, mobile }) {
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); onSend(); } }}
           placeholder={mobile ? "Ask about courses..." : "Ask about courses, coaching, study abroad..."}
           disabled={loading}
-          className="flex-1 px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-40"
+          className="flex-1 px-4 py-3 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-40"
           style={{
-            fontSize: "16px", // prevents iOS auto-zoom
+            fontSize: "16px",
             background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.12)"
+            border: "1px solid rgba(255,255,255,0.12)",
           }}
         />
         <button
           onClick={() => onSend()}
           disabled={!input.trim() || loading}
-          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-30 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #2563eb, #4f46e5)" }}
+          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-30 transition-opacity bg-gradient-to-br from-indigo-600 to-purple-600"
         >
           {loading
             ? <Loader2 className="w-4 h-4 text-white animate-spin" />
@@ -380,14 +319,12 @@ function ChatInput({ inputRef, input, setInput, loading, onSend, mobile }) {
 
 function MessageList({
   messages, loading, error, retryMsg, centerCards,
-  sendMessage, formatMessage, setIsOpen, messagesEndRef, dark
+  sendMessage, formatMessage, setIsOpen, messagesEndRef,
 }) {
+  // ✅ Bot icon in AI message avatar
   const aiAvatar = (
-    <div
-      className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5"
-      style={{ background: "linear-gradient(135deg, #1d4ed8, #4f46e5)" }}
-    >
-      <Sparkles className="w-3 h-3 text-white" />
+    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1 mr-1.5 bg-gradient-to-br from-indigo-600 to-purple-600">
+      <Bot className="w-3 h-3 text-white" />
     </div>
   );
 
@@ -399,17 +336,13 @@ function MessageList({
           <div
             className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
               msg.role === "user"
-                ? "text-white rounded-tr-sm"
-                : dark
-                  ? "text-gray-100 rounded-tl-sm"
-                  : "bg-white text-gray-800 shadow-sm border rounded-tl-sm"
+                ? "text-white rounded-tr-sm bg-gradient-to-br from-indigo-600 to-purple-600"
+                : "text-gray-100 rounded-tl-sm"
             }`}
             style={
-              msg.role === "user"
-                ? { background: "linear-gradient(135deg, #2563eb, #4f46e5)" }
-                : dark
-                  ? { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }
-                  : {}
+              msg.role !== "user"
+                ? { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }
+                : {}
             }
           >
             {formatMessage(msg.content)}
@@ -425,11 +358,8 @@ function MessageList({
             style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
           >
             {[0, 1, 2].map(i => (
-              <span
-                key={i}
-                className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
+              <span key={i} className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }} />
             ))}
           </div>
         </div>
@@ -458,22 +388,18 @@ function MessageList({
       {centerCards.length > 0 && !loading && (
         <div className="space-y-2">
           <p className="text-xs text-white/30 font-medium px-1">📍 Recommended for you:</p>
-          {centerCards.map((c) => (
-            <Link
-              key={c.id}
-              href={`/centers/${c.slug}`}
+          {centerCards.map(c => (
+            <Link key={c.id} href={`/centers/${c.slug}`}
               onClick={() => setIsOpen(false)}
-              className="block rounded-xl p-3 transition-all group"
+              className="block rounded-xl p-3 transition-all group hover:border-indigo-500/50"
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              onMouseEnter={e => e.currentTarget.style.border = "1px solid rgba(99,102,241,0.5)"}
-              onMouseLeave={e => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)"}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{c.name}</p>
                   <p className="text-xs text-white/40 mt-0.5">{c.city}, {c.state}</p>
                   {c.primaryCategory === "STUDY_ABROAD" && c.countries?.length > 0 && (
-                    <p className="text-xs text-blue-400 mt-0.5 truncate">
+                    <p className="text-xs text-indigo-400 mt-0.5 truncate">
                       {c.countries.slice(0, 3).join(" · ")}
                     </p>
                   )}
@@ -489,7 +415,7 @@ function MessageList({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-blue-400 font-medium mt-2 group-hover:text-blue-300 transition-colors">
+              <p className="text-xs text-indigo-400 font-medium mt-2 group-hover:text-indigo-300 transition-colors">
                 View Profile →
               </p>
             </Link>

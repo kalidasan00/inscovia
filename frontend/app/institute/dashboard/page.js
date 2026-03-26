@@ -6,6 +6,8 @@ import Link from "next/link";
 import Footer from "../../../components/Footer";
 import { X, AlertCircle, LogOut } from "lucide-react";
 import GallerySection from "./GallerySection";
+import PromoteBannerSection from "./PromoteBannerSection"; // ← ADD THIS
+
 
 export default function InstituteDashboard() {
   const [institute, setInstitute] = useState(null);
@@ -566,6 +568,13 @@ export default function InstituteDashboard() {
                 </div>
               </div>
             )}
+            {/* ✅ Promote Banner Section */}
+                    {center?.id && (
+                      <PromoteBannerSection
+                        centerId={center.id}
+                        centerName={institute.instituteName}
+                      />
+                    )}
 
             <GallerySection
               gallery={center?.gallery || []}

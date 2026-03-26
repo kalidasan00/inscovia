@@ -6,7 +6,6 @@ export default function HeroSection() {
 
   return (
     <section className="relative py-8 sm:py-16 md:py-20" style={{ backgroundColor: '#1E40AF' }}>
-      {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
         <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
@@ -14,7 +13,6 @@ export default function HeroSection() {
 
       <div className="relative z-10 max-w-6xl mx-auto px-4">
 
-        {/* Header */}
         <div className="text-center mb-5 sm:mb-8">
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-2 sm:mb-4 leading-tight">
             Find Your Perfect
@@ -24,7 +22,7 @@ export default function HeroSection() {
             </span>
           </h1>
           <p className="text-sm sm:text-lg text-blue-100 max-w-2xl mx-auto">
-            Search from the navbar above — AI-powered instant results
+            Search from the navbar — AI-powered instant results
           </p>
         </div>
 

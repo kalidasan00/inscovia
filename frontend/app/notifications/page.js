@@ -1,6 +1,6 @@
 // app/notifications/page.js
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell, Check, CheckCheck, Info, AlertTriangle, AlertCircle, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -13,78 +13,98 @@ const TYPE_CONFIG = {
   ALERT:   { icon: AlertCircle,   bg: "bg-red-50",    border: "border-red-200",    text: "text-red-700",    badge: "bg-red-100 text-red-700" },
 };
 
+// ✅ FIXED: getAuth() is now a plain helper — called ONCE on mount, not repeatedly
+function getAuth() {
+  const isInstitute = localStorage.getItem("instituteLoggedIn") === "true";
+  const isUser = localStorage.getItem("userLoggedIn") === "true";
+
+  if (isInstitute) {
+    return {
+      token: localStorage.getItem("instituteToken"),
+      base: `${API_URL}/auth/notifications`,
+    };
+  }
+  if (isUser) {
+    return {
+      token: localStorage.getItem("userToken"),
+      base: `${API_URL}/user/notifications`,
+    };
+  }
+  return null;
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [error, setError] = useState(null); // ✅ FIXED: user-facing error state
+
+  // ✅ FIXED: auth read ONCE on mount, stored in ref — no repeated localStorage reads
+  const authRef = useRef(null);
   const router = useRouter();
-
-  // Detect who is logged in and return token + API path
-  const getAuth = () => {
-    const isInstitute = localStorage.getItem("instituteLoggedIn") === "true";
-    const isUser = localStorage.getItem("userLoggedIn") === "true";
-
-    if (isInstitute) {
-      return {
-        token: localStorage.getItem("instituteToken"),
-        base: `${API_URL}/auth/notifications`
-      };
-    }
-    if (isUser) {
-      return {
-        token: localStorage.getItem("userToken"),
-        base: `${API_URL}/user/notifications`
-      };
-    }
-    return null;
-  };
 
   useEffect(() => {
     const auth = getAuth();
-    if (!auth) { router.push("/user-menu"); return; }
-    fetchNotifications();
-  }, []);
+    if (!auth) {
+      router.push("/user-menu");
+      return;
+    }
+    authRef.current = auth;
+    fetchNotifications(auth);
+  }, [router]); // ✅ FIXED: router added to deps
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (auth) => {
     setLoading(true);
+    setError(null);
     try {
-      const auth = getAuth();
-      if (!auth) return;
       const res = await fetch(auth.base, {
-        headers: { Authorization: `Bearer ${auth.token}` }
+        headers: { Authorization: `Bearer ${auth.token}` },
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("Failed to load notifications");
       const data = await res.json();
       setNotifications(data.notifications || []);
-    } catch {
+    } catch (err) {
+      // ✅ FIXED: no more silent catch — user sees proper error
+      setError("Unable to load notifications. Please try again.");
+      console.error("fetchNotifications error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const markRead = async (id) => {
+    const auth = authRef.current; // ✅ FIXED: uses stored ref, no localStorage re-read
+    if (!auth) return;
     try {
-      const auth = getAuth();
-      if (!auth) return;
       await fetch(`${auth.base}/${id}/read`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${auth.token}` }
+        headers: { Authorization: `Bearer ${auth.token}` },
       });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-    } catch {}
+      setNotifications(prev =>
+        prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      // ✅ FIXED: silent no more
+      setError("Could not mark as read. Please try again.");
+      console.error("markRead error:", err);
+    }
   };
 
   const markAllRead = async () => {
+    const auth = authRef.current; // ✅ FIXED: uses stored ref
+    if (!auth) return;
     setMarkingAll(true);
+    setError(null);
     try {
-      const auth = getAuth();
-      if (!auth) return;
       await fetch(`${auth.base}/read-all`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${auth.token}` }
+        headers: { Authorization: `Bearer ${auth.token}` },
       });
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    } catch {
+    } catch (err) {
+      // ✅ FIXED: user sees the error
+      setError("Could not mark all as read. Please try again.");
+      console.error("markAllRead error:", err);
     } finally {
       setMarkingAll(false);
     }
@@ -95,21 +115,40 @@ export default function NotificationsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-4 py-8">
+
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Bell className="w-6 h-6 text-blue-600" /> Notifications
             </h1>
-            {unreadCount > 0 && <p className="text-sm text-gray-500 mt-1">{unreadCount} unread</p>}
+            {unreadCount > 0 && (
+              <p className="text-sm text-gray-500 mt-1">{unreadCount} unread</p>
+            )}
           </div>
           {unreadCount > 0 && (
-            <button onClick={markAllRead} disabled={markingAll}
-              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            <button
+              onClick={markAllRead}
+              disabled={markingAll}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
               <CheckCheck className="w-4 h-4" />
               {markingAll ? "Marking..." : "Mark all read"}
             </button>
           )}
         </div>
+
+        {/* ✅ FIXED: error banner — was completely missing before */}
+        {error && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => authRef.current && fetchNotifications(authRef.current)}
+              className="ml-4 text-red-700 font-medium underline text-xs"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-16">
@@ -127,29 +166,43 @@ export default function NotificationsPage() {
               const config = TYPE_CONFIG[n.type] || TYPE_CONFIG.INFO;
               const Icon = config.icon;
               return (
-                <div key={n.id}
-                  className={`relative rounded-xl border p-4 transition-all ${n.isRead ? "bg-white border-gray-200" : `${config.bg} ${config.border}`}`}>
-                  {!n.isRead && <span className="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-600 rounded-full" />}
+                <div
+                  key={n.id}
+                  className={`relative rounded-xl border p-4 transition-all ${
+                    n.isRead ? "bg-white border-gray-200" : `${config.bg} ${config.border}`
+                  }`}
+                >
+                  {!n.isRead && (
+                    <span className="absolute top-4 right-4 w-2.5 h-2.5 bg-blue-600 rounded-full" />
+                  )}
                   <div className="flex gap-3">
                     <div className={`p-2 rounded-lg shrink-0 ${n.isRead ? "bg-gray-100" : config.bg}`}>
                       <Icon className={`w-4 h-4 ${n.isRead ? "text-gray-400" : config.text}`} />
                     </div>
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className={`font-semibold text-sm ${n.isRead ? "text-gray-700" : "text-gray-900"}`}>{n.title}</p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${config.badge}`}>{n.type}</span>
+                        <p className={`font-semibold text-sm ${n.isRead ? "text-gray-700" : "text-gray-900"}`}>
+                          {n.title}
+                        </p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${config.badge}`}>
+                          {n.type}
+                        </span>
                       </div>
-                      <p className={`text-sm ${n.isRead ? "text-gray-400" : "text-gray-600"}`}>{n.message}</p>
+                      <p className={`text-sm ${n.isRead ? "text-gray-400" : "text-gray-600"}`}>
+                        {n.message}
+                      </p>
                       <div className="flex items-center justify-between mt-2">
                         <p className="text-xs text-gray-400">
                           {new Date(n.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric", month: "short", year: "numeric",
-                            hour: "2-digit", minute: "2-digit"
+                            hour: "2-digit", minute: "2-digit",
                           })}
                         </p>
                         {!n.isRead && (
-                          <button onClick={() => markRead(n.id)}
-                            className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                          <button
+                            onClick={() => markRead(n.id)}
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                          >
                             <Check className="w-3 h-3" /> Mark read
                           </button>
                         )}

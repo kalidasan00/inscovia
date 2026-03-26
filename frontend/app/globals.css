@@ -1,16 +1,19 @@
-/* app/globals.css - Tailwind base + small custom CSS */
+/* app/globals.css - Tailwind base + custom CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* small helpers */
+/* ── Base ── */
 html, body, #__next {
   height: 100%;
 }
 
-a { color: inherit; text-decoration: none; }
+a {
+  color: inherit;
+  text-decoration: none;
+}
 
-/* Toast animation for favorites/compare notifications */
+/* ── Toast animation (favorites/compare notifications) ── */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -24,4 +27,31 @@ a { color: inherit; text-decoration: none; }
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
+}
+
+/* ── Phone Input (user signup) ── */
+/* ✅ moved from inline <style jsx global> in user-menu/page.jsx */
+.phone-input-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-input-user .PhoneInputInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.phone-input-user .PhoneInputInput:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.phone-input-user .PhoneInputCountry {
+  margin-right: 4px;
 }

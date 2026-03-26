@@ -1,135 +1,79 @@
-import Navbar from "../../components/Navbar";
-import Footer from "../../components/Footer";
+// app/privacy/page.js
 import { Shield } from "lucide-react";
+import Link from "next/link";
+
+export const metadata = {
+  title: "Privacy Policy",
+  robots: { index: false, follow: false },
+};
 
 export default function PrivacyPolicyPage() {
   return (
-    <>
-      <Navbar />
+    <main className="bg-gray-50 min-h-screen pb-20 md:pb-8">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-12 sm:py-16">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Privacy Policy</h1>
+          <p className="text-lg text-white/90">Inscovia's commitment to your privacy</p>
+        </div>
+      </div>
 
-      <main className="bg-gray-50 min-h-screen pb-20 md:pb-8">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-12 sm:py-16">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-white" />
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-12 sm:py-16">
+        <div className="bg-white rounded-2xl shadow-sm border p-8 sm:p-10 text-center">
+
+          <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Shield className="w-8 h-8 text-indigo-600" />
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-900 mb-3">
+            Our Privacy Policy is Being Finalized
+          </h2>
+
+          <p className="text-gray-600 leading-relaxed mb-6">
+            We are currently working on a comprehensive privacy policy for Inscovia.
+            We are fully committed to protecting your personal data and handling it
+            with the highest standards of care and transparency.
+          </p>
+
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-5 mb-6 text-left space-y-3">
+            <p className="text-sm font-semibold text-indigo-800 mb-2">What we promise in the meantime:</p>
+            <div className="flex items-start gap-2 text-sm text-indigo-700">
+              <span className="mt-0.5">✅</span>
+              <span>We never sell your personal data to third parties</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold mb-4">Privacy Policy</h1>
-            <p className="text-lg text-white/90">
-              Last updated: January 2025
-            </p>
+            <div className="flex items-start gap-2 text-sm text-indigo-700">
+              <span className="mt-0.5">✅</span>
+              <span>We only collect data necessary to provide our services</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-indigo-700">
+              <span className="mt-0.5">✅</span>
+              <span>Your data is stored securely and never shared without your consent</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-indigo-700">
+              <span className="mt-0.5">✅</span>
+              <span>You can request deletion of your account and data at any time</span>
+            </div>
           </div>
+
+          <p className="text-gray-500 text-sm mb-6">
+            For any privacy concerns or data-related requests, please reach out to us at{" "}
+            <a href="mailto:support@inscovia.com"
+              className="text-indigo-600 font-medium hover:underline">
+              support@inscovia.com
+            </a>
+          </p>
+
+          <Link href="/"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+            ← Back to Home
+          </Link>
+
         </div>
-
-        {/* Content */}
-        <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-          <div className="bg-white rounded-2xl shadow-sm border p-6 sm:p-8 space-y-6">
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
-              <p className="text-gray-700 leading-relaxed">
-                Welcome to Inscovia. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you visit our website and tell you about your privacy rights and how the law protects you.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Information We Collect</h2>
-              <p className="text-gray-700 leading-relaxed mb-3">
-                We may collect, use, store and transfer different kinds of personal data about you:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li><strong>Identity Data:</strong> First name, last name, username or similar identifier</li>
-                <li><strong>Contact Data:</strong> Email address, telephone numbers, and address</li>
-                <li><strong>Technical Data:</strong> IP address, browser type and version, device information</li>
-                <li><strong>Usage Data:</strong> Information about how you use our website and services</li>
-                <li><strong>Marketing Data:</strong> Your preferences in receiving marketing from us</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">3. How We Use Your Information</h2>
-              <p className="text-gray-700 leading-relaxed mb-3">
-                We will only use your personal data when the law allows us to. Most commonly, we use it to:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>Provide and improve our services to you</li>
-                <li>Send you notifications about training centers and courses</li>
-                <li>Respond to your inquiries and support requests</li>
-                <li>Send you marketing communications (with your consent)</li>
-                <li>Analyze usage patterns to improve user experience</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Data Security</h2>
-              <p className="text-gray-700 leading-relaxed">
-                We have implemented appropriate security measures to prevent your personal data from being accidentally lost, used, or accessed in an unauthorized way. We limit access to your personal data to those employees and partners who have a business need to know.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Data Retention</h2>
-              <p className="text-gray-700 leading-relaxed">
-                We will only retain your personal data for as long as necessary to fulfill the purposes we collected it for, including satisfying any legal, accounting, or reporting requirements.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Your Legal Rights</h2>
-              <p className="text-gray-700 leading-relaxed mb-3">
-                Under certain circumstances, you have rights under data protection laws in relation to your personal data:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-gray-700">
-                <li>Request access to your personal data</li>
-                <li>Request correction of your personal data</li>
-                <li>Request erasure of your personal data</li>
-                <li>Object to processing of your personal data</li>
-                <li>Request restriction of processing your personal data</li>
-                <li>Request transfer of your personal data</li>
-                <li>Right to withdraw consent</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Cookies</h2>
-              <p className="text-gray-700 leading-relaxed">
-                Our website uses cookies to distinguish you from other users and provide a better experience. By continuing to browse the site, you are agreeing to our use of cookies. You can set your browser to refuse cookies, but this may affect your ability to use our website.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Third-Party Links</h2>
-              <p className="text-gray-700 leading-relaxed">
-                Our website may include links to third-party websites. Clicking on those links may allow third parties to collect or share data about you. We do not control these third-party websites and are not responsible for their privacy statements.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Changes to This Policy</h2>
-              <p className="text-gray-700 leading-relaxed">
-                We may update this privacy policy from time to time. We will notify you of any changes by posting the new privacy policy on this page and updating the "Last updated" date.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Contact Us</h2>
-              <p className="text-gray-700 leading-relaxed">
-                If you have any questions about this privacy policy or our privacy practices, please contact us at:
-              </p>
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                <p className="text-gray-700">
-                  <strong>Email:</strong> privacy@inscovia.com<br />
-                  <strong>Phone:</strong> +91 123 456 7890<br />
-                  <strong>Address:</strong> 123, MG Road, Bangalore, Karnataka, India - 560001
-                </p>
-              </div>
-            </section>
-
-          </div>
-        </div>
-      </main>
-
-      <Footer />
-    </>
+      </div>
+    </main>
   );
 }

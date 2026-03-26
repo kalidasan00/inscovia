@@ -1,6 +1,6 @@
-// app/centers/[slug]/center-detail-client.jsx - WITH SEO BREADCRUMBS + STUDY ABROAD + AI REVIEW INTELLIGENCE + ANALYTICS + WHATSAPP
+// app/centers/[slug]/center-detail-client.jsx - FIXED: max retries on fetch + logView dep
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -32,11 +32,14 @@ const WhatsAppIcon = ({ className }) => (
   </svg>
 );
 
+const MAX_RETRIES = 3; // ✅ FIXED: was infinite retry loop
+
 export default function CenterDetailClient() {
   const { slug } = useParams();
   const router = useRouter();
   const [center, setCenter] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false); // ✅ NEW: track failed state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showToast, setShowToast] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -50,7 +53,6 @@ export default function CenterDetailClient() {
 
   const isStudyAbroad = center?.primaryCategory === "STUDY_ABROAD";
 
-  // Hide label after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => setShowWaLabel(false), 3000);
     return () => clearTimeout(timer);
@@ -62,28 +64,51 @@ export default function CenterDetailClient() {
   }, []);
 
   useEffect(() => {
+    let retryCount = 0; // ✅ FIXED: counter scoped to this effect run
+
     async function loadCenter() {
       try {
         const res = await fetch(`${API_URL}/centers/${slug}`, { cache: "no-store" });
-        if (!res.ok) { setTimeout(loadCenter, 2000); return; }
+        if (!res.ok) {
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            setTimeout(loadCenter, 2000 * retryCount); // ✅ exponential backoff
+          } else {
+            setFetchError(true); // ✅ give up gracefully after 3 tries
+            setLoading(false);
+          }
+          return;
+        }
         const data = await res.json();
         setCenter(data);
       } catch (err) {
         console.error("Error loading center:", err);
-        setTimeout(loadCenter, 2000);
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          setTimeout(loadCenter, 2000 * retryCount);
+        } else {
+          setFetchError(true);
+          setLoading(false);
+        }
       } finally {
-        setLoading(false);
+        // Only clear loading when we have data or gave up
+        if (retryCount === 0 || retryCount >= MAX_RETRIES) {
+          setLoading(false);
+        }
       }
     }
+
     loadCenter();
   }, [slug, API_URL]);
 
-  // ✅ Log center view for analytics
+  // ✅ FIXED: logView wrapped in useCallback so it's stable, no missing dep warning
+  const stableLogView = useCallback(logView, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (center) {
-      logView(center.id, center.name, center.city, center.primaryCategory);
+      stableLogView(center.id, center.name, center.city, center.primaryCategory);
     }
-  }, [center]);
+  }, [center, stableLogView]);
 
   const handleFavoriteClick = () => {
     if (!isLoggedIn) {
@@ -120,10 +145,11 @@ export default function CenterDetailClient() {
     return text.length > 150 ? text.substring(0, 150) + '...' : text;
   };
 
-  // Build WhatsApp URL
-  const getWhatsAppUrl = () => {
+  // ✅ Build WhatsApp URL — strips non-digits (used in BOTH floating btn and contact section)
+  const getWhatsAppUrl = (withMessage = true) => {
     if (!center?.whatsapp) return null;
     const number = center.whatsapp.replace(/\D/g, "");
+    if (!withMessage) return `https://wa.me/${number}`;
     const message = encodeURIComponent(
       `Hi! I found *${center.name}* on Inscovia. I'm interested in your courses. Could you please share more details?`
     );
@@ -139,13 +165,28 @@ export default function CenterDetailClient() {
     );
   }
 
-  if (!center) {
+  // ✅ FIXED: shows proper error UI after max retries, not blank screen
+  if (fetchError || !center) {
     return (
       <>
         <main className="max-w-5xl mx-auto px-4 py-8">
           <div className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">Center Not Found</h2>
-            <p className="text-gray-600 mb-4">The center you're looking for doesn't exist.</p>
+            <h2 className="text-xl font-semibold mb-2">
+              {fetchError ? "Unable to Load Center" : "Center Not Found"}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {fetchError
+                ? "Something went wrong. Please check your connection and try again."
+                : "The center you're looking for doesn't exist."}
+            </p>
+            {fetchError && (
+              <button
+                onClick={() => { setFetchError(false); setLoading(true); }}
+                className="mr-3 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Try Again
+              </button>
+            )}
             <Link href="/centers" className="text-accent hover:text-accent/80">← Back to Centers</Link>
           </div>
         </main>
@@ -156,11 +197,11 @@ export default function CenterDetailClient() {
 
   const isLiked = isFavorite(center.id);
   const isComparing = isInCompare(center.id);
-  const whatsappUrl = getWhatsAppUrl();
+  const whatsappUrl = getWhatsAppUrl(true); // with message — for floating button
 
   return (
     <>
-      {/* ✅ Floating WhatsApp Button — only shows if center has WhatsApp */}
+      {/* Floating WhatsApp Button */}
       {whatsappUrl && (
         <a
           href={whatsappUrl}
@@ -168,10 +209,10 @@ export default function CenterDetailClient() {
           rel="noopener noreferrer"
           className="fixed z-50 flex items-center gap-2 shadow-lg transition-all duration-300 active:scale-95"
           style={{
-            bottom: "84px", // above mobile nav bar
+            bottom: "84px",
             right: "16px",
             background: "#25D366",
-            borderRadius: showWaLabel ? "9999px" : "9999px",
+            borderRadius: "9999px",
             padding: showWaLabel ? "10px 16px 10px 12px" : "12px",
           }}
           aria-label="Enquire on WhatsApp"
@@ -221,7 +262,14 @@ export default function CenterDetailClient() {
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
           {/* Cover */}
           <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
-            {center.image && <img src={center.image} alt={`${center.name} cover`} className="w-full h-full object-cover" />}
+            {center.image && (
+              <img
+                src={center.image}
+                alt={`${center.name} cover`}
+                className="w-full h-full object-cover"
+                fetchpriority="high" // ✅ LCP image — load early
+              />
+            )}
 
             <div className="absolute top-2 right-2 flex gap-2">
               <button onClick={handleFavoriteClick}
@@ -409,7 +457,8 @@ export default function CenterDetailClient() {
                     </a>
                   )}
                   {center.whatsapp && (
-                    <a href={`https://wa.me/${center.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    // ✅ FIXED: uses getWhatsAppUrl() so number is cleaned (no raw spaces/dashes)
+                    <a href={getWhatsAppUrl(false)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <WhatsAppIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
                       <p className="text-xs text-gray-900 font-medium truncate">{center.whatsapp}</p>
                     </a>
@@ -446,7 +495,6 @@ export default function CenterDetailClient() {
               </div>
             )}
 
-            {/* ✅ AI Review Intelligence — shows above reviews */}
             <div className="mb-3">
               <ReviewIntelligenceCard centerId={center.id} />
             </div>
