@@ -4,11 +4,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendOTPEmail, sendPasswordResetEmail } from "../utils/emailService.js";
+// ✅ ADDED: geocode utility
+import { geocodeCity } from "../utils/geocode.js";
 
 const otpStore = new Map();
 const resetTokenStore = new Map();
 
-// Auto-cleanup expired entries every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of otpStore.entries()) {
@@ -29,16 +30,9 @@ const generateUniqueSlug = (instituteName, city) => {
   return `${baseSlug}-${citySlug}-${timestamp}`;
 };
 
-// ✅ FIXED — matches schema InstituteCategory & CenterCategory enums exactly
 const validCategories = [
-  'SCHOOL_TUITION',
-  'STUDY_ABROAD',
-  'LANGUAGES',
-  'IT_TECHNOLOGY',
-  'DESIGN_CREATIVE',
-  'MANAGEMENT',
-  'SKILL_DEVELOPMENT',
-  'EXAM_COACHING',
+  'SCHOOL_TUITION', 'STUDY_ABROAD', 'LANGUAGES', 'IT_TECHNOLOGY',
+  'DESIGN_CREATIVE', 'MANAGEMENT', 'SKILL_DEVELOPMENT', 'EXAM_COACHING',
 ];
 
 const validModes = ['ONLINE', 'OFFLINE', 'HYBRID'];
@@ -160,25 +154,20 @@ export const registerInstitute = async (req, res) => {
       otpVerified
     } = req.body;
 
-    // Base validation
     if (!instituteName || !email || !phone || !password || !primaryCategory ||
         !state || !district || !city || !location) {
       return res.status(400).json({ error: "All required fields must be filled" });
     }
 
-    // ✅ Validate primary category against schema enum
     if (!validCategories.includes(primaryCategory)) {
       return res.status(400).json({ error: `Invalid primary category. Must be one of: ${validCategories.join(', ')}` });
     }
 
-    // ✅ teachingMode — always required (schema has no nullable on teachingMode)
-    // Default to OFFLINE for STUDY_ABROAD if not provided
     const resolvedTeachingMode = teachingMode || 'OFFLINE';
     if (!validModes.includes(resolvedTeachingMode)) {
       return res.status(400).json({ error: "Invalid teaching mode" });
     }
 
-    // Validate secondary categories
     if (secondaryCategories.length > 2) {
       return res.status(400).json({ error: "Maximum 2 secondary categories allowed" });
     }
@@ -189,9 +178,16 @@ export const registerInstitute = async (req, res) => {
       return res.status(400).json({ error: "Primary category cannot be a secondary category" });
     }
 
-    // Check duplicate email
     const existingUser = await prisma.instituteUser.findUnique({ where: { email } });
     if (existingUser) return res.status(400).json({ error: "Email already registered" });
+
+    // ✅ ADDED: geocode city → lat/lng (non-blocking — won't fail registration if geocode fails)
+    const coords = await geocodeCity(city, district, state);
+    const latitude = coords?.latitude ?? null;
+    const longitude = coords?.longitude ?? null;
+    if (coords) {
+      console.log(`📍 Geocoded ${city}: lat=${latitude}, lng=${longitude}`);
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const slug = generateUniqueSlug(instituteName, city);
@@ -199,17 +195,15 @@ export const registerInstitute = async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       const instituteUser = await tx.instituteUser.create({
         data: {
-          instituteName,
-          email,
-          phone,
+          instituteName, email, phone,
           password: hashedPassword,
           primaryCategory,
           secondaryCategories,
           teachingMode: resolvedTeachingMode,
-          state,
-          district,
-          city,
-          location,
+          state, district, city, location,
+          // ✅ ADDED: save lat/lng
+          latitude,
+          longitude,
           isVerified: otpVerified || false
         }
       });
@@ -221,17 +215,16 @@ export const registerInstitute = async (req, res) => {
           primaryCategory,
           secondaryCategories,
           teachingMode: resolvedTeachingMode,
-          state,
-          district,
-          city,
-          location,
+          state, district, city, location,
+          // ✅ ADDED: save lat/lng
+          latitude,
+          longitude,
           description: `Welcome to ${instituteName}! ${
             primaryCategory === 'STUDY_ABROAD'
               ? `We are a study abroad consultancy located in ${city}, ${state}.`
               : `We are a ${primaryCategory.toLowerCase().replace(/_/g, ' ')} institute located in ${city}, ${state}.`
           }`,
-          phone,
-          email,
+          phone, email,
           rating: 0,
           courses: [],
           courseDetails: [],

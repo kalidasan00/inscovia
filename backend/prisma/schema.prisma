@@ -55,7 +55,6 @@ enum NotificationType {
   ALERT
 }
 
-// ✅ NEW: Banner placement enum
 enum BannerPlacement {
   HERO
   FEATURED
@@ -76,6 +75,10 @@ model InstituteUser {
   district String
   city     String
   location String
+
+  // ✅ ADDED: lat/lng for distance-based filtering
+  latitude  Float?
+  longitude Float?
 
   role       UserRole @default(INSTITUTE)
   isVerified Boolean  @default(false)
@@ -109,6 +112,10 @@ model Center {
   city     String
   location String
 
+  // ✅ ADDED: lat/lng for distance-based filtering
+  latitude  Float?
+  longitude Float?
+
   rating  Float    @default(0)
   courses String[]
 
@@ -140,7 +147,7 @@ model Center {
   owner  InstituteUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   reviews Review[]
-  banners Banner[] // ✅ NEW: relation to Banner
+  banners Banner[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -270,8 +277,6 @@ model Notification {
   @@index([createdAt])
 }
 
-// ─── Analytics Models ───────────────────
-
 model SearchLog {
   id        String   @id @default(cuid())
   query     String
@@ -300,9 +305,6 @@ model CenterView {
   @@index([createdAt])
 }
 
-// ─── Banner / Promotion Model ───────────────────
-
-// ✅ NEW: Banner model for institute promotions
 model Banner {
   id       String          @id @default(cuid())
   centerId String
@@ -314,13 +316,12 @@ model Banner {
   ctaText   String          @default("View Institute")
 
   placement BannerPlacement
-  duration  Int             // 7, 15, or 30 days
+  duration  Int
 
-  isActive  Boolean         @default(false) // false until admin approves
+  isActive  Boolean         @default(false)
   startDate DateTime?
   endDate   DateTime?
 
-  // Pricing in paise (₹ × 100)
   pricePaise Int?
 
   createdAt DateTime @default(now())
@@ -333,7 +334,6 @@ model Banner {
   @@index([placement, isActive])
 }
 
-// ✅ NEW: Waitlist for when banner slots are full
 model BannerWaitlist {
   id         String          @id @default(cuid())
   centerId   String

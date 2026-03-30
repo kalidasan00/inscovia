@@ -1,14 +1,12 @@
-// backend/src/controllers/centers.controller.js - OPTIMIZED VERSION
+// backend/src/controllers/centers.controller.js - FIXED
 import prisma from "../lib/prisma.js";
 import cloudinary from "../config/cloudinary.js";
 import { getTransformations } from "../utils/cloudinaryUpload.js";
 
-// ✅ OPTIMIZED: Safe JSON parser (prevents crashes)
 const safeJSONParse = (data, fallback = []) => {
   if (!data) return fallback;
   if (Array.isArray(data)) return data;
   if (typeof data === 'object') return data;
-
   try {
     return JSON.parse(data);
   } catch (error) {
@@ -17,11 +15,8 @@ const safeJSONParse = (data, fallback = []) => {
   }
 };
 
-// ✨ Helper function to parse and validate courseDetails
 const parseCourseDetails = (coursesInput) => {
   if (!coursesInput) return [];
-
-  // If it's already an array of objects with details
   if (Array.isArray(coursesInput) && coursesInput.length > 0 && typeof coursesInput[0] === 'object' && coursesInput[0].name) {
     return coursesInput.map(course => ({
       name: course.name || '',
@@ -30,8 +25,6 @@ const parseCourseDetails = (coursesInput) => {
       duration: course.duration || null
     }));
   }
-
-  // If it's an array of strings (old format)
   if (Array.isArray(coursesInput) && coursesInput.length > 0 && typeof coursesInput[0] === 'string') {
     return coursesInput.map(courseName => ({
       name: courseName,
@@ -40,31 +33,64 @@ const parseCourseDetails = (coursesInput) => {
       duration: null
     }));
   }
-
   return [];
 };
 
-// ✅ OPTIMIZED: Get centers with pagination
+// ✅ FIX #12: only select fields needed for listing cards — no sensitive/heavy fields
+const CENTER_LIST_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  city: true,
+  state: true,
+  primaryCategory: true,
+  secondaryCategories: true,
+  teachingMode: true,
+  rating: true,
+  reviewCount: true,
+  logo: true,
+  image: true,
+  featured: true,
+  topRated: true,
+  courses: true,
+  courseDetails: true,
+  description: true,
+  // ❌ NOT included in list: phone, email, whatsapp, userId, gallery, facebook, instagram, linkedin, website
+};
+
 export const getCenters = async (req, res) => {
   try {
-    // ✅ NEW: Pagination support
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    // Get total count for pagination
-    const totalCount = await prisma.center.count();
+    // ✅ FIX #12: build where clause for city filter + sanitize input
+    const where = {};
 
-    // Get centers with pagination
-    const centers = await prisma.center.findMany({
-      skip,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    if (req.query.city) {
+      // ✅ case-insensitive city match using Prisma mode
+      where.city = {
+        equals: String(req.query.city).trim().substring(0, 100), // max 100 chars
+        mode: "insensitive",
+      };
+    }
 
-    // ✅ OPTIMIZED: Safe parsing
+    if (req.query.category) {
+      where.primaryCategory = String(req.query.category).trim().substring(0, 50);
+    }
+
+    const [totalCount, centers] = await Promise.all([
+      prisma.center.count({ where }),
+      prisma.center.findMany({
+        where,
+        // ✅ FIX #12: select only needed fields
+        select: CENTER_LIST_SELECT,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
     const centersWithParsedDetails = centers.map(center => ({
       ...center,
       courseDetails: safeJSONParse(center.courseDetails, [])
@@ -85,24 +111,21 @@ export const getCenters = async (req, res) => {
   }
 };
 
-// ✅ OPTIMIZED: Get center by slug
 export const getCenterBySlug = async (req, res) => {
   try {
+    // ✅ slug detail page returns full data — that's fine
     const center = await prisma.center.findUnique({
-      where: { slug: req.params.slug }
+      where: { slug: String(req.params.slug).trim() }
     });
 
     if (!center) {
       return res.status(404).json({ error: "Center not found" });
     }
 
-    // ✅ OPTIMIZED: Safe parsing
     const centerWithParsedDetails = {
       ...center,
       courseDetails: safeJSONParse(center.courseDetails, [])
     };
-
-    console.log(`✅ Center fetched: ${center.name} (${req.params.slug})`);
 
     res.json(centerWithParsedDetails);
   } catch (error) {
@@ -111,16 +134,12 @@ export const getCenterBySlug = async (req, res) => {
   }
 };
 
-// ✅ OPTIMIZED: Update center
 export const updateCenter = async (req, res) => {
   try {
     const { slug } = req.params;
     const updateData = { ...req.body };
 
-    // ✅ OPTIMIZED: Verify ownership
-    const center = await prisma.center.findUnique({
-      where: { slug }
-    });
+    const center = await prisma.center.findUnique({ where: { slug } });
 
     if (!center) {
       return res.status(404).json({ error: "Center not found" });
@@ -130,26 +149,21 @@ export const updateCenter = async (req, res) => {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // ✨ Handle courseDetails if provided
     if (updateData.courses) {
       const courseDetails = parseCourseDetails(updateData.courses);
       updateData.courseDetails = courseDetails;
       updateData.courses = courseDetails.map(c => c.name);
     }
 
-    // Update center
     const updatedCenter = await prisma.center.update({
       where: { id: center.id },
       data: updateData
     });
 
-    // ✅ OPTIMIZED: Safe parsing
     const centerWithParsedDetails = {
       ...updatedCenter,
       courseDetails: safeJSONParse(updatedCenter.courseDetails, [])
     };
-
-    console.log(`✅ Center updated: ${center.name}`);
 
     res.json({ success: true, center: centerWithParsedDetails });
   } catch (error) {
@@ -158,34 +172,21 @@ export const updateCenter = async (req, res) => {
   }
 };
 
-// ✅ OPTIMIZED: Logo upload
 export const uploadLogo = async (req, res) => {
   try {
     const { slug } = req.params;
-
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const center = await prisma.center.findUnique({ where: { slug } });
-
     if (!center || center.userId !== req.userId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // ✨ Upload with optimization
     const config = getTransformations('logo');
-
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: "logos",
-          transformation: config.transformation
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
+        { folder: "logos", transformation: config.transformation },
+        (error, result) => { if (error) reject(error); else resolve(result); }
       );
       uploadStream.end(req.file.buffer);
     });
@@ -195,8 +196,6 @@ export const uploadLogo = async (req, res) => {
       data: { logo: result.secure_url }
     });
 
-    console.log(`✅ Logo uploaded: ${result.secure_url} (${(result.bytes / 1024).toFixed(2)}KB)`);
-
     res.json({ success: true, logoUrl: result.secure_url });
   } catch (error) {
     console.error("❌ Upload error:", error);
@@ -204,34 +203,21 @@ export const uploadLogo = async (req, res) => {
   }
 };
 
-// ✅ OPTIMIZED: Cover image upload
 export const uploadCoverImage = async (req, res) => {
   try {
     const { slug } = req.params;
-
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const center = await prisma.center.findUnique({ where: { slug } });
-
     if (!center || center.userId !== req.userId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // ✨ Upload with optimization
     const config = getTransformations('banner');
-
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: "covers",
-          transformation: config.transformation
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
+        { folder: "covers", transformation: config.transformation },
+        (error, result) => { if (error) reject(error); else resolve(result); }
       );
       uploadStream.end(req.file.buffer);
     });
@@ -240,8 +226,6 @@ export const uploadCoverImage = async (req, res) => {
       where: { id: center.id },
       data: { image: result.secure_url }
     });
-
-    console.log(`✅ Banner uploaded: ${result.secure_url} (${(result.bytes / 1024).toFixed(2)}KB)`);
 
     res.json({ success: true, imageUrl: result.secure_url });
   } catch (error) {
