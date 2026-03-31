@@ -43,18 +43,18 @@ const CENTER_LIST_SELECT = {
   slug: true,
   city: true,
   state: true,
+  district: true,
   primaryCategory: true,
   secondaryCategories: true,
   teachingMode: true,
   rating: true,
-  reviewCount: true,
   logo: true,
   image: true,
-  featured: true,
-  topRated: true,
   courses: true,
   courseDetails: true,
   description: true,
+  latitude: true,
+  longitude: true,
   // ❌ NOT included in list: phone, email, whatsapp, userId, gallery, facebook, instagram, linkedin, website
 };
 
