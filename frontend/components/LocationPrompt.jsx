@@ -31,6 +31,9 @@ export default function LocationPrompt({ onDone }) {
             null;
           if (city) {
             localStorage.setItem("userCity", city);
+            // ✅ ADDED: save raw coordinates for distance filter
+            localStorage.setItem("userLat", String(latitude));
+            localStorage.setItem("userLng", String(longitude));
             window.dispatchEvent(new Event("userCityChanged"));
             onDone(city);
           } else {

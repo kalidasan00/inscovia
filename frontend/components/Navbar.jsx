@@ -288,6 +288,9 @@ function CitySelector({ city, onCityChange }) {
             null;
           if (detected) {
             onCityChange(detected);
+            // ✅ ADDED: save raw coordinates for distance filter
+            localStorage.setItem("userLat", String(latitude));
+            localStorage.setItem("userLng", String(longitude));
             setOpen(false);
           }
         } catch { }
@@ -485,6 +488,8 @@ export default function Navbar() {
       localStorage.removeItem("userData");
       localStorage.removeItem("userToken");
       localStorage.removeItem("userCity");
+      localStorage.removeItem("userLat");
+      localStorage.removeItem("userLng");
       setUserCity(null);
     }
     window.location.href = "/";
