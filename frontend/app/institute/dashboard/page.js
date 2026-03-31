@@ -6,8 +6,14 @@ import Link from "next/link";
 import Footer from "../../../components/Footer";
 import { X, AlertCircle, LogOut } from "lucide-react";
 import GallerySection from "./GallerySection";
-import PromoteBannerSection from "./PromoteBannerSection"; // ← ADD THIS
+import PromoteBannerSection from "./PromoteBannerSection";
+import dynamic from "next/dynamic";
 
+// ✅ ADDED: LocationEditor — ssr:false required for Leaflet
+const LocationEditor = dynamic(() => import("./LocationEditor"), {
+  ssr: false,
+  loading: () => <div className="h-[340px] bg-gray-100 rounded-2xl animate-pulse mb-3" />,
+});
 
 export default function InstituteDashboard() {
   const [institute, setInstitute] = useState(null);
@@ -38,10 +44,8 @@ export default function InstituteDashboard() {
       setInstitute(data.user);
       setCenter(data.center);
       setCenterSlug(data.center?.slug);
-      // ✅ Keep in sync so Navbar bell icon works correctly
       localStorage.setItem("instituteLoggedIn", "true");
     } catch {
-      // ✅ Clean up all auth keys on failure
       localStorage.removeItem("instituteToken");
       localStorage.removeItem("instituteData");
       localStorage.removeItem("instituteLoggedIn");
@@ -51,7 +55,6 @@ export default function InstituteDashboard() {
     }
   };
 
-  // ✅ Fixed: clears all 3 keys + fires event so Navbar bell disappears immediately
   const handleLogout = () => {
     localStorage.removeItem("instituteToken");
     localStorage.removeItem("instituteData");
@@ -337,7 +340,6 @@ export default function InstituteDashboard() {
                     </div>
                   )}
                 </div>
-
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-sm font-bold text-gray-900">Services</h2>
@@ -361,7 +363,6 @@ export default function InstituteDashboard() {
                     </div>
                   )}
                 </div>
-
                 {center?.topUniversities?.length > 0 && (
                   <div className="mb-3">
                     <h2 className="text-sm font-bold text-gray-900 mb-2">Top Universities</h2>
@@ -388,14 +389,11 @@ export default function InstituteDashboard() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {schoolData.boards.map((b, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-medium rounded-full">
-                          {b}
-                        </span>
+                        <span key={i} className="px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-medium rounded-full">{b}</span>
                       ))}
                     </div>
                   </div>
                 )}
-
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-sm font-bold text-gray-900">Classes</h2>
@@ -406,9 +404,7 @@ export default function InstituteDashboard() {
                   {schoolData?.classes?.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {schoolData.classes.map((c, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded-full">
-                          {c}
-                        </span>
+                        <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded-full">{c}</span>
                       ))}
                     </div>
                   ) : (
@@ -418,20 +414,16 @@ export default function InstituteDashboard() {
                     </div>
                   )}
                 </div>
-
                 {schoolData?.subjects?.length > 0 && (
                   <div className="mb-3">
                     <h2 className="text-sm font-bold text-gray-900 mb-2">Subjects</h2>
                     <div className="flex flex-wrap gap-1.5">
                       {schoolData.subjects.map((s, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-medium rounded-full">
-                          {s}
-                        </span>
+                        <span key={i} className="px-2.5 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-medium rounded-full">{s}</span>
                       ))}
                     </div>
                   </div>
                 )}
-
                 {schoolData?.specialPrograms?.length > 0 && (
                   <div className="mb-3">
                     <h2 className="text-sm font-bold text-gray-900 mb-2">Special Programs</h2>
@@ -568,13 +560,29 @@ export default function InstituteDashboard() {
                 </div>
               </div>
             )}
-            {/* ✅ Promote Banner Section */}
-                    {center?.id && (
-                      <PromoteBannerSection
-                        centerId={center.id}
-                        centerName={institute.instituteName}
-                      />
-                    )}
+
+            {/* ✅ ADDED: Location Editor — institutes can set/update their map location */}
+            {center?.slug && (
+              <div className="mb-3">
+                <LocationEditor
+                  centerId={center.id}
+                  centerSlug={center.slug}
+                  initialLat={center.latitude}
+                  initialLng={center.longitude}
+                  onSaved={(lat, lng) => {
+                    setCenter(prev => ({ ...prev, latitude: lat, longitude: lng }));
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Promote Banner Section */}
+            {center?.id && (
+              <PromoteBannerSection
+                centerId={center.id}
+                centerName={institute.instituteName}
+              />
+            )}
 
             <GallerySection
               gallery={center?.gallery || []}
