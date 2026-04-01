@@ -20,6 +20,8 @@ import auditAgentRouter from "./routes/auditAgent.routes.js";
 import bannerRouter from "./routes/banner.routes.js";
 import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 import aptitudeRouter from "./routes/aptitude.routes.js";
+// ✅ ADDED
+import orgRouter from "./routes/org.routes.js";
 import { runAudit } from "./controllers/auditAgent.controller.js";
 import { expireOldBanners } from "./controllers/banner.controller.js";
 
@@ -89,6 +91,8 @@ app.use("/api/review-intelligence", reviewIntelligenceRouter);
 app.use("/api/audit", auditAgentRouter);
 app.use("/api/banners", bannerRouter);
 app.use("/api/aptitude", aptitudeRouter);
+// ✅ ADDED
+app.use("/api/org", orgRouter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Inscovia API is running ✅" });
@@ -124,6 +128,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🕵️  Audit Agent: ${BACKEND_URL}/api/audit`);
   console.log(`🎯 Banners: ${BACKEND_URL}/api/banners`);
   console.log(`🧠 Aptitude: ${BACKEND_URL}/api/aptitude`);
+  console.log(`🏢 Org: ${BACKEND_URL}/api/org`);
 
   if (process.env.RESEND_API_KEY) console.log('✅ Resend configured');
   else console.warn('⚠️  RESEND_API_KEY missing');
@@ -134,7 +139,6 @@ app.listen(PORT, '0.0.0.0', () => {
   if (process.env.ADMIN_EMAIL) console.log(`✅ Admin email: ${process.env.ADMIN_EMAIL}`);
   else console.warn('⚠️  ADMIN_EMAIL missing');
 
-  // Keep-alive ping
   setInterval(async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/keep-alive`);
@@ -145,7 +149,6 @@ app.listen(PORT, '0.0.0.0', () => {
     }
   }, 14 * 60 * 1000);
 
-  // Weekly audit
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   setInterval(async () => {
     console.log("🤖 Running weekly audit...");
@@ -161,7 +164,6 @@ app.listen(PORT, '0.0.0.0', () => {
     }
   }, SEVEN_DAYS);
 
-  // ✅ Banner expiry check — runs every hour
   setInterval(async () => {
     await expireOldBanners();
   }, 60 * 60 * 1000);
