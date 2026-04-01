@@ -4,56 +4,58 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendOTPEmail, sendPasswordResetEmail } from "../utils/emailService.js";
-// ✅ ADDED: geocode utility
 import { geocodeCity } from "../utils/geocode.js";
 
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const otpStore = new Map();
 const resetTokenStore = new Map();
 
+// Auto-cleanup expired entries every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of otpStore.entries()) {
-    if (now > value.expiresAt) { otpStore.delete(key); console.log(`🧹 Cleaned expired OTP for ${key}`); }
+    if (now > value.expiresAt) { otpStore.delete(key); }
   }
   for (const [key, value] of resetTokenStore.entries()) {
-    if (now > value.expiresAt) { resetTokenStore.delete(key); console.log(`🧹 Cleaned expired reset token`); }
+    if (now > value.expiresAt) { resetTokenStore.delete(key); }
   }
 }, 10 * 60 * 1000);
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const generateResetToken = () => crypto.randomBytes(32).toString('hex');
 
-const generateUniqueSlug = (instituteName, city) => {
-  const baseSlug = instituteName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+function generateSlug(name, city) {
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   const citySlug = city.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const timestamp = Date.now().toString(36);
-  return `${baseSlug}-${citySlug}-${timestamp}`;
-};
+  const ts = Date.now().toString(36);
+  return `${base}-${citySlug}-${ts}`;
+}
 
 const validCategories = [
   'SCHOOL_TUITION', 'STUDY_ABROAD', 'LANGUAGES', 'IT_TECHNOLOGY',
   'DESIGN_CREATIVE', 'MANAGEMENT', 'SKILL_DEVELOPMENT', 'EXAM_COACHING',
 ];
-
 const validModes = ['ONLINE', 'OFFLINE', 'HYBRID'];
 
-// ============= OTP FUNCTIONS =============
+// ─── OTP ─────────────────────────────────────────────────────────────────────
 
 export const sendOTP = async (req, res) => {
   try {
     const { email, instituteName } = req.body;
-    if (!email || !instituteName) return res.status(400).json({ error: "Email and institute name are required" });
-
-    const existingUser = await prisma.instituteUser.findUnique({ where: { email } });
-    if (existingUser) return res.status(400).json({ error: "Email already registered" });
-
+    if (!email || !instituteName) {
+      return res.status(400).json({ error: "Email and institute name are required" });
+    }
+    // ✅ Check unified User table
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email already registered" });
+    }
     const otp = generateOTP();
     const expiresAt = Date.now() + 10 * 60 * 1000;
     otpStore.set(email, { otp, expiresAt, instituteName });
     await sendOTPEmail(email, otp, instituteName);
-    console.log(`✅ OTP sent to ${email}: ${otp}`);
-
-    res.json({ success: true, message: "OTP sent successfully to your email", expiresIn: 600 });
+    console.log(`✅ OTP sent to ${email}`);
+    res.json({ success: true, message: "OTP sent successfully", expiresIn: 600 });
   } catch (error) {
     console.error("❌ Send OTP error:", error);
     res.status(500).json({ error: "Failed to send OTP. Please try again." });
@@ -64,14 +66,14 @@ export const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) return res.status(400).json({ error: "Email and OTP are required" });
-
     const storedData = otpStore.get(email);
-    if (!storedData) return res.status(400).json({ error: "OTP not found or expired. Please request a new one." });
-    if (Date.now() > storedData.expiresAt) { otpStore.delete(email); return res.status(400).json({ error: "OTP expired. Please request a new one." }); }
-    if (storedData.otp !== otp) return res.status(400).json({ error: "Invalid OTP. Please try again." });
-
+    if (!storedData) return res.status(400).json({ error: "OTP not found or expired." });
+    if (Date.now() > storedData.expiresAt) {
+      otpStore.delete(email);
+      return res.status(400).json({ error: "OTP expired. Please request a new one." });
+    }
+    if (storedData.otp !== otp) return res.status(400).json({ error: "Invalid OTP." });
     otpStore.delete(email);
-    console.log(`✅ OTP verified for ${email}`);
     res.json({ success: true, message: "Email verified successfully" });
   } catch (error) {
     console.error("❌ Verify OTP error:", error);
@@ -79,26 +81,22 @@ export const verifyOTP = async (req, res) => {
   }
 };
 
-// ============= FORGOT PASSWORD =============
+// ─── FORGOT PASSWORD ──────────────────────────────────────────────────────────
 
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Email is required" });
-
-    const user = await prisma.instituteUser.findUnique({ where: { email: email.toLowerCase().trim() } });
-    if (!user) return res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
-
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!user) return res.json({ success: true, message: "If an account exists, you will receive a reset link" });
     const resetToken = generateResetToken();
     const expiresAt = Date.now() + 60 * 60 * 1000;
     resetTokenStore.set(resetToken, { email: user.email, expiresAt });
-    await sendPasswordResetEmail(user.email, resetToken, user.instituteName);
-    console.log(`✅ Password reset email sent to ${user.email}`);
-
-    res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
+    await sendPasswordResetEmail(user.email, resetToken, user.name);
+    res.json({ success: true, message: "If an account exists, you will receive a reset link" });
   } catch (error) {
     console.error("❌ Forgot password error:", error);
-    res.status(500).json({ error: "Failed to process request. Please try again." });
+    res.status(500).json({ error: "Failed to process request." });
   }
 };
 
@@ -106,14 +104,14 @@ export const verifyResetToken = async (req, res) => {
   try {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: "Token is required" });
-
     const tokenData = resetTokenStore.get(token);
     if (!tokenData) return res.status(400).json({ error: "Invalid or expired reset token" });
-    if (Date.now() > tokenData.expiresAt) { resetTokenStore.delete(token); return res.status(400).json({ error: "Reset token has expired" }); }
-
+    if (Date.now() > tokenData.expiresAt) {
+      resetTokenStore.delete(token);
+      return res.status(400).json({ error: "Reset token has expired" });
+    }
     res.json({ success: true, message: "Token is valid" });
   } catch (error) {
-    console.error("❌ Verify token error:", error);
     res.status(500).json({ error: "Verification failed" });
   }
 };
@@ -123,27 +121,25 @@ export const resetPassword = async (req, res) => {
     const { token, password } = req.body;
     if (!token || !password) return res.status(400).json({ error: "Token and password are required" });
     if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters" });
-
     const tokenData = resetTokenStore.get(token);
     if (!tokenData) return res.status(400).json({ error: "Invalid or expired reset token" });
-    if (Date.now() > tokenData.expiresAt) { resetTokenStore.delete(token); return res.status(400).json({ error: "Reset token has expired" }); }
-
-    const user = await prisma.instituteUser.findUnique({ where: { email: tokenData.email } });
+    if (Date.now() > tokenData.expiresAt) {
+      resetTokenStore.delete(token);
+      return res.status(400).json({ error: "Reset token has expired" });
+    }
+    const user = await prisma.user.findUnique({ where: { email: tokenData.email } });
     if (!user) { resetTokenStore.delete(token); return res.status(404).json({ error: "User not found" }); }
-
     const hashedPassword = await bcrypt.hash(password, 10);
-    await prisma.instituteUser.update({ where: { id: user.id }, data: { password: hashedPassword } });
+    await prisma.user.update({ where: { id: user.id }, data: { password: hashedPassword } });
     resetTokenStore.delete(token);
-    console.log(`✅ Password reset successful for ${user.email}`);
-
     res.json({ success: true, message: "Password reset successful" });
   } catch (error) {
     console.error("❌ Reset password error:", error);
-    res.status(500).json({ error: "Failed to reset password. Please try again." });
+    res.status(500).json({ error: "Failed to reset password." });
   }
 };
 
-// ============= REGISTER INSTITUTE =============
+// ─── REGISTER INSTITUTE ───────────────────────────────────────────────────────
 
 export const registerInstitute = async (req, res) => {
   try {
@@ -158,116 +154,139 @@ export const registerInstitute = async (req, res) => {
         !state || !district || !city || !location) {
       return res.status(400).json({ error: "All required fields must be filled" });
     }
-
     if (!validCategories.includes(primaryCategory)) {
-      return res.status(400).json({ error: `Invalid primary category. Must be one of: ${validCategories.join(', ')}` });
+      return res.status(400).json({ error: "Invalid primary category" });
     }
-
     const resolvedTeachingMode = teachingMode || 'OFFLINE';
     if (!validModes.includes(resolvedTeachingMode)) {
       return res.status(400).json({ error: "Invalid teaching mode" });
     }
-
     if (secondaryCategories.length > 2) {
       return res.status(400).json({ error: "Maximum 2 secondary categories allowed" });
     }
     if (secondaryCategories.some(cat => !validCategories.includes(cat))) {
-      return res.status(400).json({ error: `Invalid secondary category. Must be one of: ${validCategories.join(', ')}` });
+      return res.status(400).json({ error: "Invalid secondary category" });
     }
     if (secondaryCategories.includes(primaryCategory)) {
       return res.status(400).json({ error: "Primary category cannot be a secondary category" });
     }
 
-    const existingUser = await prisma.instituteUser.findUnique({ where: { email } });
-    if (existingUser) return res.status(400).json({ error: "Email already registered" });
-
-    // ✅ ADDED: geocode city → lat/lng (non-blocking — won't fail registration if geocode fails)
+    // ✅ Geocode city
     const coords = await geocodeCity(city, district, state);
-    const latitude = coords?.latitude ?? null;
-    const longitude = coords?.longitude ?? null;
-    if (coords) {
-      console.log(`📍 Geocoded ${city}: lat=${latitude}, lng=${longitude}`);
+    const orgSlug = generateSlug(instituteName, city);
+    const centerSlug = generateSlug(instituteName, city);
+
+    // ✅ Check if user already exists (same email, adding new org)
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+
+    if (existingUser) {
+      // User exists — create new org + member + center for them
+      const result = await prisma.$transaction(async (tx) => {
+        const org = await tx.organization.create({
+          data: {
+            name: instituteName, slug: orgSlug,
+            primaryCategory, secondaryCategories,
+            teachingMode: resolvedTeachingMode,
+            state, district, city, location,
+            latitude: coords?.latitude ?? null,
+            longitude: coords?.longitude ?? null,
+          }
+        });
+        await tx.orgMember.create({
+          data: { userId: existingUser.id, orgId: org.id, role: "OWNER", status: "ACTIVE" }
+        });
+        const center = await tx.center.create({
+          data: {
+            name: instituteName, slug: centerSlug,
+            primaryCategory, secondaryCategories,
+            teachingMode: resolvedTeachingMode,
+            state, district, city, location,
+            latitude: coords?.latitude ?? null,
+            longitude: coords?.longitude ?? null,
+            description: `Welcome to ${instituteName}!`,
+            phone, email, rating: 0,
+            courses: [], courseDetails: [], gallery: [],
+            orgId: org.id,
+          }
+        });
+        return { org, center };
+      });
+
+      const token = jwt.sign(
+        { id: existingUser.id, email: existingUser.email, orgId: result.org.id },
+        JWT_SECRET, { expiresIn: "7d" }
+      );
+      console.log(`✅ New org for existing user: ${email} → ${instituteName}`);
+      return res.status(201).json({
+        success: true, message: "Organization created successfully", token,
+        user: { id: existingUser.id, name: existingUser.name, email: existingUser.email },
+        organization: { id: result.org.id, name: result.org.name, slug: result.org.slug },
+        center: { id: result.center.id, slug: result.center.slug, name: result.center.name }
+      });
     }
 
+    // New user — create User + Org + Member + Center
     const hashedPassword = await bcrypt.hash(password, 10);
-    const slug = generateUniqueSlug(instituteName, city);
 
     const result = await prisma.$transaction(async (tx) => {
-      const instituteUser = await tx.instituteUser.create({
+      const user = await tx.user.create({
         data: {
-          instituteName, email, phone,
+          name: instituteName, email, phone,
           password: hashedPassword,
-          primaryCategory,
-          secondaryCategories,
-          teachingMode: resolvedTeachingMode,
-          state, district, city, location,
-          // ✅ ADDED: save lat/lng
-          latitude,
-          longitude,
-          isVerified: otpVerified || false
+          isVerified: otpVerified || false,
+          role: "USER",
         }
       });
-
+      const org = await tx.organization.create({
+        data: {
+          name: instituteName, slug: orgSlug,
+          primaryCategory, secondaryCategories,
+          teachingMode: resolvedTeachingMode,
+          state, district, city, location,
+          latitude: coords?.latitude ?? null,
+          longitude: coords?.longitude ?? null,
+        }
+      });
+      await tx.orgMember.create({
+        data: { userId: user.id, orgId: org.id, role: "OWNER", status: "ACTIVE" }
+      });
       const center = await tx.center.create({
         data: {
-          name: instituteName,
-          slug,
-          primaryCategory,
-          secondaryCategories,
+          name: instituteName, slug: centerSlug,
+          primaryCategory, secondaryCategories,
           teachingMode: resolvedTeachingMode,
           state, district, city, location,
-          // ✅ ADDED: save lat/lng
-          latitude,
-          longitude,
+          latitude: coords?.latitude ?? null,
+          longitude: coords?.longitude ?? null,
           description: `Welcome to ${instituteName}! ${
             primaryCategory === 'STUDY_ABROAD'
-              ? `We are a study abroad consultancy located in ${city}, ${state}.`
-              : `We are a ${primaryCategory.toLowerCase().replace(/_/g, ' ')} institute located in ${city}, ${state}.`
+              ? `We are a study abroad consultancy in ${city}, ${state}.`
+              : `We are a ${primaryCategory.toLowerCase().replace(/_/g, ' ')} institute in ${city}, ${state}.`
           }`,
-          phone, email,
-          rating: 0,
-          courses: [],
-          courseDetails: [],
-          gallery: [],
-          userId: instituteUser.id
+          phone, email, rating: 0,
+          courses: [], courseDetails: [], gallery: [],
+          orgId: org.id,
         }
       });
-
-      return { instituteUser, center };
+      return { user, org, center };
     });
 
     const token = jwt.sign(
-      { id: result.instituteUser.id, email: result.instituteUser.email },
-      process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "7d" }
+      { id: result.user.id, email: result.user.email, orgId: result.org.id },
+      JWT_SECRET, { expiresIn: "7d" }
     );
 
     console.log(`✅ Institute registered: ${instituteName} (${email})`);
-
     res.status(201).json({
-      success: true,
-      message: "Institute registered successfully",
-      token,
-      user: {
-        id: result.instituteUser.id,
-        instituteName: result.instituteUser.instituteName,
-        email: result.instituteUser.email,
-        phone: result.instituteUser.phone,
-        primaryCategory: result.instituteUser.primaryCategory,
-        secondaryCategories: result.instituteUser.secondaryCategories,
-        teachingMode: result.instituteUser.teachingMode,
-        location: {
-          state: result.instituteUser.state,
-          district: result.instituteUser.district,
-          city: result.instituteUser.city,
-          location: result.instituteUser.location
-        }
+      success: true, message: "Institute registered successfully", token,
+      user: { id: result.user.id, name: result.user.name, email: result.user.email, phone: result.user.phone },
+      organization: {
+        id: result.org.id, name: result.org.name, slug: result.org.slug,
+        primaryCategory: result.org.primaryCategory, secondaryCategories: result.org.secondaryCategories,
+        teachingMode: result.org.teachingMode, state: result.org.state,
+        district: result.org.district, city: result.org.city, location: result.org.location,
       },
-      center: {
-        id: result.center.id,
-        slug: result.center.slug,
-        name: result.center.name
-      }
+      center: { id: result.center.id, slug: result.center.slug, name: result.center.name }
     });
   } catch (error) {
     console.error("❌ Registration error:", error);
@@ -275,16 +294,33 @@ export const registerInstitute = async (req, res) => {
   }
 };
 
-// ============= LOGIN INSTITUTE =============
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
 
 export const loginInstitute = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
 
-    const user = await prisma.instituteUser.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email },
-      include: { centers: true }
+      include: {
+        orgMemberships: {
+          where: { status: "ACTIVE" },
+          include: {
+            org: {
+              include: {
+                centers: {
+                  select: {
+                    id: true, slug: true, name: true,
+                    image: true, logo: true, rating: true,
+                    city: true, state: true,
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
@@ -293,34 +329,36 @@ export const loginInstitute = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) return res.status(401).json({ error: "Invalid credentials" });
 
+    // ✅ Must have at least one org to login as institute
+    if (!user.orgMemberships.length) {
+      return res.status(403).json({ error: "No organization found for this account" });
+    }
+
+    const firstOrg = user.orgMemberships[0].org;
+
     const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "7d" }
+      { id: user.id, email: user.email, orgId: firstOrg.id },
+      JWT_SECRET, { expiresIn: "7d" }
     );
 
-    console.log(`✅ Login successful: ${user.instituteName} (${email})`);
-
+    console.log(`✅ Login: ${email}`);
     res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        instituteName: user.instituteName,
-        email: user.email,
-        phone: user.phone,
-        primaryCategory: user.primaryCategory,
-        secondaryCategories: user.secondaryCategories,
-        teachingMode: user.teachingMode,
-        location: {
-          state: user.state,
-          district: user.district,
-          city: user.city,
-          location: user.location
-        }
+      success: true, message: "Login successful", token,
+      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, isVerified: user.isVerified },
+      organizations: user.orgMemberships.map(m => ({
+        id: m.org.id, name: m.org.name, slug: m.org.slug,
+        role: m.role, primaryCategory: m.org.primaryCategory,
+        city: m.org.city, centers: m.org.centers,
+      })),
+      organization: {
+        id: firstOrg.id, name: firstOrg.name, slug: firstOrg.slug,
+        primaryCategory: firstOrg.primaryCategory,
+        secondaryCategories: firstOrg.secondaryCategories,
+        teachingMode: firstOrg.teachingMode,
+        state: firstOrg.state, district: firstOrg.district,
+        city: firstOrg.city, location: firstOrg.location,
       },
-      centers: user.centers
+      center: firstOrg.centers?.[0] || null,
     });
   } catch (error) {
     console.error("❌ Login error:", error);
@@ -328,60 +366,43 @@ export const loginInstitute = async (req, res) => {
   }
 };
 
-// ============= GET CURRENT USER =============
+// ─── GET CURRENT USER ─────────────────────────────────────────────────────────
 
 export const getCurrentUser = async (req, res) => {
   try {
-    const user = await prisma.instituteUser.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: req.userId },
       select: {
-        id: true,
-        instituteName: true,
-        email: true,
-        phone: true,
-        primaryCategory: true,
-        secondaryCategories: true,
-        teachingMode: true,
-        state: true,
-        district: true,
-        city: true,
-        location: true,
-        isVerified: true,
-        createdAt: true,
-        centers: {
+        id: true, name: true, email: true,
+        phone: true, isVerified: true, createdAt: true,
+        orgMemberships: {
+          where: { status: "ACTIVE" },
           select: {
-            id: true,
-            slug: true,
-            name: true,
-            primaryCategory: true,
-            secondaryCategories: true,
-            teachingMode: true,
-            state: true,
-            district: true,
-            city: true,
-            location: true,
-            description: true,
-            rating: true,
-            courses: true,
-            courseDetails: true,
-            image: true,
-            logo: true,
-            gallery: true,
-            website: true,
-            whatsapp: true,
-            phone: true,
-            email: true,
-            facebook: true,
-            instagram: true,
-            linkedin: true,
-            countries: true,
-            services: true,
-            topUniversities: true,
-            avgScholarship: true,
-            successRate: true,
-            studentsPlaced: true,
-            createdAt: true,
-            updatedAt: true
+            role: true,
+            org: {
+              select: {
+                id: true, name: true, slug: true,
+                primaryCategory: true, secondaryCategories: true,
+                teachingMode: true, state: true, district: true,
+                city: true, location: true, latitude: true, longitude: true,
+                centers: {
+                  select: {
+                    id: true, slug: true, name: true,
+                    primaryCategory: true, secondaryCategories: true,
+                    teachingMode: true, state: true, district: true,
+                    city: true, location: true, latitude: true, longitude: true,
+                    description: true, rating: true,
+                    courses: true, courseDetails: true,
+                    image: true, logo: true, gallery: true,
+                    website: true, whatsapp: true, phone: true, email: true,
+                    facebook: true, instagram: true, linkedin: true,
+                    countries: true, services: true, topUniversities: true,
+                    avgScholarship: true, successRate: true, studentsPlaced: true,
+                    createdAt: true, updatedAt: true,
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -389,10 +410,41 @@ export const getCurrentUser = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const center = user.centers && user.centers.length > 0 ? user.centers[0] : null;
-    if (!center) console.log("⚠️ No center found for user:", user.instituteName);
+    // ✅ Use orgId from token to find active org
+    const activeOrgId = req.orgId;
+    const activeMembership = activeOrgId
+      ? user.orgMemberships.find(m => m.org.id === activeOrgId)
+      : user.orgMemberships[0];
 
-    res.json({ user, center });
+    const activeOrg = activeMembership?.org || null;
+    const center = activeOrg?.centers?.[0] || null;
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        isVerified: user.isVerified,
+        // ✅ Backward compat with existing frontend
+        instituteName: activeOrg?.name || user.name,
+        primaryCategory: activeOrg?.primaryCategory,
+        secondaryCategories: activeOrg?.secondaryCategories,
+        teachingMode: activeOrg?.teachingMode,
+        state: activeOrg?.state,
+        district: activeOrg?.district,
+        city: activeOrg?.city,
+        location: activeOrg?.location,
+        role: activeMembership?.role || null,
+      },
+      center,
+      organization: activeOrg,
+      organizations: user.orgMemberships.map(m => ({
+        id: m.org.id, name: m.org.name, slug: m.org.slug,
+        role: m.role, primaryCategory: m.org.primaryCategory,
+        city: m.org.city,
+      })),
+    });
   } catch (error) {
     console.error("❌ Get user error:", error);
     res.status(500).json({ error: "Failed to get user" });
