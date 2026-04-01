@@ -1,4 +1,4 @@
-// backend/src/controllers/centers.controller.js - FIXED
+// backend/src/controllers/centers.controller.js
 import prisma from "../lib/prisma.js";
 import cloudinary from "../config/cloudinary.js";
 import { getTransformations } from "../utils/cloudinaryUpload.js";
@@ -36,7 +36,6 @@ const parseCourseDetails = (coursesInput) => {
   return [];
 };
 
-// ✅ FIX #12: only select fields needed for listing cards — no sensitive/heavy fields
 const CENTER_LIST_SELECT = {
   id: true,
   name: true,
@@ -55,7 +54,6 @@ const CENTER_LIST_SELECT = {
   description: true,
   latitude: true,
   longitude: true,
-  // ❌ NOT included in list: phone, email, whatsapp, userId, gallery, facebook, instagram, linkedin, website
 };
 
 export const getCenters = async (req, res) => {
@@ -64,13 +62,11 @@ export const getCenters = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    // ✅ FIX #12: build where clause for city filter + sanitize input
     const where = {};
 
     if (req.query.city) {
-      // ✅ case-insensitive city match using Prisma mode
       where.city = {
-        equals: String(req.query.city).trim().substring(0, 100), // max 100 chars
+        equals: String(req.query.city).trim().substring(0, 100),
         mode: "insensitive",
       };
     }
@@ -83,7 +79,6 @@ export const getCenters = async (req, res) => {
       prisma.center.count({ where }),
       prisma.center.findMany({
         where,
-        // ✅ FIX #12: select only needed fields
         select: CENTER_LIST_SELECT,
         skip,
         take: limit,
@@ -98,12 +93,7 @@ export const getCenters = async (req, res) => {
 
     res.json({
       centers: centersWithParsedDetails,
-      pagination: {
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-        totalCount
-      }
+      pagination: { page, limit, totalPages: Math.ceil(totalCount / limit), totalCount }
     });
   } catch (error) {
     console.error('❌ Get centers error:', error);
@@ -113,21 +103,11 @@ export const getCenters = async (req, res) => {
 
 export const getCenterBySlug = async (req, res) => {
   try {
-    // ✅ slug detail page returns full data — that's fine
     const center = await prisma.center.findUnique({
       where: { slug: String(req.params.slug).trim() }
     });
-
-    if (!center) {
-      return res.status(404).json({ error: "Center not found" });
-    }
-
-    const centerWithParsedDetails = {
-      ...center,
-      courseDetails: safeJSONParse(center.courseDetails, [])
-    };
-
-    res.json(centerWithParsedDetails);
+    if (!center) return res.status(404).json({ error: "Center not found" });
+    res.json({ ...center, courseDetails: safeJSONParse(center.courseDetails, []) });
   } catch (error) {
     console.error("❌ Error in getCenterBySlug:", error);
     res.status(500).json({ error: "Server error" });
@@ -140,12 +120,10 @@ export const updateCenter = async (req, res) => {
     const updateData = { ...req.body };
 
     const center = await prisma.center.findUnique({ where: { slug } });
+    if (!center) return res.status(404).json({ error: "Center not found" });
 
-    if (!center) {
-      return res.status(404).json({ error: "Center not found" });
-    }
-
-    if (center.userId !== req.userId) {
+    // ✅ FIXED: check orgId instead of userId
+    if (center.orgId !== req.orgId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -160,12 +138,7 @@ export const updateCenter = async (req, res) => {
       data: updateData
     });
 
-    const centerWithParsedDetails = {
-      ...updatedCenter,
-      courseDetails: safeJSONParse(updatedCenter.courseDetails, [])
-    };
-
-    res.json({ success: true, center: centerWithParsedDetails });
+    res.json({ success: true, center: { ...updatedCenter, courseDetails: safeJSONParse(updatedCenter.courseDetails, []) } });
   } catch (error) {
     console.error("❌ Update error:", error);
     res.status(500).json({ error: "Failed to update center" });
@@ -178,7 +151,8 @@ export const uploadLogo = async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const center = await prisma.center.findUnique({ where: { slug } });
-    if (!center || center.userId !== req.userId) {
+    // ✅ FIXED: check orgId instead of userId
+    if (!center || center.orgId !== req.orgId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -191,11 +165,7 @@ export const uploadLogo = async (req, res) => {
       uploadStream.end(req.file.buffer);
     });
 
-    await prisma.center.update({
-      where: { id: center.id },
-      data: { logo: result.secure_url }
-    });
-
+    await prisma.center.update({ where: { id: center.id }, data: { logo: result.secure_url } });
     res.json({ success: true, logoUrl: result.secure_url });
   } catch (error) {
     console.error("❌ Upload error:", error);
@@ -209,7 +179,8 @@ export const uploadCoverImage = async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const center = await prisma.center.findUnique({ where: { slug } });
-    if (!center || center.userId !== req.userId) {
+    // ✅ FIXED: check orgId instead of userId
+    if (!center || center.orgId !== req.orgId) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -222,11 +193,7 @@ export const uploadCoverImage = async (req, res) => {
       uploadStream.end(req.file.buffer);
     });
 
-    await prisma.center.update({
-      where: { id: center.id },
-      data: { image: result.secure_url }
-    });
-
+    await prisma.center.update({ where: { id: center.id }, data: { image: result.secure_url } });
     res.json({ success: true, imageUrl: result.secure_url });
   } catch (error) {
     console.error("❌ Upload error:", error);
