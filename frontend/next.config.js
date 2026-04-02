@@ -1,28 +1,33 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',   // good for Vercel deployments
+  output: 'standalone',
 
   // ✅ SEO Optimizations
-  compress: true,  // Enable gzip compression
-  trailingSlash: false,  // Consistent URLs (no trailing slash)
-  poweredByHeader: false,  // Remove X-Powered-By header (security)
+  compress: true,
+  trailingSlash: false,
+  poweredByHeader: false,
 
   // ✅ Image optimization
   images: {
-    domains: ['res.cloudinary.com'],  // Allow Cloudinary images
-    formats: ['image/avif', 'image/webp'],  // Modern formats
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+    ],
+    formats: ['image/avif', 'image/webp'],
   },
 
-  // ✅ Sitemap & robots.txt rewrites
-  async rewrites() {
+  // ✅ Security headers
+  async headers() {
     return [
       {
-        source: '/sitemap.xml',
-        destination: 'https://inscovia.onrender.com/sitemap.xml',
-      },
-      {
-        source: '/robots.txt',
-        destination: 'https://inscovia.onrender.com/robots.txt',
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
       },
     ];
   },

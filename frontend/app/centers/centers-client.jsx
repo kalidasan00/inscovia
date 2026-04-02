@@ -30,9 +30,9 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export default function CentersClient() {
-  const [centers, setCenters] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function CentersClient({ initialCenters = [] }) {
+  const [centers, setCenters] = useState(initialCenters);
+  const [loading, setLoading] = useState(initialCenters.length === 0);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [distanceKm, setDistanceKm] = useState(null);
   const [userLat, setUserLat] = useState(null);
@@ -66,15 +66,22 @@ export default function CentersClient() {
   }, []);
 
   useEffect(() => {
+    if (initialCenters.length > 0) return;
+
+    let retries = 0;
+
     async function loadCenters() {
       try {
         const res = await fetch(`${API_URL}/centers`, { cache: "no-store" });
-        if (!res.ok) { setTimeout(loadCenters, 2000); return; }
+        if (!res.ok) {
+          if (retries < 3) { retries++; setTimeout(loadCenters, 2000); }
+          return;
+        }
         const data = await res.json();
         setCenters(data.centers || []);
       } catch (err) {
         console.error("Error reaching backend:", err);
-        setTimeout(loadCenters, 2000);
+        if (retries < 3) { retries++; setTimeout(loadCenters, 2000); }
       } finally {
         setLoading(false);
       }
@@ -159,7 +166,7 @@ export default function CentersClient() {
   // only filter when distanceKm is set AND less than 100 AND user has coordinates
   if (distanceKm && distanceKm < 100 && userLat && userLng) {
     filtered = filtered.filter((c) => {
-      if (!c.latitude || !c.longitude) return true; // include if no coords
+      if (!c.latitude || !c.longitude) return true;
       const dist = getDistanceKm(userLat, userLng, c.latitude, c.longitude);
       return dist <= distanceKm;
     });
@@ -169,7 +176,6 @@ export default function CentersClient() {
   let displayFiltered = filtered;
 
   if (city && !distanceKm && filtered.length === 0 && userLat && userLng && !loading) {
-    // fallback: show centers within 50km
     displayFiltered = centers.filter((c) => {
       if (c.primaryCategory === "STUDY_ABROAD") return false;
       if (!c.latitude || !c.longitude) return false;

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Footer from "../components/Footer";
 import HeroSection from "../components/HeroSection";
 import FeaturedBanner from "../components/FeaturedBanner";
-import AIChatWidget from "../components/AIChatWidget";
 import Link from "next/link";
 import {
   MonitorSmartphone, BookOpen, Building2, ChevronRight,
@@ -12,24 +12,30 @@ import {
   MapPin, Shield, Lock, Cloud, Layout
 } from "lucide-react";
 
-export default function HomeClient() {
-  const [centers, setCenters] = useState([]);
-  const [loading, setLoading] = useState(true);
+const AIChatWidget = dynamic(() => import("../components/AIChatWidget"), { ssr: false });
+
+export default function HomeClient({ initialCenters = [] }) {
+  const [centers, setCenters] = useState(initialCenters);
+  const [loading, setLoading] = useState(initialCenters.length === 0);
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
   useEffect(() => {
+    if (initialCenters.length > 0) return;
+
     let cancelled = false;
+    let retries = 0;
+
     async function loadCenters() {
       try {
         const res = await fetch(`${API_URL}/centers`, { cache: "no-store" });
         if (!res.ok) {
-          if (!cancelled) setTimeout(loadCenters, 2000);
+          if (!cancelled && retries < 3) { retries++; setTimeout(loadCenters, 2000); }
           return;
         }
         const data = await res.json();
         if (!cancelled) setCenters(data.centers || []);
       } catch {
-        if (!cancelled) setTimeout(loadCenters, 2000);
+        if (!cancelled && retries < 3) { retries++; setTimeout(loadCenters, 2000); }
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -14,19 +14,12 @@ export const metadata = {
 
   description: 'Discover and compare top-rated training centers and coaching institutes across India. Technology, Management, Skill Development, and Exam Preparation courses.',
 
-  keywords: [
-    'training centers India',
-    'coaching institutes',
-    'skill development courses',
-    'technology training',
-    'management courses',
-    'exam preparation',
-    'IT coaching',
-    'professional training'
-  ],
-
   authors: [{ name: 'Inscovia' }],
   creator: 'Inscovia',
+
+  alternates: {
+    canonical: 'https://www.inscovia.com',
+  },
 
   robots: {
     index: true,
@@ -46,7 +39,7 @@ export const metadata = {
     url: 'https://www.inscovia.com',
     siteName: 'Inscovia',
     title: 'Inscovia - Find Best Training Centers in India',
-    description: 'Compare 1000+ verified training centers across India',
+    description: 'Discover and compare top-rated training centers across India',
     images: [{
       url: '/og-image.png',
       width: 1200,
@@ -74,7 +67,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <body className="bg-gray-50 text-gray-900">
         <FavoritesProvider>
           <CompareProvider>

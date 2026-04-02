@@ -44,21 +44,13 @@ export async function generateMetadata({ params }) {
 
   const category = center.primaryCategory?.replace(/_/g, ' ').toLowerCase() || 'training';
   const shortDesc = center.description?.substring(0, 150) || `${center.name} in ${center.city}`;
-  const courseKeywords = center.courses?.slice(0, 5) || [];
+  // ✅ SEO FIX: removed courseKeywords — no longer needed after keywords removal
 
   return {
     title: `${center.name} - ${center.city} | Reviews, Courses & Admission`,
     description: `${center.name} in ${center.city}, ${center.state}. ${shortDesc}... Read reviews, compare courses, and get admission details.`,
-    keywords: [
-      center.name,
-      `${center.name} ${center.city}`,
-      category,
-      `${category} courses ${center.city}`,
-      `${category} ${center.city}`,
-      center.city,
-      center.state,
-      ...courseKeywords,
-    ],
+    // ✅ SEO FIX #1: removed keywords[] — Google has ignored this meta tag since 2009.
+    // keeping it was dead weight and can signal spam to Bing crawler.
     openGraph: {
       title: `${center.name} - ${center.city}`,
       description: shortDesc,
@@ -80,7 +72,11 @@ export async function generateMetadata({ params }) {
       images: [center.image || center.logo || '/og-image.png'],
     },
     alternates: {
-      canonical: `https://inscovia.com/centers/${params.slug}`,
+      // ✅ SEO FIX #2: changed inscovia.com → www.inscovia.com
+      // layout.js uses www. as the metadataBase. Google treats inscovia.com and
+      // www.inscovia.com as two different sites — inconsistent canonicals cause
+      // duplicate content issues and split link equity between both versions.
+      canonical: `https://www.inscovia.com/centers/${params.slug}`,
     },
     robots: {
       index: true,
@@ -104,7 +100,8 @@ function buildSchemas(center) {
     '@type': 'EducationalOrganization',
     name: c.name,
     description: c.description,
-    url: `https://inscovia.com/centers/${c.slug}`,
+    // ✅ SEO FIX #2: www consistency
+    url: `https://www.inscovia.com/centers/${c.slug}`,
     image: c.image || c.logo,
     logo: c.logo,
     telephone: c.phone,
@@ -115,11 +112,15 @@ function buildSchemas(center) {
       addressRegion: c.state,
       addressCountry: 'IN',
     },
-    ...(c.rating > 0 && {
+    // ✅ SEO FIX #3: changed (c.rating > 0) → (c.rating > 0 && c.reviewCount > 0)
+    // previously used reviewCount || 1 which meant if reviewCount was 0 or undefined,
+    // Google was told there is 1 review when there isn't. Google can penalize
+    // structured data that doesn't match actual page content — this is a trust signal.
+    ...(c.rating > 0 && c.reviewCount > 0 && {
       aggregateRating: {
         '@type': 'AggregateRating',
         ratingValue: c.rating,
-        reviewCount: c.reviewCount || 1,
+        reviewCount: c.reviewCount,
         bestRating: 5,
         worstRating: 1,
       },
@@ -131,10 +132,11 @@ function buildSchemas(center) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://inscovia.com' },
-      { '@type': 'ListItem', position: 2, name: 'Centers', item: 'https://inscovia.com/centers' },
-      { '@type': 'ListItem', position: 3, name: c.city, item: `https://inscovia.com/centers?city=${c.city}` },
-      { '@type': 'ListItem', position: 4, name: c.name, item: `https://inscovia.com/centers/${c.slug}` },
+      // ✅ SEO FIX #2: www consistency across all breadcrumb URLs
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.inscovia.com' },
+      { '@type': 'ListItem', position: 2, name: 'Centers', item: 'https://www.inscovia.com/centers' },
+      { '@type': 'ListItem', position: 3, name: c.city, item: `https://www.inscovia.com/centers?city=${c.city}` },
+      { '@type': 'ListItem', position: 4, name: c.name, item: `https://www.inscovia.com/centers/${c.slug}` },
     ],
   };
 
@@ -145,7 +147,8 @@ function buildSchemas(center) {
     provider: {
       '@type': 'Organization',
       name: c.name,
-      url: `https://inscovia.com/centers/${c.slug}`,
+      // ✅ SEO FIX #2: www consistency
+      url: `https://www.inscovia.com/centers/${c.slug}`,
     },
     ...(course.fees && {
       offers: { '@type': 'Offer', price: course.fees, priceCurrency: 'INR' },
@@ -157,7 +160,8 @@ function buildSchemas(center) {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Inscovia',
-    url: 'https://inscovia.com',
+    // ✅ SEO FIX #2: www consistency
+    url: 'https://www.inscovia.com',
     logo: 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png',
     contactPoint: {
       '@type': 'ContactPoint',

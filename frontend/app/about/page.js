@@ -1,4 +1,25 @@
+// app/about/page.js
 import { GraduationCap, Target, Users, Award } from "lucide-react";
+
+export const metadata = {
+  title: 'About Inscovia - India\'s Training Center Discovery Platform',
+  description: 'Learn about Inscovia — founded to help students across India find, compare, and review verified training centers and coaching institutes with confidence.',
+  alternates: {
+    canonical: 'https://www.inscovia.com/about',
+  },
+  openGraph: {
+    title: 'About Inscovia - India\'s Training Center Discovery Platform',
+    description: 'Learn about Inscovia — founded to help students across India find, compare, and review verified training centers and coaching institutes.',
+    type: 'website',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'About Inscovia' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Inscovia - India\'s Training Center Discovery Platform',
+    description: 'Learn about Inscovia — founded to help students across India find, compare, and review verified training centers.',
+    images: ['/og-image.png'],
+  },
+};
 
 export default function AboutPage() {
   return (

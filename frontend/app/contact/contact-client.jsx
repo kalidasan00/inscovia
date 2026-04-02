@@ -1,6 +1,4 @@
-// app/contact/page.js  ← replace with this wrapper
-import ContactPage from './contact-client';
-
+// app/contact/metadata.js  ← new file
 export const metadata = {
   title: 'Contact Us | Inscovia',
   description: 'Get in touch with the Inscovia team. We are here to help you find the right training center or answer any questions about our platform.',
@@ -20,5 +18,3 @@ export const metadata = {
     images: ['/og-image.png'],
   },
 };
-
-export { default } from './contact-client';
