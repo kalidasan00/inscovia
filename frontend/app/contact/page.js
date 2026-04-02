@@ -1,24 +1,21 @@
-// app/contact/page.js  ← replace with this wrapper
-import ContactPage from './contact-client';
+// app/contact/page.js
+"use client";
 
 export const metadata = {
   title: 'Contact Us | Inscovia',
-  description: 'Get in touch with the Inscovia team. We are here to help you find the right training center or answer any questions about our platform.',
-  alternates: {
-    canonical: 'https://www.inscovia.com/contact',
-  },
-  openGraph: {
-    title: 'Contact Us | Inscovia',
-    description: 'Get in touch with the Inscovia team.',
-    type: 'website',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Contact Inscovia' }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Contact Us | Inscovia',
-    description: 'Get in touch with the Inscovia team.',
-    images: ['/og-image.png'],
-  },
+  description: 'Get in touch with the Inscovia team.',
+  alternates: { canonical: 'https://www.inscovia.com/contact' },
 };
 
-export { default } from './contact-client';
+export default function ContactPage() {
+  return (
+    <main className="max-w-2xl mx-auto px-4 py-12 pb-24">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Contact Us</h1>
+      <p className="text-gray-600 mb-6">Get in touch with the Inscovia team.</p>
+      <a href="mailto:support@inscovia.com"
+        className="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+        support@inscovia.com
+      </a>
+    </main>
+  );
+}
