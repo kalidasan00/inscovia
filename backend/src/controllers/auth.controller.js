@@ -45,7 +45,6 @@ export const sendOTP = async (req, res) => {
     if (!email || !instituteName) {
       return res.status(400).json({ error: "Email and institute name are required" });
     }
-    // ✅ Check unified User table
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
@@ -171,16 +170,13 @@ export const registerInstitute = async (req, res) => {
       return res.status(400).json({ error: "Primary category cannot be a secondary category" });
     }
 
-    // ✅ Geocode city
     const coords = await geocodeCity(city, district, state);
     const orgSlug = generateSlug(instituteName, city);
     const centerSlug = generateSlug(instituteName, city);
 
-    // ✅ Check if user already exists (same email, adding new org)
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
     if (existingUser) {
-      // User exists — create new org + member + center for them
       const result = await prisma.$transaction(async (tx) => {
         const org = await tx.organization.create({
           data: {
@@ -225,7 +221,6 @@ export const registerInstitute = async (req, res) => {
       });
     }
 
-    // New user — create User + Org + Member + Center
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await prisma.$transaction(async (tx) => {
@@ -329,7 +324,6 @@ export const loginInstitute = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) return res.status(401).json({ error: "Invalid credentials" });
 
-    // ✅ Must have at least one org to login as institute
     if (!user.orgMemberships.length) {
       return res.status(403).json({ error: "No organization found for this account" });
     }
@@ -378,6 +372,7 @@ export const getCurrentUser = async (req, res) => {
         orgMemberships: {
           where: { status: "ACTIVE" },
           select: {
+            id: true,
             role: true,
             org: {
               select: {
@@ -388,6 +383,8 @@ export const getCurrentUser = async (req, res) => {
                 centers: {
                   select: {
                     id: true, slug: true, name: true,
+                    // ✅ ADDED: orgId so frontend TeamSection can use it
+                    orgId: true,
                     primaryCategory: true, secondaryCategories: true,
                     teachingMode: true, state: true, district: true,
                     city: true, location: true, latitude: true, longitude: true,
@@ -435,9 +432,15 @@ export const getCurrentUser = async (req, res) => {
         district: activeOrg?.district,
         city: activeOrg?.city,
         location: activeOrg?.location,
+        // ✅ ADDED: role for TeamSection currentUserRole
         role: activeMembership?.role || null,
       },
       center,
+      // ✅ ADDED: membership with role for frontend
+      membership: {
+        id: activeMembership?.id || null,
+        role: activeMembership?.role || null,
+      },
       organization: activeOrg,
       organizations: user.orgMemberships.map(m => ({
         id: m.org.id, name: m.org.name, slug: m.org.slug,
