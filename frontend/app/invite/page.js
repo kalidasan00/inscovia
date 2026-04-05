@@ -11,12 +11,11 @@ function InvitePage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const [status, setStatus] = useState("loading"); // loading | valid | invalid | accepting | accepted | error
+  const [status, setStatus] = useState("loading");
   const [invite, setInvite] = useState(null);
   const [hasAccount, setHasAccount] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ Load invite info on mount
   useEffect(() => {
     if (!token) { setStatus("invalid"); return; }
     fetchInviteInfo();
@@ -37,18 +36,14 @@ function InvitePage() {
   };
 
   const handleAccept = async () => {
-    // ✅ Check if user is logged in
-    const token_auth = localStorage.getItem("instituteToken");
+    // ✅ FIXED: check userToken first, then instituteToken
+    const token_auth = localStorage.getItem("userToken") || localStorage.getItem("instituteToken");
     if (!token_auth) {
-      // Not logged in — redirect to login/register with invite token
-      const path = hasAccount
-        ? `/institute/login?invite=${token}`
-        : `/institute/register?invite=${token}`;
-      router.push(path);
+      // ✅ FIXED: redirect to /login not /institute/login
+      router.push(`/login?invite=${token}`);
       return;
     }
 
-    // ✅ Logged in — accept directly
     setStatus("accepting");
     try {
       const res = await fetch(`${API_URL}/org/invite/${token}/accept`, {
@@ -58,13 +53,23 @@ function InvitePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to accept invite");
 
-      // ✅ Update token with new org
+      // ✅ Save institute session
       localStorage.setItem("instituteToken", data.token);
       localStorage.setItem("instituteLoggedIn", "true");
-      window.dispatchEvent(new Event("authStateChanged"));
 
+      // ✅ FIXED: refresh userOrgs from backend so switcher shows new org immediately
+      try {
+        const orgsRes = await fetch(`${API_URL}/org/my`, {
+          headers: { Authorization: `Bearer ${data.token}` },
+        });
+        const orgsData = await orgsRes.json();
+        if (orgsRes.ok && orgsData.organizations) {
+          localStorage.setItem("userOrgs", JSON.stringify(orgsData.organizations));
+        }
+      } catch { }
+
+      window.dispatchEvent(new Event("authStateChanged"));
       setStatus("accepted");
-      // Redirect to dashboard after 2 seconds
       setTimeout(() => router.push("/institute/dashboard"), 2000);
     } catch (err) {
       setStatus("error");
@@ -75,7 +80,6 @@ function InvitePage() {
   const roleLabel = invite?.role === "MANAGER" ? "Manager" : "Staff";
   const roleColor = invite?.role === "MANAGER" ? "text-blue-600 bg-blue-50" : "text-green-600 bg-green-50";
 
-  // ── Loading ──
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -87,7 +91,6 @@ function InvitePage() {
     );
   }
 
-  // ── Invalid ──
   if (status === "invalid") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -105,7 +108,6 @@ function InvitePage() {
     );
   }
 
-  // ── Accepted ──
   if (status === "accepted") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -125,11 +127,9 @@ function InvitePage() {
     );
   }
 
-  // ── Valid invite ──
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="bg-white rounded-2xl shadow-lg max-w-sm w-full overflow-hidden">
-        {/* Header */}
         <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 text-white text-center">
           <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,7 +139,6 @@ function InvitePage() {
           <h1 className="text-xl font-bold">You're Invited!</h1>
         </div>
 
-        {/* Invite details */}
         <div className="p-6">
           <div className="bg-gray-50 rounded-xl p-4 mb-5">
             <p className="text-xs text-gray-500 mb-1">Organization</p>
@@ -153,7 +152,6 @@ function InvitePage() {
             </div>
           </div>
 
-          {/* Role permissions */}
           <div className="mb-5">
             <p className="text-xs font-semibold text-gray-600 mb-2">As {roleLabel} you can:</p>
             {invite?.role === "MANAGER" ? (
@@ -175,7 +173,6 @@ function InvitePage() {
             )}
           </div>
 
-          {/* Expiry notice */}
           <p className="text-xs text-gray-400 text-center mb-4">
             Invite expires: {new Date(invite?.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
@@ -184,7 +181,6 @@ function InvitePage() {
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">{error}</div>
           )}
 
-          {/* Accept button */}
           <button
             onClick={handleAccept}
             disabled={status === "accepting"}

@@ -7,6 +7,7 @@ import Footer from "../../../components/Footer";
 import { X, AlertCircle, LogOut } from "lucide-react";
 import GallerySection from "./GallerySection";
 import PromoteBannerSection from "./PromoteBannerSection";
+import TeamSection from "./TeamSection";
 import dynamic from "next/dynamic";
 
 // ✅ ADDED: LocationEditor — ssr:false required for Leaflet
@@ -19,6 +20,7 @@ export default function InstituteDashboard() {
   const [institute, setInstitute] = useState(null);
   const [center, setCenter] = useState(null);
   const [centerSlug, setCenterSlug] = useState(null);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -44,6 +46,8 @@ export default function InstituteDashboard() {
       setInstitute(data.user);
       setCenter(data.center);
       setCenterSlug(data.center?.slug);
+      // ✅ ADDED: get current user role from membership
+      setCurrentUserRole(data.user?.role || data.membership?.role || "OWNER");
       localStorage.setItem("instituteLoggedIn", "true");
     } catch {
       localStorage.removeItem("instituteToken");
@@ -574,6 +578,14 @@ export default function InstituteDashboard() {
                   }}
                 />
               </div>
+            )}
+
+            {/* ✅ ADDED: Team Section */}
+            {(center?.orgId || institute?.role) && (
+              <TeamSection
+                orgId={center?.orgId || institute?.organization?.id}
+                currentUserRole={currentUserRole}
+              />
             )}
 
             {/* Promote Banner Section */}
