@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
-import { Heart, GitCompare, Search, MessageSquare, User, Mail, Phone, LogOut, X, AlertCircle, Building2, ChevronRight } from "lucide-react";
+import { Heart, GitCompare, Search, MessageSquare, User, Mail, Phone, LogOut, X, AlertCircle, Building2, ChevronRight, Plus, LogIn } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -13,9 +13,11 @@ export default function UserDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  // ✅ ADDED: organizations for institute switcher
   const [orgs, setOrgs] = useState([]);
   const [switchingOrg, setSwitchingOrg] = useState(null);
+  // ✅ ADDED: leave org state
+  const [leavingOrg, setLeavingOrg] = useState(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(null); // org object
   const router = useRouter();
   const { favoritesCount } = useFavorites();
   const { compareCount } = useCompare();
@@ -26,12 +28,11 @@ export default function UserDashboard() {
     const isLoggedIn = localStorage.getItem("userLoggedIn") === "true";
     const userData = localStorage.getItem("userData");
     if (!isLoggedIn || !userData) {
-      router.push("/login"); // ✅ FIXED: /user-menu → /login
+      router.push("/login");
       return;
     }
     try {
       setUser(JSON.parse(userData));
-      // ✅ ADDED: load orgs for switcher
       const savedOrgs = localStorage.getItem("userOrgs");
       if (savedOrgs) setOrgs(JSON.parse(savedOrgs));
     } catch {
@@ -41,7 +42,6 @@ export default function UserDashboard() {
     }
   };
 
-  // ✅ ADDED: switch to institute dashboard
   const handleSwitchToInstitute = async (org) => {
     setSwitchingOrg(org.id);
     try {
@@ -57,7 +57,6 @@ export default function UserDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // ✅ Save institute auth
       localStorage.setItem("instituteLoggedIn", "true");
       localStorage.setItem("instituteToken", data.token);
       localStorage.setItem("instituteData", JSON.stringify(user));
@@ -68,6 +67,49 @@ export default function UserDashboard() {
       console.error("Switch error:", err.message);
     } finally {
       setSwitchingOrg(null);
+    }
+  };
+
+  // ✅ ADDED: leave org
+  const handleLeaveOrg = async () => {
+    if (!showLeaveModal) return;
+    setLeavingOrg(showLeaveModal.id);
+    try {
+      const userToken = localStorage.getItem("userToken");
+
+      // ✅ Get membership id from backend
+      const membersRes = await fetch(`${API_URL}/org/${showLeaveModal.id}/members`, {
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+      const membersData = await membersRes.json();
+      if (!membersRes.ok) throw new Error(membersData.error);
+
+      const myMembership = membersData.members.find(m => m.user?.email === user?.email);
+      if (!myMembership) throw new Error("Membership not found");
+
+      // ✅ OWNER cannot leave — must transfer ownership first
+      if (myMembership.role === "OWNER") {
+        alert("You are the owner. Transfer ownership before leaving.");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/org/${showLeaveModal.id}/members/${myMembership.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${userToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // ✅ Update local orgs list
+      const updatedOrgs = orgs.filter(o => o.id !== showLeaveModal.id);
+      setOrgs(updatedOrgs);
+      localStorage.setItem("userOrgs", JSON.stringify(updatedOrgs));
+      window.dispatchEvent(new Event("authStateChanged"));
+      setShowLeaveModal(null);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLeavingOrg(null);
     }
   };
 
@@ -111,34 +153,68 @@ export default function UserDashboard() {
     <>
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-8">
 
-        {/* ✅ ADDED: Institute switcher banner — shows only if user has orgs */}
-        {orgs.length > 0 && (
-          <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-xl p-3">
-            <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1.5">
+        {/* ✅ Your Institutes section */}
+        <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5" />
               Your Institutes
             </p>
+            <Link href="/institute/register"
+              className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-lg hover:bg-green-200 transition-colors">
+              <Plus className="w-3 h-3" />
+              Add
+            </Link>
+          </div>
+
+          {orgs.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-xs text-gray-500 mb-2">No institutes yet</p>
+              <Link href="/institute/register"
+                className="text-xs font-medium text-indigo-600">
+                Register your institute →
+              </Link>
+            </div>
+          ) : (
             <div className="space-y-1.5">
               {orgs.map((org) => (
-                <button key={org.id} onClick={() => handleSwitchToInstitute(org)}
-                  disabled={switchingOrg === org.id}
-                  className="w-full flex items-center gap-2.5 p-2.5 bg-white rounded-lg border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-50 transition-all text-left disabled:opacity-50">
-                  <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-4 h-4 text-indigo-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-900 truncate">{org.name}</p>
-                    <p className="text-[10px] text-gray-500">{org.city} · <span className="capitalize text-indigo-600">{org.role?.toLowerCase()}</span></p>
-                  </div>
-                  {switchingOrg === org.id
-                    ? <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                    : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  }
-                </button>
+                <div key={org.id} className="flex items-center gap-2 bg-white rounded-lg border border-indigo-100 p-2.5">
+                  {/* Switch button */}
+                  <button
+                    onClick={() => handleSwitchToInstitute(org)}
+                    disabled={switchingOrg === org.id}
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left disabled:opacity-50"
+                  >
+                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-900 truncate">{org.name}</p>
+                      <p className="text-[10px] text-gray-500">
+                        {org.city} · <span className="capitalize text-indigo-600">{org.role?.toLowerCase()}</span>
+                      </p>
+                    </div>
+                    {switchingOrg === org.id
+                      ? <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                      : <LogIn className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                    }
+                  </button>
+
+                  {/* ✅ ADDED: Leave button — only for non-owners */}
+                  {org.role !== "OWNER" && (
+                    <button
+                      onClick={() => setShowLeaveModal(org)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                      title="Leave institute"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Header */}
         <div className="bg-white rounded-lg border shadow-sm p-4 sm:p-5 mb-4">
@@ -270,6 +346,38 @@ export default function UserDashboard() {
           </Link>
         </div>
       </main>
+
+      {/* ✅ ADDED: Leave org modal */}
+      {showLeaveModal && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowLeaveModal(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Leave Institute?</h3>
+                <p className="text-gray-600 text-sm">
+                  Are you sure you want to leave <strong>{showLeaveModal.name}</strong>? You will lose access to this institute's dashboard.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowLeaveModal(null)}
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLeaveOrg}
+                  disabled={leavingOrg === showLeaveModal.id}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
+                  {leavingOrg === showLeaveModal.id ? "Leaving..." : "Leave"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Logout Modal */}
       {showLogoutModal && (

@@ -45,14 +45,11 @@ function LoginPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // ✅ After login — always go to user dashboard
   const handlePostLogin = async (data) => {
-    // ✅ Save user auth
     localStorage.setItem("userToken", data.token);
     localStorage.setItem("userLoggedIn", "true");
     localStorage.setItem("userData", JSON.stringify(data.user));
 
-    // ✅ Save organizations for institute switcher in navbar
     if (data.organizations && data.organizations.length > 0) {
       localStorage.setItem("userOrgs", JSON.stringify(data.organizations));
     } else {
@@ -68,7 +65,6 @@ function LoginPage() {
       return;
     }
 
-    // ✅ Always go to user dashboard — institute switch happens from navbar
     const savedCity = localStorage.getItem("userCity");
     if (!savedCity) {
       setShowLocationPrompt(true);
@@ -77,7 +73,7 @@ function LoginPage() {
     }
   };
 
-  // ✅ Accept invite after login
+  // ✅ Accept invite after login — refreshes userOrgs from backend
   const acceptInvite = async (token, authToken) => {
     try {
       const res = await fetch(`${API_URL}/org/invite/${token}/accept`, {
@@ -89,6 +85,18 @@ function LoginPage() {
 
       localStorage.setItem("instituteLoggedIn", "true");
       localStorage.setItem("instituteToken", data.token);
+
+      // ✅ ADDED: refresh userOrgs so switcher shows new org immediately
+      try {
+        const orgsRes = await fetch(`${API_URL}/org/my`, {
+          headers: { Authorization: `Bearer ${data.token}` },
+        });
+        const orgsData = await orgsRes.json();
+        if (orgsRes.ok && orgsData.organizations) {
+          localStorage.setItem("userOrgs", JSON.stringify(orgsData.organizations));
+        }
+      } catch { }
+
       window.dispatchEvent(new Event("authStateChanged"));
       router.push("/institute/dashboard");
     } catch (err) {
@@ -96,36 +104,11 @@ function LoginPage() {
     }
   };
 
-  // ✅ Switch to selected org
-  const handleSelectOrg = async (org) => {
-    try {
-      const res = await fetch(`${API_URL}/org/switch`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${pendingAuthData.token}`,
-        },
-        body: JSON.stringify({ orgId: org.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      localStorage.setItem("instituteToken", data.token);
-      localStorage.setItem("instituteOrgs", JSON.stringify(organizations));
-      window.dispatchEvent(new Event("authStateChanged"));
-      router.push("/institute/dashboard");
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  // ✅ Unified login — one endpoint for everyone
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      // ✅ Try institute login first (has orgs)
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,7 +121,6 @@ function LoginPage() {
         return;
       }
 
-      // ✅ If institute login fails, try user login
       const userRes = await fetch(`${API_URL}/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -159,7 +141,6 @@ function LoginPage() {
     }
   };
 
-  // ✅ Register (user)
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError("");
@@ -248,7 +229,6 @@ function LoginPage() {
 
   const inputClass = "w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm";
 
-  // ── Location prompt ──
   if (showLocationPrompt) {
     return (
       <LocationPrompt onDone={() => {
@@ -273,6 +253,9 @@ function LoginPage() {
               </div>
               <h1 className="text-2xl font-bold">Welcome to Inscovia</h1>
               <p className="text-blue-100 text-sm mt-1">Students & Institutes — one login</p>
+              {inviteToken && (
+                <p className="mt-2 text-xs bg-white/20 rounded-lg px-3 py-1.5 inline-block">🎉 You have a pending invite</p>
+              )}
             </div>
             <div className="p-6 space-y-3">
               <button onClick={() => { setActiveTab("login"); setError(""); }}
