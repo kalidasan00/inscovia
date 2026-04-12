@@ -288,7 +288,6 @@ function CitySelector({ city, onCityChange }) {
             null;
           if (detected) {
             onCityChange(detected);
-            // ✅ ADDED: save raw coordinates for distance filter
             localStorage.setItem("userLat", String(latitude));
             localStorage.setItem("userLng", String(longitude));
             setOpen(false);
@@ -617,11 +616,14 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Mobile Menu — ✅ FIXED: max-h so it never goes outside screen + overflow-y-auto to scroll inside */}
+        {/* ✅ FIXED: mobile menu — removed overflow-hidden, kept overflow-y-auto */}
         {isOpen && (
           <>
-            <div className="md:hidden fixed inset-0 top-16 bg-black/20 z-40" onClick={() => setIsOpen(false)} />
-            <div className="md:hidden fixed left-0 right-0 top-16 z-50 bg-white border-t shadow-lg rounded-b-2xl overflow-hidden max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div
+              className="md:hidden fixed inset-0 top-16 bg-black/20 z-40"
+              onClick={() => setIsOpen(false)}
+            />
+            <div className="md:hidden fixed left-0 right-0 top-16 z-50 bg-white border-t shadow-lg rounded-b-2xl max-h-[calc(100vh-4rem)] overflow-y-auto">
               <div className="space-y-0">
                 <Link href="/"
                   className={`flex items-center gap-3 px-4 py-3.5 text-sm border-b border-gray-100 ${pathname === '/' ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}`}

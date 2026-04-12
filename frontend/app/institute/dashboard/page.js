@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AccountSwitcher from "../../../components/AccountSwitcher";
 import Footer from "../../../components/Footer";
 import { X, AlertCircle, LogOut } from "lucide-react";
 import GallerySection from "./GallerySection";
@@ -10,7 +11,7 @@ import PromoteBannerSection from "./PromoteBannerSection";
 import TeamSection from "./TeamSection";
 import dynamic from "next/dynamic";
 
-// ✅ ADDED: LocationEditor — ssr:false required for Leaflet
+// ✅ LocationEditor — ssr:false required for Leaflet
 const LocationEditor = dynamic(() => import("./LocationEditor"), {
   ssr: false,
   loading: () => <div className="h-[340px] bg-gray-100 rounded-2xl animate-pulse mb-3" />,
@@ -46,7 +47,6 @@ export default function InstituteDashboard() {
       setInstitute(data.user);
       setCenter(data.center);
       setCenterSlug(data.center?.slug);
-      // ✅ ADDED: get current user role from membership
       setCurrentUserRole(data.user?.role || data.membership?.role || "OWNER");
       localStorage.setItem("instituteLoggedIn", "true");
     } catch {
@@ -201,6 +201,12 @@ export default function InstituteDashboard() {
   return (
     <>
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
+
+        {/* ✅ AccountSwitcher — above the dashboard card, matches user dashboard style */}
+        <div className="mb-3">
+          <AccountSwitcher mode="institute" />
+        </div>
+
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
 
           {/* Header Banner */}
@@ -208,10 +214,13 @@ export default function InstituteDashboard() {
             {center?.image && (
               <img src={center.image} alt={institute.instituteName} className="w-full h-full object-cover" />
             )}
+
+            {/* Logout — top-right */}
             <button onClick={() => setShowLogoutModal(true)}
               className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-lg transition-colors shadow-sm" title="Logout">
               <LogOut className="w-4 h-4 text-gray-700" />
             </button>
+
             <div className="absolute -bottom-10 left-3">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-xl border-4 border-white overflow-hidden flex items-center justify-center">
                 {center?.logo ? (
@@ -565,7 +574,7 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* ✅ ADDED: Location Editor — institutes can set/update their map location */}
+            {/* ✅ Location Editor */}
             {center?.slug && (
               <div className="mb-3">
                 <LocationEditor
@@ -580,7 +589,7 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* ✅ ADDED: Team Section */}
+            {/* ✅ Team Section */}
             {(center?.orgId || institute?.role) && (
               <TeamSection
                 orgId={center?.orgId || institute?.organization?.id}
