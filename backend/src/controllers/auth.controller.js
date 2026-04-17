@@ -160,9 +160,7 @@ export const registerInstitute = async (req, res) => {
     if (!validModes.includes(resolvedTeachingMode)) {
       return res.status(400).json({ error: "Invalid teaching mode" });
     }
-    if (secondaryCategories.length > 2) {
-      return res.status(400).json({ error: "Maximum 2 secondary categories allowed" });
-    }
+    // ✅ REMOVED: Maximum 2 secondary categories limit
     if (secondaryCategories.some(cat => !validCategories.includes(cat))) {
       return res.status(400).json({ error: "Invalid secondary category" });
     }
@@ -383,7 +381,6 @@ export const getCurrentUser = async (req, res) => {
                 centers: {
                   select: {
                     id: true, slug: true, name: true,
-                    // ✅ ADDED: orgId so frontend TeamSection can use it
                     orgId: true,
                     primaryCategory: true, secondaryCategories: true,
                     teachingMode: true, state: true, district: true,
@@ -407,7 +404,6 @@ export const getCurrentUser = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // ✅ Use orgId from token to find active org
     const activeOrgId = req.orgId;
     const activeMembership = activeOrgId
       ? user.orgMemberships.find(m => m.org.id === activeOrgId)
@@ -423,7 +419,6 @@ export const getCurrentUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         isVerified: user.isVerified,
-        // ✅ Backward compat with existing frontend
         instituteName: activeOrg?.name || user.name,
         primaryCategory: activeOrg?.primaryCategory,
         secondaryCategories: activeOrg?.secondaryCategories,
@@ -432,11 +427,9 @@ export const getCurrentUser = async (req, res) => {
         district: activeOrg?.district,
         city: activeOrg?.city,
         location: activeOrg?.location,
-        // ✅ ADDED: role for TeamSection currentUserRole
         role: activeMembership?.role || null,
       },
       center,
-      // ✅ ADDED: membership with role for frontend
       membership: {
         id: activeMembership?.id || null,
         role: activeMembership?.role || null,
