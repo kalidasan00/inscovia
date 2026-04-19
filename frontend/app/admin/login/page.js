@@ -1,7 +1,9 @@
+// app/admin/login/page.js
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -10,8 +12,12 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // ✅ FIXED: Use environment variable
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+  // ✅ Redirect if already logged in
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("adminToken");
+    if (token) router.replace("/admin/dashboard");
+  }, [router]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,7 +28,7 @@ export default function AdminLogin() {
       const res = await fetch(`${API_URL}/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
@@ -33,14 +39,17 @@ export default function AdminLogin() {
         return;
       }
 
-      // Save token and admin info
+      // ✅ Store in both localStorage AND cookie
+      // localStorage → used by layout/sidebar
+      // cookie → read by middleware for edge protection
       localStorage.setItem("adminToken", data.token);
       localStorage.setItem("adminInfo", JSON.stringify(data.admin));
 
-      // ✅ FIXED: Use Next.js router instead of window.location
+      // ✅ Set cookie so middleware can read it (no JS needed at edge)
+      document.cookie = `adminToken=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
+
       router.push("/admin/dashboard");
-    } catch (err) {
-      console.error("Login error:", err);
+    } catch {
       setError("Failed to connect to server. Please check your connection.");
       setLoading(false);
     }
@@ -73,13 +82,12 @@ export default function AdminLogin() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="admin@inscovia.com"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Password
@@ -87,13 +95,12 @@ export default function AdminLogin() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
-
           <button
             type="submit"
             disabled={loading}
