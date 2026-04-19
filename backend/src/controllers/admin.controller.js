@@ -3,35 +3,37 @@ import prisma from "../lib/prisma.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// Admin Login
+// ─── Admin Login ─────────────────────────────────────────────────────────────
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    console.log('🔍 Admin login attempt:', email);
 
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    const admin = await prisma.instituteUser.findUnique({ where: { email } });
+    const admin = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true, name: true, email: true, password: true,
+        role: true, adminRole: true, permissions: true, isActive: true,
+      },
+    });
 
     if (!admin || admin.role !== "ADMIN") {
       return res.status(401).json({ error: "Invalid admin credentials" });
     }
-
     if (!admin.isActive) {
       return res.status(403).json({ error: "Admin account is deactivated" });
     }
 
     const isPasswordValid = await bcrypt.compare(password, admin.password);
-
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid admin credentials" });
     }
 
     const token = jwt.sign(
-      { id: admin.id, email: admin.email, role: admin.role },
+      { id: admin.id, email: admin.email, role: admin.role, adminRole: admin.adminRole, permissions: admin.permissions },
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "7d" }
     );
@@ -40,7 +42,7 @@ export const adminLogin = async (req, res) => {
       success: true,
       message: "Admin login successful",
       token,
-      admin: { id: admin.id, name: admin.instituteName, email: admin.email, role: admin.role }
+      admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role, adminRole: admin.adminRole, permissions: admin.permissions },
     });
   } catch (error) {
     console.error("❌ Admin login error:", error);
@@ -48,290 +50,298 @@ export const adminLogin = async (req, res) => {
   }
 };
 
-// Get Dashboard Statistics
+// ─── Create Admin (SUPER_ADMIN only) ─────────────────────────────────────────
+export const createAdmin = async (req, res) => {
+  try {
+    if (req.adminRole !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Only Super Admin can create admins" });
+    }
+
+    const { name, email, password, phone, permissions } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Name, email and password are required" });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return res.status(409).json({ error: "Email already exists" });
+
+    const hashed = await bcrypt.hash(password, 12);
+    const admin = await prisma.user.create({
+      data: {
+        name, email, password: hashed, phone: phone || "",
+        role: "ADMIN", adminRole: "ADMIN",
+        permissions: permissions || [],
+        isVerified: true, isActive: true,
+      },
+      select: { id: true, name: true, email: true, role: true, adminRole: true, permissions: true, isActive: true, createdAt: true },
+    });
+
+    res.status(201).json({ success: true, admin });
+  } catch (error) {
+    console.error("❌ Create admin error:", error);
+    res.status(500).json({ error: "Failed to create admin" });
+  }
+};
+
+// ─── Get All Admins (SUPER_ADMIN only) ───────────────────────────────────────
+export const getAllAdmins = async (req, res) => {
+  try {
+    if (req.adminRole !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Only Super Admin can view admins" });
+    }
+
+    const admins = await prisma.user.findMany({
+      where: { role: "ADMIN" },
+      select: { id: true, name: true, email: true, adminRole: true, permissions: true, isActive: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({ admins });
+  } catch (error) {
+    console.error("❌ Get admins error:", error);
+    res.status(500).json({ error: "Failed to fetch admins" });
+  }
+};
+
+// ─── Update Admin Permissions (SUPER_ADMIN only) ─────────────────────────────
+export const updateAdminPermissions = async (req, res) => {
+  try {
+    if (req.adminRole !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Only Super Admin can update permissions" });
+    }
+
+    const { id } = req.params;
+    const { permissions, isActive } = req.body;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(permissions !== undefined && { permissions }),
+        ...(isActive !== undefined && { isActive }),
+      },
+      select: { id: true, name: true, email: true, adminRole: true, permissions: true, isActive: true },
+    });
+
+    res.json({ success: true, admin: updated });
+  } catch (error) {
+    console.error("❌ Update permissions error:", error);
+    res.status(500).json({ error: "Failed to update permissions" });
+  }
+};
+
+// ─── Delete Admin (SUPER_ADMIN only) ─────────────────────────────────────────
+export const deleteAdmin = async (req, res) => {
+  try {
+    if (req.adminRole !== "SUPER_ADMIN") {
+      return res.status(403).json({ error: "Only Super Admin can delete admins" });
+    }
+
+    const { id } = req.params;
+
+    // ✅ Prevent self-deletion
+    if (id === req.userId) {
+      return res.status(400).json({ error: "Cannot delete your own account" });
+    }
+
+    // ✅ Verify target exists
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    await prisma.user.delete({ where: { id } });
+
+    console.log(`✅ Admin deleted: ${target.email} by ${req.userId}`);
+    res.json({ success: true, message: `Admin ${target.email} deleted` });
+  } catch (error) {
+    console.error("❌ deleteAdmin error:", error);
+    res.status(500).json({ error: "Failed to delete admin" });
+  }
+};
+
+// ─── Dashboard Stats ──────────────────────────────────────────────────────────
 export const getDashboardStats = async (req, res) => {
   try {
-    const [
-      totalCenters,
-      totalInstitutes,
-      pendingInstitutes,
-      activeInstitutes,
-      totalUsers,
-      recentCenters,
-      recentReviews
-    ] = await Promise.all([
+    const [totalCenters, totalUsers, totalReviews, recentCenters, recentReviews] = await Promise.all([
       prisma.center.count(),
-      prisma.instituteUser.count({ where: { role: "INSTITUTE" } }),
-      prisma.instituteUser.count({ where: { role: "INSTITUTE", isVerified: false } }),
-      prisma.instituteUser.count({ where: { role: "INSTITUTE", isActive: true } }),
-      prisma.user.count(),
+      prisma.user.count({ where: { role: "USER" } }),
+      prisma.review.count(),
       prisma.center.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { owner: { select: { instituteName: true, email: true } } }
+        take: 5, orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, city: true, createdAt: true },
       }),
       prisma.review.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { center: { select: { name: true } } }
-      })
+        take: 5, orderBy: { createdAt: "desc" },
+        include: { center: { select: { name: true } } },
+      }),
     ]);
 
-    res.json({
-      stats: { totalCenters, totalInstitutes, pendingInstitutes, activeInstitutes, totalUsers },
-      recentCenters,
-      recentReviews
-    });
+    res.json({ stats: { totalCenters, totalUsers, totalReviews }, recentCenters, recentReviews });
   } catch (error) {
     console.error("❌ Dashboard stats error:", error);
     res.status(500).json({ error: "Failed to fetch dashboard stats" });
   }
 };
 
-// Get All Institutes
+// ─── Institutes ───────────────────────────────────────────────────────────────
 export const getAllInstitutes = async (req, res) => {
   try {
     const { status } = req.query;
-    let where = { role: "INSTITUTE" };
-
-    if (status === "pending") where.isVerified = false;
-    else if (status === "verified") where.isVerified = true;
-    else if (status === "active") { where.isActive = true; where.isVerified = true; }
+    const where = {};
+    if (status === "active") where.isActive = true;
     else if (status === "inactive") where.isActive = false;
 
-    const institutes = await prisma.instituteUser.findMany({
+    const institutes = await prisma.organization.findMany({
       where,
-      include: { _count: { select: { centers: true } } },
-      orderBy: { createdAt: 'desc' }
+      include: { _count: { select: { centers: true, members: true } } },
+      orderBy: { createdAt: "desc" },
     });
 
     res.json({ institutes });
   } catch (error) {
-    console.error("Get institutes error:", error);
+    console.error("❌ Get institutes error:", error);
     res.status(500).json({ error: "Failed to fetch institutes" });
   }
 };
 
-// Approve Institute
 export const approveInstitute = async (req, res) => {
   try {
     const { id } = req.params;
-    const institute = await prisma.instituteUser.update({
-      where: { id },
-      data: { isVerified: true, isActive: true }
-    });
-    res.json({ success: true, message: "Institute approved successfully", institute });
+    const institute = await prisma.organization.update({ where: { id }, data: { isActive: true } });
+    res.json({ success: true, institute });
   } catch (error) {
-    console.error("Approve institute error:", error);
     res.status(500).json({ error: "Failed to approve institute" });
   }
 };
 
-// Delete Institute
 export const deleteInstitute = async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.instituteUser.delete({ where: { id } });
-    res.json({ success: true, message: "Institute deleted successfully" });
+    await prisma.organization.delete({ where: { id } });
+    res.json({ success: true, message: "Institute deleted" });
   } catch (error) {
-    console.error("Delete institute error:", error);
     res.status(500).json({ error: "Failed to delete institute" });
   }
 };
 
-// Toggle Institute Active Status
 export const toggleInstituteStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const institute = await prisma.instituteUser.findUnique({ where: { id } });
-    if (!institute) return res.status(404).json({ error: "Institute not found" });
-
-    const updated = await prisma.instituteUser.update({
-      where: { id },
-      data: { isActive: !institute.isActive }
-    });
-
-    res.json({
-      success: true,
-      message: `Institute ${updated.isActive ? 'activated' : 'deactivated'} successfully`,
-      institute: updated
-    });
+    const org = await prisma.organization.findUnique({ where: { id } });
+    if (!org) return res.status(404).json({ error: "Institute not found" });
+    const updated = await prisma.organization.update({ where: { id }, data: { isActive: !org.isActive } });
+    res.json({ success: true, institute: updated });
   } catch (error) {
-    console.error("Toggle status error:", error);
-    res.status(500).json({ error: "Failed to update status" });
+    res.status(500).json({ error: "Failed to toggle status" });
   }
 };
 
-// Get All Centers
+// ─── Centers ──────────────────────────────────────────────────────────────────
 export const getAllCenters = async (req, res) => {
   try {
     const centers = await prisma.center.findMany({
-      include: {
-        owner: {
-          select: { instituteName: true, email: true, phone: true, isVerified: true, isActive: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
+      include: { org: { select: { name: true, id: true } } },
+      orderBy: { createdAt: "desc" },
     });
     res.json({ centers });
   } catch (error) {
-    console.error("Get centers error:", error);
     res.status(500).json({ error: "Failed to fetch centers" });
   }
 };
 
-// Delete Center
 export const deleteCenter = async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.center.delete({ where: { id } });
-    res.json({ success: true, message: "Center deleted successfully" });
+    res.json({ success: true, message: "Center deleted" });
   } catch (error) {
-    console.error("Delete center error:", error);
     res.status(500).json({ error: "Failed to delete center" });
   }
 };
 
-// Get All Users
+// ─── Users ────────────────────────────────────────────────────────────────────
 export const getAllUsers = async (req, res) => {
   try {
     const { search } = req.query;
-
     const where = search
       ? {
+          role: "USER",
           OR: [
             { name: { contains: search, mode: "insensitive" } },
             { email: { contains: search, mode: "insensitive" } },
-            { phone: { contains: search, mode: "insensitive" } }
-          ]
+            { phone: { contains: search, mode: "insensitive" } },
+          ],
         }
-      : {};
+      : { role: "USER" };
 
     const users = await prisma.user.findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        gender: true,
-        isActive: true,
-        createdAt: true
-      },
-      orderBy: { createdAt: 'desc' }
+      select: { id: true, name: true, email: true, phone: true, gender: true, isActive: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
     });
 
     res.json({ users, total: users.length });
   } catch (error) {
-    console.error("Get users error:", error);
     res.status(500).json({ error: "Failed to fetch users" });
   }
 };
 
-// Delete User
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.user.delete({ where: { id } });
-    res.json({ success: true, message: "User deleted successfully" });
+    res.json({ success: true, message: "User deleted" });
   } catch (error) {
-    console.error("Delete user error:", error);
     res.status(500).json({ error: "Failed to delete user" });
   }
 };
 
-// Toggle User Active Status
 export const toggleUserStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: "User not found" });
-
-    const updated = await prisma.user.update({
-      where: { id },
-      data: { isActive: !user.isActive }
-    });
-
-    res.json({
-      success: true,
-      message: `User ${updated.isActive ? 'activated' : 'deactivated'} successfully`,
-      user: updated
-    });
+    const updated = await prisma.user.update({ where: { id }, data: { isActive: !user.isActive } });
+    res.json({ success: true, user: updated });
   } catch (error) {
-    console.error("Toggle user status error:", error);
-    res.status(500).json({ error: "Failed to update user status" });
+    res.status(500).json({ error: "Failed to toggle user status" });
   }
 };
 
-// Get Analytics
+// ─── Analytics ────────────────────────────────────────────────────────────────
 export const getAnalytics = async (req, res) => {
   try {
     const [
-      totalInstitutes, verifiedInstitutes, pendingInstitutes,
-      totalCenters, totalUsers, totalReviews, totalPapers, totalAptitude,
-      institutesByCategory, institutesByState,
+      totalCenters, totalUsers, totalReviews,
+      totalPapers, totalAptitude,
       centersByCategory, centersByState, centersByMode,
-      topCenters, reviewsByRating, papersByCategory, aptitudeByTopic,
-      recentUsers, recentInstitutes, recentCenters, paperDownloads
+      topCenters, reviewsByRating,
+      papersByCategory, aptitudeByTopic,
+      recentUsers, recentCenters,
+      paperDownloads,
     ] = await Promise.all([
-      prisma.instituteUser.count({ where: { role: "INSTITUTE" } }),
-      prisma.instituteUser.count({ where: { role: "INSTITUTE", isVerified: true } }),
-      prisma.instituteUser.count({ where: { role: "INSTITUTE", isVerified: false } }),
       prisma.center.count(),
-      prisma.user.count(),
+      prisma.user.count({ where: { role: "USER" } }),
       prisma.review.count(),
       prisma.previousYearPaper.count(),
       prisma.aptitudeQuestion.count(),
-
-      prisma.instituteUser.groupBy({
-        by: ["primaryCategory"], where: { role: "INSTITUTE" },
-        _count: { id: true }, orderBy: { _count: { id: "desc" } }
-      }),
-      prisma.instituteUser.groupBy({
-        by: ["state"], where: { role: "INSTITUTE" },
-        _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8
-      }),
-      prisma.center.groupBy({
-        by: ["primaryCategory"],
-        _count: { id: true }, orderBy: { _count: { id: "desc" } }
-      }),
-      prisma.center.groupBy({
-        by: ["state"],
-        _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8
-      }),
-      prisma.center.groupBy({
-        by: ["teachingMode"],
-        _count: { id: true }
-      }),
+      prisma.center.groupBy({ by: ["primaryCategory"], _count: { id: true }, orderBy: { _count: { id: "desc" } } }),
+      prisma.center.groupBy({ by: ["state"], _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8 }),
+      prisma.center.groupBy({ by: ["teachingMode"], _count: { id: true } }),
       prisma.center.findMany({
-        where: { rating: { gt: 0 } },
-        orderBy: { rating: "desc" }, take: 5,
-        select: { id: true, name: true, city: true, rating: true, primaryCategory: true }
+        where: { rating: { gt: 0 } }, orderBy: { rating: "desc" }, take: 5,
+        select: { id: true, name: true, city: true, rating: true, primaryCategory: true },
       }),
-      prisma.review.groupBy({
-        by: ["rating"],
-        _count: { id: true },
-        orderBy: { rating: "desc" }
-      }),
-      prisma.previousYearPaper.groupBy({
-        by: ["examCategory"],
-        _count: { id: true }, orderBy: { _count: { id: "desc" } }
-      }),
-      prisma.aptitudeQuestion.groupBy({
-        by: ["topic"],
-        _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8
-      }),
+      prisma.review.groupBy({ by: ["rating"], _count: { id: true }, orderBy: { rating: "desc" } }),
+      prisma.previousYearPaper.groupBy({ by: ["examCategory"], _count: { id: true }, orderBy: { _count: { id: "desc" } } }),
+      prisma.aptitudeQuestion.groupBy({ by: ["topic"], _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 8 }),
       prisma.user.findMany({
-        where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-        select: { createdAt: true }, orderBy: { createdAt: "asc" }
-      }),
-      prisma.instituteUser.findMany({
-        where: { role: "INSTITUTE", createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-        select: { createdAt: true }, orderBy: { createdAt: "asc" }
+        where: { role: "USER", createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        select: { createdAt: true }, orderBy: { createdAt: "asc" },
       }),
       prisma.center.findMany({
         where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-        select: { createdAt: true }, orderBy: { createdAt: "asc" }
+        select: { createdAt: true }, orderBy: { createdAt: "asc" },
       }),
       prisma.previousYearPaper.aggregate({ _sum: { downloads: true } }),
     ]);
@@ -353,12 +363,10 @@ export const getAnalytics = async (req, res) => {
 
     res.json({
       overview: {
-        totalInstitutes, verifiedInstitutes, pendingInstitutes,
-        totalCenters, totalUsers, totalReviews, totalPapers, totalAptitude,
+        totalCenters, totalUsers, totalReviews,
+        totalPapers, totalAptitude,
         totalDownloads: paperDownloads._sum.downloads || 0,
       },
-      institutesByCategory: institutesByCategory.map(i => ({ name: i.primaryCategory, count: i._count.id })),
-      institutesByState: institutesByState.map(i => ({ name: i.state, count: i._count.id })),
       centersByCategory: centersByCategory.map(c => ({ name: c.primaryCategory, count: c._count.id })),
       centersByState: centersByState.map(c => ({ name: c.state, count: c._count.id })),
       centersByMode: centersByMode.map(c => ({ name: c.teachingMode, count: c._count.id })),
@@ -368,75 +376,55 @@ export const getAnalytics = async (req, res) => {
       aptitudeByTopic: aptitudeByTopic.map(a => ({ name: a.topic, count: a._count.id })),
       growth: {
         users: groupByDay(recentUsers),
-        institutes: groupByDay(recentInstitutes),
         centers: groupByDay(recentCenters),
-      }
+      },
     });
   } catch (error) {
-    console.error("Analytics error:", error);
+    console.error("❌ Analytics error:", error);
     res.status(500).json({ error: "Failed to fetch analytics" });
   }
 };
 
-// Send Notification
+// ─── Notifications ────────────────────────────────────────────────────────────
 export const sendNotification = async (req, res) => {
   try {
-    const { title, message, type = "INFO", instituteId } = req.body;
-
+    const { title, message, type = "INFO", userId } = req.body;
     if (!title || !message) {
       return res.status(400).json({ error: "Title and message are required" });
     }
 
-    if (instituteId) {
-      const institute = await prisma.instituteUser.findUnique({ where: { id: instituteId } });
-      if (!institute) return res.status(404).json({ error: "Institute not found" });
-
-      const notification = await prisma.notification.create({
-        data: { title, message, type, instituteId }
-      });
-      return res.json({ success: true, message: "Notification sent", notification });
-    } else {
-      // Broadcast to ALL institutes
-      const institutes = await prisma.instituteUser.findMany({
-        where: { role: "INSTITUTE" },
-        select: { id: true }
-      });
-      await prisma.notification.createMany({
-        data: institutes.map(i => ({ title, message, type, instituteId: i.id }))
-      });
-      return res.json({ success: true, message: `Notification sent to ${institutes.length} institutes` });
+    if (userId) {
+      const notification = await prisma.notification.create({ data: { title, message, type, userId } });
+      return res.json({ success: true, notification });
     }
+
+    const users = await prisma.user.findMany({ where: { role: "USER" }, select: { id: true } });
+    await prisma.notification.createMany({ data: users.map(u => ({ title, message, type, userId: u.id })) });
+    return res.json({ success: true, message: `Sent to ${users.length} users` });
   } catch (error) {
-    console.error("Send notification error:", error);
     res.status(500).json({ error: "Failed to send notification" });
   }
 };
 
-// Get All Notifications (admin)
 export const getAllNotifications = async (req, res) => {
   try {
     const notifications = await prisma.notification.findMany({
-      include: {
-        institute: { select: { instituteName: true, email: true } }
-      },
+      include: { user: { select: { name: true, email: true } } },
       orderBy: { createdAt: "desc" },
-      take: 100
+      take: 100,
     });
     res.json({ notifications });
   } catch (error) {
-    console.error("Get notifications error:", error);
     res.status(500).json({ error: "Failed to fetch notifications" });
   }
 };
 
-// Delete Notification
 export const deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.notification.delete({ where: { id } });
     res.json({ success: true, message: "Notification deleted" });
   } catch (error) {
-    console.error("Delete notification error:", error);
     res.status(500).json({ error: "Failed to delete notification" });
   }
 };

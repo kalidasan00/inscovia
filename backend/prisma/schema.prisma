@@ -38,6 +38,12 @@ enum UserRole {
   INSTITUTE // ✅ kept for migration — removed after InstituteUser table dropped
 }
 
+// ✅ ADDED: admin-level role — SUPER_ADMIN bypasses all checks, ADMIN uses permissions[]
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
 enum OrgRole {
   OWNER
   MANAGER
@@ -91,7 +97,15 @@ model User {
   password String
 
   gender     String?
-  role       UserRole @default(USER)
+  role       UserRole  @default(USER)
+  // ✅ ADDED: only applies when role = ADMIN
+  // SUPER_ADMIN → full access, ADMIN → scoped to permissions[]
+  adminRole  AdminRole @default(ADMIN)
+  // ✅ ADDED: list of sections this admin can access
+  // e.g. ["papers:read", "papers:write", "blog:read", "blog:write"]
+  // ignored completely if adminRole = SUPER_ADMIN
+  permissions String[] @default([])
+
   isVerified Boolean  @default(false)
   isActive   Boolean  @default(true)
 
@@ -103,6 +117,7 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([adminRole])
 }
 
 // ─── Organization ────────────────────────────────────────────────────────────
@@ -230,11 +245,9 @@ model Center {
   successRate     String?
   studentsPlaced  Int?
 
-  // ✅ NEW: belongs to Organization
   orgId String?
   org   Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  // ✅ KEPT for migration — remove after migration complete
   userId String?
 
   reviews Review[]
