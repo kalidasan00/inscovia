@@ -1,54 +1,48 @@
-// app/page.js - SERVER COMPONENT (for SEO)
-import HomeClient from './home-client';
+// app/page.js
+import { Suspense } from "react";
+import HomeClient from "./home-client";
 
-// 🎯 HOMEPAGE SEO METADATA (only works in server components)
 export const metadata = {
-  title: 'Inscovia - Find Best Training Centers & Coaching Institutes in India',
+  title:
+    "Inscovia - Find Best Training Centers & Coaching Institutes in India",
+  description:
+    "Discover and compare top-rated training centers across India. Browse Technology, Management, Skill Development, and Exam Preparation courses. Read reviews, compare institutes, and enroll today.",
 
-  // ✅ SEO FIX #1: removed "1000+ verified" — false claim, you confirmed no real data yet.
-  // Google and users lose trust when landing page doesn't match the claim.
-  description: 'Discover and compare top-rated training centers across India. Browse Technology, Management, Skill Development, and Exam Preparation courses. Read reviews, compare institutes, and enroll today.',
-
-  // ✅ SEO FIX #2: removed keywords[] — Google ignores since 2009, Bing flags as spam signal.
-
-  // ✅ SEO FIX #3: added canonical — prevents duplicate indexing of http vs https,
-  // www vs non-www versions of homepage.
+  // ✅ Page-level canonical — only set here, not in layout
   alternates: {
-    canonical: 'https://www.inscovia.com',
+    canonical: "https://www.inscovia.com",
   },
 
   openGraph: {
-    title: 'Inscovia - Find Best Training Centers in India',
-    // ✅ SEO FIX #1: removed "1000+" false claim from OG description too
-    description: 'Discover and compare top-rated training centers across India. Technology, Management, Skills & Exam Coaching.',
+    title: "Inscovia - Find Best Training Centers in India",
+    description:
+      "Discover and compare top-rated training centers across India. Technology, Management, Skills & Exam Coaching.",
     images: [
       {
-        url: '/og-image.png',
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: 'Inscovia - Training Centers Directory',
-      }
+        alt: "Inscovia - Training Centers Directory",
+      },
     ],
-    type: 'website',
+    type: "website",
   },
 
   twitter: {
-    card: 'summary_large_image',
-    title: 'Inscovia - Find Best Training Centers in India',
-    // ✅ SEO FIX #1: removed "1000+" false claim from Twitter card too
-    description: 'Discover and compare top-rated training centers across India',
-    images: ['/og-image.png'],
+    card: "summary_large_image",
+    title: "Inscovia - Find Best Training Centers in India",
+    description: "Discover and compare top-rated training centers across India",
+    images: ["/og-image.png"],
   },
 };
 
-// ✅ SEO FIX #4: converted to async server component — fetches centers on server
-// so Google sees real content (cities, categories, counts) on first load.
-// previously HomeClient fetched in useEffect = Google saw empty shell.
+// ✅ Limited to 12 centers — homepage doesn't need all 500+
+// revalidate reduced to 300s (5 min) so new institutes appear faster
 async function getCenters() {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/centers`,
-      { next: { revalidate: 3600 } } // ISR — revalidate every hour
+      `${process.env.NEXT_PUBLIC_API_URL}/centers?limit=12&sort=rating`,
+      { next: { revalidate: 300 } }
     );
     if (!res.ok) return [];
     const data = await res.json();
@@ -59,7 +53,31 @@ async function getCenters() {
 }
 
 export default async function HomePage() {
-  // ✅ SEO FIX #4: pass real data to HomeClient so Google sees it on first crawl
   const initialCenters = await getCenters();
-  return <HomeClient initialCenters={initialCenters} />;
+
+  return (
+    // ✅ Suspense boundary — page shows skeleton instead of hanging
+    // if getCenters() is slow or on revalidation
+    <Suspense fallback={<HomePageSkeleton />}>
+      <HomeClient initialCenters={initialCenters} />
+    </Suspense>
+  );
+}
+
+// ✅ Lightweight skeleton — shown during SSR revalidation or slow fetch
+function HomePageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50 animate-pulse">
+      <div className="h-16 bg-white border-b border-gray-200" />
+      <div className="max-w-7xl mx-auto px-4 py-12 space-y-6">
+        <div className="h-10 bg-gray-200 rounded w-1/2 mx-auto" />
+        <div className="h-6 bg-gray-200 rounded w-1/3 mx-auto" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-48 bg-gray-200 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }

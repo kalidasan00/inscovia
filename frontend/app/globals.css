@@ -1,11 +1,18 @@
-/* app/globals.css - Tailwind base + custom CSS */
+/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ── Base ── */
-html, body, #__next {
+html,
+body,
+#__next {
   height: 100%;
+}
+
+/* ✅ Font variable wired from next/font in layout.js */
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
 
 a {
@@ -13,7 +20,13 @@ a {
   text-decoration: none;
 }
 
-/* ── Toast animation (favorites/compare notifications) ── */
+/* ── Smooth scrolling (mobile UX) ── */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent; /* ✅ removes blue flash on mobile tap */
+}
+
+/* ── Toast animation ── */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -29,8 +42,7 @@ a {
   animation: fade-in 0.3s ease-out;
 }
 
-/* ── Phone Input (user signup) ── */
-/* ✅ moved from inline <style jsx global> in user-menu/page.jsx */
+/* ── Phone Input ── */
 .phone-input-user {
   display: flex;
   align-items: center;
@@ -54,4 +66,14 @@ a {
 
 .phone-input-user .PhoneInputCountry {
   margin-right: 4px;
+}
+
+/* ── Mobile touch targets (accessibility + speed perception) ── */
+@layer base {
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px; /* ✅ Apple/Google recommended minimum tap target */
+    min-width: 44px;
+  }
 }
