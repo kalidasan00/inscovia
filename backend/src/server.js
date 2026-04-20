@@ -11,6 +11,7 @@ import adminRouter from "./routes/admin.routes.js";
 import reviewsRouter from "./routes/reviews.routes.js";
 import passwordResetRouter from "./routes/password-reset.routes.js";
 import papersRouter from "./routes/papers.routes.js";
+import categoriesRouter from "./routes/categories.routes.js";
 import sitemapRoutes from './routes/sitemap.routes.js';
 import chatRouter from "./routes/chat.routes.js";
 import searchRouter from "./routes/search.routes.js";
@@ -20,7 +21,6 @@ import auditAgentRouter from "./routes/auditAgent.routes.js";
 import bannerRouter from "./routes/banner.routes.js";
 import { registerSlugMiddleware } from './middleware/slugMiddleware.js';
 import aptitudeRouter from "./routes/aptitude.routes.js";
-// ✅ ADDED
 import orgRouter from "./routes/org.routes.js";
 import { runAudit } from "./controllers/auditAgent.controller.js";
 import { expireOldBanners } from "./controllers/banner.controller.js";
@@ -84,6 +84,7 @@ app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/papers", papersRouter);
+app.use("/api/categories", categoriesRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/search", searchRouter);
 app.use("/api/analytics", analyticsRouter);
@@ -91,7 +92,6 @@ app.use("/api/review-intelligence", reviewIntelligenceRouter);
 app.use("/api/audit", auditAgentRouter);
 app.use("/api/banners", bannerRouter);
 app.use("/api/aptitude", aptitudeRouter);
-// ✅ ADDED
 app.use("/api/org", orgRouter);
 
 app.get("/", (req, res) => {
@@ -129,6 +129,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🎯 Banners: ${BACKEND_URL}/api/banners`);
   console.log(`🧠 Aptitude: ${BACKEND_URL}/api/aptitude`);
   console.log(`🏢 Org: ${BACKEND_URL}/api/org`);
+  console.log(`📄 Categories: ${BACKEND_URL}/api/categories`);
 
   if (process.env.RESEND_API_KEY) console.log('✅ Resend configured');
   else console.warn('⚠️  RESEND_API_KEY missing');
