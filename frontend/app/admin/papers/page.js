@@ -3,31 +3,104 @@
 import { useState, useEffect } from "react";
 import {
   FileText, Upload, Trash2, Plus, Download,
-  Eye, EyeOff, AlertCircle, X
+  Eye, EyeOff, AlertCircle, X, ChevronRight,
+  ChevronLeft, Pencil, Check
 } from "lucide-react";
 
-const EXAM_CATEGORIES = [
-  "Engineering", "Medical", "Civil Services", "Banking",
-  "SSC & Railway", "Defence", "Law", "Management", "State PSC", "Teaching"
-];
+// ── Edit Modal ────────────────────────────────────────────────────────────────
+function EditModal({ paper, categories, onSave, onClose, saving }) {
+  const [form, setForm] = useState({
+    examName:       paper.examName             || "",
+    examCategoryId: paper.examCategoryId       || "",
+    subject:        paper.subject              || "",
+    year:           paper.year                 || new Date().getFullYear(),
+    shift:          paper.shift                || "",
+    language:       paper.language             || "English",
+    metaTitle:      paper.metaTitle            || "",
+    metaDescription:paper.metaDescription      || "",
+  });
 
-function ConfirmModal({ message, onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-        <p className="text-gray-800 font-medium mb-6">{message}</p>
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
-          >
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white">
+          <h3 className="text-base font-bold text-gray-900">Edit Paper</h3>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Exam Name *</label>
+            <input type="text" value={form.examName} placeholder="e.g. JEE Main"
+              onChange={e => setForm({ ...form, examName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Category *</label>
+            <select value={form.examCategoryId}
+              onChange={e => setForm({ ...form, examCategoryId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select category</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+            <input type="text" value={form.subject} placeholder="e.g. Physics"
+              onChange={e => setForm({ ...form, subject: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Year *</label>
+            <input type="number" min="2000" max="2030" value={form.year}
+              onChange={e => setForm({ ...form, year: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Shift</label>
+            <input type="text" value={form.shift} placeholder="e.g. Shift 1"
+              onChange={e => setForm({ ...form, shift: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Language</label>
+            <select value={form.language}
+              onChange={e => setForm({ ...form, language: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option>English</option>
+              <option>Hindi</option>
+              <option>English & Hindi</option>
+            </select>
+          </div>
+          {/* SEO Fields */}
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              SEO Title <span className="text-gray-400 font-normal">(leave blank to auto-generate)</span>
+            </label>
+            <input type="text" value={form.metaTitle} placeholder="Auto-generated if empty"
+              onChange={e => setForm({ ...form, metaTitle: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              SEO Description <span className="text-gray-400 font-normal">(leave blank to auto-generate)</span>
+            </label>
+            <textarea value={form.metaDescription} placeholder="Auto-generated if empty" rows={2}
+              onChange={e => setForm({ ...form, metaDescription: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+        </div>
+        <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+          <button onClick={onClose}
+            className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
             Cancel
           </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
-          >
-            Confirm
+          <button onClick={() => onSave(form)} disabled={saving || !form.examName || !form.examCategoryId}
+            className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+            {saving
+              ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving...</>
+              : <><Check className="w-3.5 h-3.5" />Save Changes</>}
           </button>
         </div>
       </div>
@@ -35,31 +108,58 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
   );
 }
 
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdminPapers() {
-  const [papers, setPapers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [filterCategory, setFilterCategory] = useState("All");
-  const [confirm, setConfirm] = useState(null); // { message, onConfirm }
+  const [papers, setPapers]         = useState([]);
+  const [categories, setCategories] = useState([]); // ✅ from DB
+  const [loading, setLoading]       = useState(true);
+  const [uploading, setUploading]   = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState(null);
+  const [success, setSuccess]       = useState(null);
+  const [showForm, setShowForm]     = useState(false);
+  const [editPaper, setEditPaper]   = useState(null);
+
+  // Drill-down
+  const [level, setLevel]                       = useState(1);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [selectedExam, setSelectedExam]         = useState(null);
 
   const [form, setForm] = useState({
-    examName: "", examCategory: "", subject: "",
+    examName: "", examCategoryId: "", subject: "",
     year: new Date().getFullYear(), shift: "", language: "English",
+    metaTitle: "", metaDescription: "",
   });
   const [pdfFile, setPdfFile] = useState(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-  useEffect(() => { fetchPapers(); }, []);
+  const showSuccess = (msg) => { setSuccess(msg); setTimeout(() => setSuccess(null), 3000); };
+
+  useEffect(() => {
+    fetchCategories();
+    fetchPapers();
+  }, []);
+
+  // ✅ Fetch categories from DB — no hardcoded list
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res   = await fetch(`${API_URL}/categories/admin/all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setCategories(data.categories || []);
+    } catch {
+      setError("Failed to load categories");
+    }
+  };
 
   const fetchPapers = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch(`${API_URL}/papers`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res   = await fetch(`${API_URL}/papers`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       setPapers(data.papers || []);
@@ -73,29 +173,24 @@ export default function AdminPapers() {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!pdfFile) { setError("Please select a PDF file"); return; }
-
     setUploading(true);
     setError(null);
-    setSuccess(null);
-
-    const token = localStorage.getItem("adminToken");
+    const token    = localStorage.getItem("adminToken");
     const formData = new FormData();
     formData.append("pdf", pdfFile);
-    Object.entries(form).forEach(([k, v]) => formData.append(k, v));
-    formData.append("fileSize", `${(pdfFile.size / 1024 / 1024).toFixed(1)} MB`);
-
+    Object.entries(form).forEach(([k, v]) => v && formData.append(k, v));
     try {
-      const res = await fetch(`${API_URL}/papers`, {
+      const res  = await fetch(`${API_URL}/papers`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
-      setSuccess("Paper uploaded successfully!");
+      showSuccess("Paper uploaded successfully!");
       setShowForm(false);
       setPdfFile(null);
-      setForm({ examName: "", examCategory: "", subject: "", year: new Date().getFullYear(), shift: "", language: "English" });
+      setForm({ examName: "", examCategoryId: "", subject: "", year: new Date().getFullYear(), shift: "", language: "English", metaTitle: "", metaDescription: "" });
       fetchPapers();
     } catch (err) {
       setError(err.message);
@@ -104,181 +199,196 @@ export default function AdminPapers() {
     }
   };
 
+  const handleEditSave = async (updatedForm) => {
+    if (!editPaper) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res   = await fetch(`${API_URL}/papers/${editPaper.id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          examName:        updatedForm.examName,
+          examCategoryId:  updatedForm.examCategoryId,
+          subject:         updatedForm.subject        || null,
+          year:            parseInt(updatedForm.year),
+          shift:           updatedForm.shift          || null,
+          language:        updatedForm.language,
+          metaTitle:       updatedForm.metaTitle       || null,
+          metaDescription: updatedForm.metaDescription || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Update failed");
+      setPapers(prev => prev.map(p => p.id === editPaper.id ? data.paper : p));
+      setEditPaper(null);
+      showSuccess("Paper updated!");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = (id, name) => {
-    setConfirm({
-      message: `Delete "${name}"? This cannot be undone.`,
-      onConfirm: async () => {
-        setConfirm(null);
-        const token = localStorage.getItem("adminToken");
-        try {
-          const res = await fetch(`${API_URL}/papers/${id}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (!res.ok) throw new Error("Delete failed");
-          setSuccess("Paper deleted.");
-          fetchPapers();
-        } catch (err) {
-          setError(err.message);
-        }
-      }
-    });
+    if (!confirm(`Delete "${name}"? This also removes the PDF from Cloudinary.`)) return;
+    const token = localStorage.getItem("adminToken");
+    fetch(`${API_URL}/papers/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) { setPapers(prev => prev.filter(p => p.id !== id)); showSuccess("Paper deleted."); }
+        else setError(data.error || "Delete failed");
+      })
+      .catch(() => setError("Delete failed"));
   };
 
   const handleToggle = (id, isActive) => {
-    setConfirm({
-      message: `${isActive ? "Hide" : "Show"} this paper?`,
-      onConfirm: async () => {
-        setConfirm(null);
-        const token = localStorage.getItem("adminToken");
-        try {
-          await fetch(`${API_URL}/papers/${id}/toggle`, {
-            method: "PUT",
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          fetchPapers();
-        } catch {
-          setError("Failed to update status");
-        }
-      }
-    });
+    const token = localStorage.getItem("adminToken");
+    fetch(`${API_URL}/papers/${id}/toggle`, { method: "PUT", headers: { Authorization: `Bearer ${token}` } })
+      .then(() => {
+        setPapers(prev => prev.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
+        showSuccess(`Paper ${isActive ? "hidden" : "shown"}.`);
+      })
+      .catch(() => setError("Failed to update status"));
   };
 
-  const filtered = filterCategory === "All"
-    ? papers
-    : papers.filter(p => p.examCategory === filterCategory);
+  // ✅ Group by categoryId → examName
+  const allGrouped = papers.reduce((acc, p) => {
+    const catId = p.examCategoryId;
+    if (!acc[catId]) acc[catId] = {};
+    if (!acc[catId][p.examName]) acc[catId][p.examName] = [];
+    acc[catId][p.examName].push(p);
+    return acc;
+  }, {});
+
+  const goLevel1 = () => { setLevel(1); setSelectedCategoryId(null); setSelectedExam(null); };
+  const goLevel2 = (catId) => { setLevel(2); setSelectedCategoryId(catId); setSelectedExam(null); };
+  const goLevel3 = (exam) => { setLevel(3); setSelectedExam(exam); };
+
+  const currentPapers = level === 3
+    ? (allGrouped[selectedCategoryId]?.[selectedExam] || []).sort((a, b) => b.year - a.year)
+    : [];
+
+  const selectedCategoryObj = categories.find(c => c.id === selectedCategoryId);
 
   return (
     <>
-      {confirm && (
-        <ConfirmModal
-          message={confirm.message}
-          onConfirm={confirm.onConfirm}
-          onCancel={() => setConfirm(null)}
+      {editPaper && (
+        <EditModal
+          paper={editPaper}
+          categories={categories}
+          onSave={handleEditSave}
+          onClose={() => setEditPaper(null)}
+          saving={saving}
         />
       )}
 
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Question Papers</h2>
-          <p className="text-sm text-gray-500 mt-1">{papers.length} papers uploaded</p>
+          <p className="text-sm text-gray-500 mt-1">{papers.length} papers total</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Upload Paper
+        <button onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+          <Plus className="w-4 h-4" />Upload Paper
         </button>
       </div>
 
       {/* Alerts */}
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          {error}
+          <AlertCircle className="w-4 h-4 shrink-0" />{error}
           <button onClick={() => setError(null)} className="ml-auto"><X className="w-4 h-4" /></button>
         </div>
       )}
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center justify-between">
-          {success}
-          <button onClick={() => setSuccess(null)}><X className="w-4 h-4" /></button>
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+          <Check className="w-4 h-4" />{success}
         </div>
       )}
 
       {/* Upload Form */}
       {showForm && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload New Paper</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Upload New Paper</h3>
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { label: "Exam Name *", key: "examName", placeholder: "e.g. JEE Main, UPSC CSE", required: true },
-                { label: "Subject", key: "subject", placeholder: "e.g. Physics, General Awareness" },
-                { label: "Shift", key: "shift", placeholder: "e.g. Shift 1, Morning" },
-              ].map(({ label, key, placeholder, required }) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                  <input
-                    type="text"
-                    placeholder={placeholder}
-                    value={form[key]}
-                    onChange={e => setForm({ ...form, [key]: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    required={required}
-                  />
-                </div>
-              ))}
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                <select
-                  value={form.examCategory}
-                  onChange={e => setForm({ ...form, examCategory: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                >
+                <label className="block text-xs font-medium text-gray-600 mb-1">Exam Name *</label>
+                <input type="text" placeholder="e.g. JEE Main, UPSC CSE" value={form.examName} required
+                  onChange={e => setForm({ ...form, examName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              {/* ✅ Category dropdown from DB */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Category *</label>
+                <select value={form.examCategoryId} required
+                  onChange={e => setForm({ ...form, examCategoryId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">Select category</option>
-                  {EXAM_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {categories.filter(c => c.isActive).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
                 </select>
+                {categories.length === 0 && (
+                  <p className="text-[10px] text-amber-600 mt-1">
+                    No categories found. <a href="/admin/categories" className="underline">Add categories first →</a>
+                  </p>
+                )}
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
-                <input
-                  type="number" min="2000" max="2030"
-                  value={form.year}
+                <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+                <input type="text" placeholder="e.g. Physics" value={form.subject}
+                  onChange={e => setForm({ ...form, subject: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Year *</label>
+                <input type="number" min="2000" max="2030" value={form.year} required
                   onChange={e => setForm({ ...form, year: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
-                <select
-                  value={form.language}
+                <label className="block text-xs font-medium text-gray-600 mb-1">Shift</label>
+                <input type="text" placeholder="e.g. Shift 1" value={form.shift}
+                  onChange={e => setForm({ ...form, shift: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Language</label>
+                <select value={form.language}
                   onChange={e => setForm({ ...form, language: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option>English</option>
                   <option>Hindi</option>
                   <option>English & Hindi</option>
                 </select>
               </div>
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PDF File *</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
-                <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])} className="hidden" id="pdf-upload" />
+              <label className="block text-xs font-medium text-gray-600 mb-1">PDF File *</label>
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <input type="file" accept=".pdf" onChange={e => setPdfFile(e.target.files[0])}
+                  className="hidden" id="pdf-upload" />
                 <label htmlFor="pdf-upload" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <Upload className="w-6 h-6 text-gray-300 mx-auto mb-2" />
                   {pdfFile
-                    ? <p className="text-sm font-medium text-green-600">{pdfFile.name}</p>
-                    : <p className="text-sm text-gray-500">Click to upload PDF</p>
-                  }
+                    ? <p className="text-sm font-medium text-green-600">{pdfFile.name} ({(pdfFile.size / 1024 / 1024).toFixed(1)} MB)</p>
+                    : <p className="text-sm text-gray-400">Click to upload PDF</p>}
                 </label>
               </div>
             </div>
-
             <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={uploading}
-                className="px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2 text-sm"
-              >
+              <button type="submit" disabled={uploading}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 text-sm">
                 {uploading
-                  ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />Uploading...</>
-                  : <><Upload className="w-4 h-4" />Upload</>
-                }
+                  ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />Uploading...</>
+                  : <><Upload className="w-3.5 h-3.5" />Upload</>}
               </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 text-sm"
-              >
+              <button type="button" onClick={() => { setShowForm(false); setPdfFile(null); }}
+                className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 text-sm">
                 Cancel
               </button>
             </div>
@@ -286,98 +396,159 @@ export default function AdminPapers() {
         </div>
       )}
 
-      {/* Filter */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {["All", ...EXAM_CATEGORIES].map(cat => (
-          <button
-            key={cat}
-            onClick={() => setFilterCategory(cat)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-all
-              ${filterCategory === cat
-                ? "bg-primary text-white border-primary"
-                : "bg-white text-gray-600 border-gray-200 hover:border-primary"
-              }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Table */}
       {loading ? (
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent mx-auto" />
+          <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent mx-auto" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : papers.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No papers found</p>
-          <button onClick={() => setShowForm(true)} className="mt-3 text-primary font-medium text-sm">Upload your first paper →</button>
+          <FileText className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">No papers yet</p>
+          <button onClick={() => setShowForm(true)} className="mt-3 text-blue-600 font-medium text-sm hover:underline">
+            Upload first paper →
+          </button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Exam</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Category</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Year</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Downloads</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map(paper => (
-                  <tr key={paper.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{paper.examName}</p>
-                      {paper.subject && <p className="text-xs text-gray-500">{paper.subject}</p>}
-                      {paper.shift && <p className="text-xs text-gray-400">{paper.shift}</p>}
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">{paper.examCategory}</span>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell text-gray-600">{paper.year}</td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="flex items-center gap-1 text-gray-600">
-                        <Download className="w-3.5 h-3.5" />{paper.downloads}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${paper.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {paper.isActive ? "Active" : "Hidden"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer"
-                          className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="View PDF">
-                          <Eye className="w-4 h-4" />
-                        </a>
-                        <button
-                          onClick={() => handleToggle(paper.id, paper.isActive)}
-                          className="p-1.5 text-gray-400 hover:text-yellow-600 transition-colors"
-                          title="Toggle visibility"
-                        >
-                          {paper.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(paper.id, paper.examName)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+        <>
+          {/* Level 1: Category grid */}
+          {level === 1 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {categories.filter(cat => allGrouped[cat.id]).map(cat => {
+                const examCount  = Object.keys(allGrouped[cat.id] || {}).length;
+                const paperCount = Object.values(allGrouped[cat.id] || {}).flat().length;
+                return (
+                  <button key={cat.id} onClick={() => goLevel2(cat.id)}
+                    className="bg-white border border-gray-200 rounded-xl p-4 text-left hover:shadow-sm hover:border-gray-300 transition-all group">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white mb-3"
+                      style={{ backgroundColor: cat.color }}>
+                      {cat.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900">{cat.name}</p>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {examCount} exam{examCount !== 1 ? "s" : ""} · {paperCount} paper{paperCount !== 1 ? "s" : ""}
+                    </p>
+                    <div className="mt-3 h-0.5 rounded-full w-8 group-hover:w-full transition-all"
+                      style={{ backgroundColor: cat.color }} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Level 2: Exams list */}
+          {level === 2 && selectedCategoryId && (
+            <div>
+              <button onClick={goLevel1}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 mb-4 transition-colors">
+                <ChevronLeft className="w-3.5 h-3.5" /> All Categories
+              </button>
+              <h3 className="text-base font-bold text-gray-900 mb-3">{selectedCategoryObj?.name}</h3>
+              <div className="flex flex-col gap-2">
+                {Object.entries(allGrouped[selectedCategoryId] || {}).map(([examName, examPapers]) => {
+                  const years       = [...new Set(examPapers.map(p => p.year))].sort((a, b) => b - a);
+                  const activeCount = examPapers.filter(p => p.isActive).length;
+                  return (
+                    <button key={examName} onClick={() => goLevel3(examName)}
+                      className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3 hover:shadow-sm transition-all text-left">
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+                        style={{ backgroundColor: selectedCategoryObj?.color || "#6b7280" }}>
+                        {examName.slice(0, 2).toUpperCase()}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">{examName}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {examPapers.length} paper{examPapers.length !== 1 ? "s" : ""}
+                          {years.length > 1 ? ` · ${years[years.length - 1]}–${years[0]}` : ` · ${years[0]}`}
+                          {` · ${activeCount} active`}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Level 3: Papers table */}
+          {level === 3 && selectedCategoryId && selectedExam && (
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
+                <button onClick={goLevel1} className="hover:text-gray-600">Categories</button>
+                <ChevronRight className="w-3 h-3" />
+                <button onClick={() => goLevel2(selectedCategoryId)} className="hover:text-gray-600">
+                  {selectedCategoryObj?.name}
+                </button>
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-gray-700 font-medium">{selectedExam}</span>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Paper</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Language</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Size</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Downloads</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {currentPapers.map(paper => (
+                        <tr key={paper.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-gray-900">
+                              {paper.year}
+                              {paper.shift && <span className="text-gray-400 font-normal"> · {paper.shift}</span>}
+                            </p>
+                            {paper.subject && <p className="text-xs text-gray-400 mt-0.5">{paper.subject}</p>}
+                          </td>
+                          <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">{paper.language}</td>
+                          <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">{paper.fileSize || "—"}</td>
+                          <td className="px-4 py-3 hidden lg:table-cell">
+                            <span className="flex items-center gap-1 text-xs text-gray-600">
+                              <Download className="w-3 h-3" />{paper.downloads ?? 0}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              paper.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                            }`}>
+                              {paper.isActive ? "Active" : "Hidden"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <a href={paper.pdfUrl} target="_blank" rel="noopener noreferrer"
+                                className="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors" title="View PDF">
+                                <Eye className="w-4 h-4" />
+                              </a>
+                              <button onClick={() => setEditPaper(paper)}
+                                className="p-1.5 text-gray-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors" title="Edit">
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleToggle(paper.id, paper.isActive)}
+                                className="p-1.5 text-gray-400 hover:text-amber-600 rounded-md hover:bg-amber-50 transition-colors"
+                                title={paper.isActive ? "Hide" : "Show"}>
+                                {paper.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                              <button onClick={() => handleDelete(paper.id, `${paper.examName} ${paper.year}`)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors" title="Delete">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </>
   );
