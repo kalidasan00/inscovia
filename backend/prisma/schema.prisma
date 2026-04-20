@@ -35,10 +35,9 @@ enum CenterCategory {
 enum UserRole {
   ADMIN
   USER
-  INSTITUTE // ✅ kept for migration — removed after InstituteUser table dropped
+  INSTITUTE
 }
 
-// ✅ ADDED: admin-level role — SUPER_ADMIN bypasses all checks, ADMIN uses permissions[]
 enum AdminRole {
   SUPER_ADMIN
   ADMIN
@@ -90,27 +89,19 @@ enum BannerPlacement {
 // ─── Unified User Model ──────────────────────────────────────────────────────
 
 model User {
-  id       String   @id @default(cuid())
-  name     String
-  email    String   @unique
-  phone    String
-  password String
-
-  gender     String?
-  role       UserRole  @default(USER)
-  // ✅ ADDED: only applies when role = ADMIN
-  // SUPER_ADMIN → full access, ADMIN → scoped to permissions[]
-  adminRole  AdminRole @default(ADMIN)
-  // ✅ ADDED: list of sections this admin can access
-  // e.g. ["papers:read", "papers:write", "blog:read", "blog:write"]
-  // ignored completely if adminRole = SUPER_ADMIN
-  permissions String[] @default([])
-
-  isVerified Boolean  @default(false)
-  isActive   Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  phone       String
+  password    String
+  gender      String?
+  role        UserRole  @default(USER)
+  adminRole   AdminRole @default(ADMIN)
+  permissions String[]  @default([])
+  isVerified  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   orgMemberships OrgMember[]
   notifications  Notification[]
@@ -123,26 +114,21 @@ model User {
 // ─── Organization ────────────────────────────────────────────────────────────
 
 model Organization {
-  id   String @id @default(cuid())
-  name String
-  slug String @unique
-
+  id                  String             @id @default(cuid())
+  name                String
+  slug                String             @unique
   primaryCategory     InstituteCategory
   secondaryCategories InstituteCategory[] @default([])
-  teachingMode        TeachingMode        @default(OFFLINE)
-
-  state    String
-  district String
-  city     String
-  location String
-
-  latitude  Float?
-  longitude Float?
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  teachingMode        TeachingMode       @default(OFFLINE)
+  state               String
+  district            String
+  city                String
+  location            String
+  latitude            Float?
+  longitude           Float?
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   members OrgMember[]
   centers Center[]
@@ -161,12 +147,10 @@ model OrgMember {
   id     String          @id @default(cuid())
   role   OrgRole         @default(STAFF)
   status OrgMemberStatus @default(ACTIVE)
-
   userId String
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId  String
+  org    Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -181,17 +165,15 @@ model OrgMember {
 // ─── OrgInvite ───────────────────────────────────────────────────────────────
 
 model OrgInvite {
-  id     String          @id @default(cuid())
-  email  String
-  role   OrgRole         @default(STAFF)
-  token  String          @unique
-  status OrgInviteStatus @default(PENDING)
-
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
+  id        String          @id @default(cuid())
+  email     String
+  role      OrgRole         @default(STAFF)
+  token     String          @unique
+  status    OrgInviteStatus @default(PENDING)
+  orgId     String
+  org       Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
 
   @@index([token])
   @@index([email])
@@ -202,59 +184,45 @@ model OrgInvite {
 // ─── Center ──────────────────────────────────────────────────────────────────
 
 model Center {
-  id   String        @id @default(cuid())
-  slug String        @unique
-  name String
-
+  id                  String           @id @default(cuid())
+  slug                String           @unique
+  name                String
   primaryCategory     CenterCategory
   secondaryCategories CenterCategory[] @default([])
   teachingMode        TeachingMode
-
-  state    String
-  district String
-  city     String
-  location String
-
-  latitude  Float?
-  longitude Float?
-
-  rating  Float    @default(0)
-  courses String[]
-
-  courseDetails Json? @default("[]")
-
-  image   String?
-  logo    String?
-  gallery String[] @default([])
-
-  description String @db.Text
-
-  website  String?
-  whatsapp String?
-  phone    String?
-  email    String?
-
-  facebook  String?
-  instagram String?
-  linkedin  String?
-
-  countries       String[] @default([])
-  services        String[] @default([])
-  topUniversities String[] @default([])
-  avgScholarship  String?
-  successRate     String?
-  studentsPlaced  Int?
-
-  orgId String?
-  org   Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  userId String?
-
-  reviews Review[]
-  banners Banner[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  state               String
+  district            String
+  city                String
+  location            String
+  latitude            Float?
+  longitude           Float?
+  rating              Float            @default(0)
+  courses             String[]
+  courseDetails       Json?            @default("[]")
+  image               String?
+  logo                String?
+  gallery             String[]         @default([])
+  description         String           @db.Text
+  website             String?
+  whatsapp            String?
+  phone               String?
+  email               String?
+  facebook            String?
+  instagram           String?
+  linkedin            String?
+  countries           String[]         @default([])
+  services            String[]         @default([])
+  topUniversities     String[]         @default([])
+  avgScholarship      String?
+  successRate         String?
+  studentsPlaced      Int?
+  orgId               String?
+  org                 Organization?    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId              String?
+  reviews             Review[]
+  banners             Banner[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   @@index([slug])
   @@index([state, district, city])
@@ -270,15 +238,13 @@ model Center {
 // ─── Review ──────────────────────────────────────────────────────────────────
 
 model Review {
-  id        String @id @default(cuid())
+  id        String   @id @default(cuid())
   userName  String
   userEmail String
   rating    Int
-  comment   String @db.Text
-
-  centerId String
-  center   Center @relation(fields: [centerId], references: [id], onDelete: Cascade)
-
+  comment   String   @db.Text
+  centerId  String
+  center    Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -291,46 +257,77 @@ model Review {
 // ─── Notification ────────────────────────────────────────────────────────────
 
 model Notification {
-  id      String           @id @default(cuid())
-  title   String
-  message String           @db.Text
-  type    NotificationType @default(INFO)
-  isRead  Boolean          @default(false)
-
-  userId String?
-  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  id        String           @id @default(cuid())
+  title     String
+  message   String           @db.Text
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
 
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
 }
 
-// ─── PreviousYearPaper ───────────────────────────────────────────────────────
+// ─── ExamCategory ─────────────────────────────────────────────────────────────
+// ✅ ADDED: Dynamic exam categories managed by admin
+// No hardcoded lists anywhere — everything from DB
+
+model ExamCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique   // e.g. "Engineering", "Medical"
+  slug        String   @unique   // e.g. "engineering", "medical" — used in SEO URLs
+  description String?  @db.Text  // used in SEO meta description
+  color       String   @default("#6b7280") // hex color for UI
+  sortOrder   Int      @default(0)         // controls display order
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ✅ Relation: one category → many papers
+  papers PreviousYearPaper[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+// ─── PreviousYearPaper ────────────────────────────────────────────────────────
 
 model PreviousYearPaper {
-  id           String  @id @default(cuid())
-  slug         String  @unique
-  examName     String
-  examCategory String
-  subject      String?
-  year         Int
-  shift        String?
-  language     String  @default("English")
-  pdfUrl       String
-  fileSize     String?
-  downloads    Int     @default(0)
-  isActive     Boolean @default(true)
+  id       String @id @default(cuid())
+  slug     String @unique
+
+  // ✅ examCategory now links to ExamCategory table (not a plain string)
+  examCategoryId String
+  examCategory   ExamCategory @relation(fields: [examCategoryId], references: [id])
+
+  examName String
+  subject  String?
+  year     Int
+  shift    String?
+  language String  @default("English")
+  pdfUrl   String
+  fileSize String?
+  downloads Int    @default(0)
+  isActive  Boolean @default(true)
+
+  // ✅ SEO fields
+  metaTitle       String?  // overrides default SEO title if set
+  metaDescription String?  // overrides default SEO description if set
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([slug])
+  @@index([examCategoryId])
   @@index([examName])
-  @@index([examCategory])
   @@index([year])
   @@index([isActive])
+  @@index([examCategoryId, isActive])   // compound — used in public filtered queries
+  @@index([examName, year])             // compound — used in SEO slug generation
 }
 
 // ─── AptitudeQuestion ────────────────────────────────────────────────────────
@@ -348,9 +345,8 @@ model AptitudeQuestion {
   subtopic    String
   difficulty  Difficulty @default(EASY)
   isActive    Boolean    @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([topic])
   @@index([subtopic])
@@ -393,13 +389,11 @@ model CenterView {
 // ─── Banner ──────────────────────────────────────────────────────────────────
 
 model Banner {
-  id       String          @id @default(cuid())
-  centerId String
-  center   Center          @relation(fields: [centerId], references: [id], onDelete: Cascade)
-
-  orgId String?
-  org   Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
+  id         String          @id @default(cuid())
+  centerId   String
+  center     Center          @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  orgId      String?
+  org        Organization?   @relation(fields: [orgId], references: [id], onDelete: Cascade)
   title      String
   tagline    String?
   imageUrl   String?
@@ -410,9 +404,8 @@ model Banner {
   startDate  DateTime?
   endDate    DateTime?
   pricePaise Int?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
 
   @@index([centerId])
   @@index([orgId])
@@ -429,8 +422,7 @@ model BannerWaitlist {
   placement  BannerPlacement
   duration   Int
   email      String
-
-  createdAt DateTime @default(now())
+  createdAt  DateTime        @default(now())
 
   @@index([placement])
   @@index([centerId])
@@ -439,30 +431,25 @@ model BannerWaitlist {
 // ─── InstituteUser (kept for migration only) ─────────────────────────────────
 
 model InstituteUser {
-  id       String   @id @default(cuid())
-  email    String   @unique
-  password String
-
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  password            String
   instituteName       String
   phone               String
   primaryCategory     InstituteCategory
   secondaryCategories InstituteCategory[] @default([])
   teachingMode        TeachingMode
-
-  state    String
-  district String
-  city     String
-  location String
-
-  latitude  Float?
-  longitude Float?
-
-  role       UserRole @default(INSTITUTE)
-  isVerified Boolean  @default(false)
-  isActive   Boolean  @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  state               String
+  district            String
+  city                String
+  location            String
+  latitude            Float?
+  longitude           Float?
+  role                UserRole           @default(INSTITUTE)
+  isVerified          Boolean            @default(false)
+  isActive            Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   @@index([email])
 }
