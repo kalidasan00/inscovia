@@ -272,21 +272,18 @@ model Notification {
 }
 
 // ─── ExamCategory ─────────────────────────────────────────────────────────────
-// ✅ ADDED: Dynamic exam categories managed by admin
-// No hardcoded lists anywhere — everything from DB
 
 model ExamCategory {
   id          String   @id @default(cuid())
-  name        String   @unique   // e.g. "Engineering", "Medical"
-  slug        String   @unique   // e.g. "engineering", "medical" — used in SEO URLs
-  description String?  @db.Text  // used in SEO meta description
-  color       String   @default("#6b7280") // hex color for UI
-  sortOrder   Int      @default(0)         // controls display order
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  color       String   @default("#6b7280")
+  sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // ✅ Relation: one category → many papers
   papers PreviousYearPaper[]
 
   @@index([slug])
@@ -300,9 +297,9 @@ model PreviousYearPaper {
   id       String @id @default(cuid())
   slug     String @unique
 
-  // ✅ examCategory now links to ExamCategory table (not a plain string)
-  examCategoryId String
-  examCategory   ExamCategory @relation(fields: [examCategoryId], references: [id])
+  // ✅ nullable so existing 421 rows are not affected
+  examCategoryId String?
+  examCategory   ExamCategory? @relation(fields: [examCategoryId], references: [id])
 
   examName String
   subject  String?
@@ -314,9 +311,8 @@ model PreviousYearPaper {
   downloads Int    @default(0)
   isActive  Boolean @default(true)
 
-  // ✅ SEO fields
-  metaTitle       String?  // overrides default SEO title if set
-  metaDescription String?  // overrides default SEO description if set
+  metaTitle       String?
+  metaDescription String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -326,8 +322,8 @@ model PreviousYearPaper {
   @@index([examName])
   @@index([year])
   @@index([isActive])
-  @@index([examCategoryId, isActive])   // compound — used in public filtered queries
-  @@index([examName, year])             // compound — used in SEO slug generation
+  @@index([examCategoryId, isActive])
+  @@index([examName, year])
 }
 
 // ─── AptitudeQuestion ────────────────────────────────────────────────────────
