@@ -30,7 +30,6 @@ const InstituteMap = dynamic(() => import("../../../components/InstituteMap"), {
   loading: () => <div className="h-[220px] bg-gray-100 rounded-xl animate-pulse mb-3" />,
 });
 
-// ✅ Extracted social icons — no longer inline repeated SVGs
 const FacebookIcon = ({ className }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -67,7 +66,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
   const [showToast, setShowToast] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  // ✅ FIX #12: WhatsApp label auto-hide via ref timer, removed useState for showWaLabel
   const [showWaLabel, setShowWaLabel] = useState(true);
   const waLabelTimer = useRef(null);
 
@@ -77,7 +75,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-  // ✅ FIX #2: SSR-safe localStorage read
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userLoggedIn = localStorage.getItem("userLoggedIn") === "true";
@@ -90,7 +87,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
     return () => clearTimeout(waLabelTimer.current);
   }, []);
 
-  // ✅ FIX #7: retry timeouts tracked in ref so they're cleared on unmount
   useEffect(() => {
     if (initialCenter) return;
 
@@ -138,11 +134,10 @@ export default function CenterDetailClient({ initialCenter = null }) {
 
     return () => {
       cancelled = true;
-      retryTimers.forEach(clearTimeout); // ✅ FIX #7: all retry timers cleared on unmount
+      retryTimers.forEach(clearTimeout);
     };
   }, [slug, API_URL, initialCenter]);
 
-  // ✅ FIX #4: logView as proper dep, wrapped in ref to stay stable
   const logViewRef = useRef(logView);
   useEffect(() => { logViewRef.current = logView; }, [logView]);
 
@@ -154,7 +149,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
     }
   }, [center, stableLogView]);
 
-  // ✅ FIX #9: memoized description values
   const isStudyAbroad = useMemo(() => center?.primaryCategory === "STUDY_ABROAD", [center]);
   const shouldShowReadMore = useMemo(() => center?.description && center.description.length > 150, [center]);
   const truncatedDescription = useMemo(() => {
@@ -164,7 +158,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
       : center.description;
   }, [center]);
 
-  // ✅ FIX #8: memoized whatsapp URLs — computed once, not twice per render
   const whatsappUrlWithMessage = useMemo(() => {
     if (!center?.whatsapp) return null;
     const number = center.whatsapp.replace(/\D/g, "");
@@ -180,7 +173,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
     return `https://wa.me/${number}`;
   }, [center]);
 
-  // ✅ FIX #11: memoized category formatter
   const formatCategory = useCallback(
     (category) => category?.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) || "",
     []
@@ -245,7 +237,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
 
   return (
     <>
-      {/* ✅ FIXED: Floating WhatsApp Button — restored missing opening <a tag */}
       {whatsappUrlWithMessage && (
         <a
           href={whatsappUrlWithMessage}
@@ -272,21 +263,15 @@ export default function CenterDetailClient({ initialCenter = null }) {
 
       {/* Breadcrumb */}
       <nav className="max-w-5xl mx-auto px-3 sm:px-4 py-2 text-xs border-b bg-gray-50" aria-label="Breadcrumb">
-        <ol className="flex items-center gap-2 text-gray-600 flex-wrap">
-          <li><Link href="/" className="hover:text-indigo-600 transition-colors">Home</Link></li>
-          <li className="flex items-center gap-2">
-            <span className="text-gray-400">/</span>
-            <Link href="/centers" className="hover:text-indigo-600 transition-colors">Centers</Link>
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-gray-400">/</span>
-            <Link href={`/centers?city=${center.city}`} className="hover:text-indigo-600 transition-colors">{center.city}</Link>
-          </li>
-          <li className="flex items-center gap-2">
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-900 font-medium truncate max-w-[150px] sm:max-w-[200px]">{center.name}</span>
-          </li>
-        </ol>
+        <p className="text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis">
+          <Link href="/" className="hover:text-indigo-600">Home</Link>
+          <span className="mx-1 text-gray-400">/</span>
+          <Link href="/centers" className="hover:text-indigo-600">Centers</Link>
+          <span className="mx-1 text-gray-400">/</span>
+          <Link href={`/centers?city=${center.city}`} className="hover:text-indigo-600">{center.city}</Link>
+          <span className="mx-1 text-gray-400">/</span>
+          <span className="text-gray-900 font-medium">{center.name}</span>
+        </p>
       </nav>
 
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
@@ -307,7 +292,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
           {/* Cover */}
           <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
             {center.image && (
-              // ✅ FIX #1 + #5: fetchPriority camelCase + next/image for optimization
               <Image
                 src={center.image}
                 alt={`${center.name} cover`}
@@ -339,7 +323,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
             <div className="absolute -bottom-10 left-3 z-10">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-xl border-4 border-white overflow-hidden flex items-center justify-center">
                 {center.logo ? (
-                  // ✅ FIX #5: next/image for logo
                   <Image
                     src={center.logo}
                     alt={`${center.name} logo`}
@@ -419,7 +402,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
 
             <div className="mb-3">
               <h2 className="text-sm font-bold text-gray-900 mb-1.5">About</h2>
-              {/* ✅ FIX #9: use memoized truncated text */}
               <p className="text-gray-700 leading-relaxed text-sm">
                 {showFullDescription || !shouldShowReadMore
                   ? center.description
@@ -513,7 +495,6 @@ export default function CenterDetailClient({ initialCenter = null }) {
                       <p className="text-xs text-gray-900 font-medium truncate">{center.phone}</p>
                     </a>
                   )}
-                  {/* ✅ FIX #8: use memoized plain whatsapp URL */}
                   {center.whatsapp && (
                     <a href={whatsappUrlPlain} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <WhatsAppIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
@@ -552,9 +533,7 @@ export default function CenterDetailClient({ initialCenter = null }) {
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Gallery</h2>
                 <div className="grid grid-cols-3 gap-2">
                   {center.gallery.map((img, i) => (
-                    // ✅ FIX #6: stable key using img URL, not index
                     <div key={img} className="aspect-square relative overflow-hidden rounded-lg border">
-                      {/* ✅ FIX #5: next/image for gallery */}
                       <Image
                         src={img}
                         alt={`${center.name} - Gallery image ${i + 1}`}

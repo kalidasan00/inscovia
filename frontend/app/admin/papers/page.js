@@ -4,20 +4,101 @@ import { useState, useEffect } from "react";
 import {
   FileText, Upload, Trash2, Plus, Download,
   Eye, EyeOff, AlertCircle, X, ChevronRight,
-  ChevronLeft, Pencil, Check
+  ChevronLeft, Pencil, Check, Tag, FolderPlus
 } from "lucide-react";
+
+// ── Category Modal ────────────────────────────────────────────────────────────
+function CategoryModal({ onClose, onSaved, API_URL }) {
+  const [name, setName]               = useState("");
+  const [description, setDescription] = useState("");
+  const [color, setColor]             = useState("#6b7280");
+  const [saving, setSaving]           = useState(false);
+  const [error, setError]             = useState(null);
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError("Name is required"); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res   = await fetch(`${API_URL}/categories`, {
+        method:  "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body:    JSON.stringify({ name: name.trim(), description, color }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create category");
+      onSaved(data.category);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="text-base font-bold text-gray-900">New Exam Category</h3>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+          )}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Name *</label>
+            <input type="text" value={name} placeholder="e.g. Engineering, Medical"
+              onChange={e => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+            <textarea value={description} placeholder="Short description (optional)" rows={2}
+              onChange={e => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+            <div className="flex items-center gap-3">
+              <input type="color" value={color} onChange={e => setColor(e.target.value)}
+                className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-1" />
+              <span className="text-sm text-gray-500">{color}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+          <button onClick={onClose}
+            className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+            {saving
+              ? <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving...</>
+              : <><Check className="w-3.5 h-3.5" />Create</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Edit Modal ────────────────────────────────────────────────────────────────
 function EditModal({ paper, categories, onSave, onClose, saving }) {
   const [form, setForm] = useState({
-    examName:       paper.examName             || "",
-    examCategoryId: paper.examCategoryId       || "",
-    subject:        paper.subject              || "",
-    year:           paper.year                 || new Date().getFullYear(),
-    shift:          paper.shift                || "",
-    language:       paper.language             || "English",
-    metaTitle:      paper.metaTitle            || "",
-    metaDescription:paper.metaDescription      || "",
+    examName:        paper.examName        || "",
+    examCategoryId:  paper.examCategoryId  || "",
+    subject:         paper.subject         || "",
+    year:            paper.year            || new Date().getFullYear(),
+    shift:           paper.shift           || "",
+    language:        paper.language        || "English",
+    metaTitle:       paper.metaTitle       || "",
+    metaDescription: paper.metaDescription || "",
   });
 
   return (
@@ -73,7 +154,6 @@ function EditModal({ paper, categories, onSave, onClose, saving }) {
               <option>English & Hindi</option>
             </select>
           </div>
-          {/* SEO Fields */}
           <div className="col-span-2">
             <label className="block text-xs font-medium text-gray-600 mb-1">
               SEO Title <span className="text-gray-400 font-normal">(leave blank to auto-generate)</span>
@@ -110,20 +190,21 @@ function EditModal({ paper, categories, onSave, onClose, saving }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdminPapers() {
-  const [papers, setPapers]         = useState([]);
-  const [categories, setCategories] = useState([]); // ✅ from DB
-  const [loading, setLoading]       = useState(true);
-  const [uploading, setUploading]   = useState(false);
-  const [saving, setSaving]         = useState(false);
-  const [error, setError]           = useState(null);
-  const [success, setSuccess]       = useState(null);
-  const [showForm, setShowForm]     = useState(false);
-  const [editPaper, setEditPaper]   = useState(null);
+  const [papers, setPapers]               = useState([]);
+  const [categories, setCategories]       = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [uploading, setUploading]         = useState(false);
+  const [saving, setSaving]               = useState(false);
+  const [error, setError]                 = useState(null);
+  const [success, setSuccess]             = useState(null);
+  const [showForm, setShowForm]           = useState(false);
+  const [showCatModal, setShowCatModal]   = useState(false);
+  const [editPaper, setEditPaper]         = useState(null);
 
   // Drill-down
-  const [level, setLevel]                       = useState(1);
+  const [level, setLevel]                           = useState(1);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-  const [selectedExam, setSelectedExam]         = useState(null);
+  const [selectedExam, setSelectedExam]             = useState(null);
 
   const [form, setForm] = useState({
     examName: "", examCategoryId: "", subject: "",
@@ -141,7 +222,6 @@ export default function AdminPapers() {
     fetchPapers();
   }, []);
 
-  // ✅ Fetch categories from DB — no hardcoded list
   const fetchCategories = async () => {
     try {
       const token = localStorage.getItem("adminToken");
@@ -168,6 +248,20 @@ export default function AdminPapers() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteCategory = (id, name) => {
+    if (!confirm(`Delete category "${name}"? Papers under this category will lose their category.`)) return;
+    const token = localStorage.getItem("adminToken");
+    fetch(`${API_URL}/categories/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setCategories(prev => prev.filter(c => c.id !== id));
+          showSuccess("Category deleted.");
+        } else setError(data.error || "Delete failed");
+      })
+      .catch(() => setError("Delete failed"));
   };
 
   const handleUpload = async (e) => {
@@ -253,7 +347,6 @@ export default function AdminPapers() {
       .catch(() => setError("Failed to update status"));
   };
 
-  // ✅ Group by categoryId → examName
   const allGrouped = papers.reduce((acc, p) => {
     const catId = p.examCategoryId;
     if (!acc[catId]) acc[catId] = {};
@@ -274,6 +367,17 @@ export default function AdminPapers() {
 
   return (
     <>
+      {showCatModal && (
+        <CategoryModal
+          API_URL={API_URL}
+          onClose={() => setShowCatModal(false)}
+          onSaved={(cat) => {
+            setCategories(prev => [...prev, cat]);
+            showSuccess(`Category "${cat.name}" created!`);
+          }}
+        />
+      )}
+
       {editPaper && (
         <EditModal
           paper={editPaper}
@@ -285,16 +389,64 @@ export default function AdminPapers() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Question Papers</h2>
           <p className="text-sm text-gray-500 mt-1">{papers.length} papers total</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-          <Plus className="w-4 h-4" />Upload Paper
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowCatModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium border border-gray-200">
+            <FolderPlus className="w-4 h-4" />Add Category
+          </button>
+          <button onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+            <Plus className="w-4 h-4" />Upload Paper
+          </button>
+        </div>
       </div>
+
+      {/* ── Categories Strip ─────────────────────────────────────────────────── */}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-5">
+          {categories.map(cat => {
+            const paperCount = Object.values(allGrouped[cat.id] || {}).flat().length;
+            return (
+              <div key={cat.id}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-xs font-medium text-gray-700 group">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                {cat.name}
+                {paperCount > 0 && (
+                  <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full text-[10px]">{paperCount}</span>
+                )}
+                <button onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                  className="ml-1 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+          <button onClick={() => setShowCatModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-dashed border-gray-300 text-xs text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors">
+            <Plus className="w-3 h-3" />New
+          </button>
+        </div>
+      )}
+
+      {/* No categories notice */}
+      {categories.length === 0 && (
+        <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+          <Tag className="w-5 h-5 text-amber-500 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800">No categories yet</p>
+            <p className="text-xs text-amber-600 mt-0.5">Create a category first before uploading papers.</p>
+          </div>
+          <button onClick={() => setShowCatModal(true)}
+            className="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium hover:bg-amber-600">
+            Add Category
+          </button>
+        </div>
+      )}
 
       {/* Alerts */}
       {error && (
@@ -321,22 +473,22 @@ export default function AdminPapers() {
                   onChange={e => setForm({ ...form, examName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              {/* ✅ Category dropdown from DB */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Category *</label>
-                <select value={form.examCategoryId} required
-                  onChange={e => setForm({ ...form, examCategoryId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Select category</option>
-                  {categories.filter(c => c.isActive).map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                {categories.length === 0 && (
-                  <p className="text-[10px] text-amber-600 mt-1">
-                    No categories found. <a href="/admin/categories" className="underline">Add categories first →</a>
-                  </p>
-                )}
+                <div className="flex gap-2">
+                  <select value={form.examCategoryId} required
+                    onChange={e => setForm({ ...form, examCategoryId: e.target.value })}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select category</option>
+                    {categories.filter(c => c.isActive).map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <button type="button" onClick={() => setShowCatModal(true)}
+                    className="px-2 py-2 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-600 hover:border-blue-400 transition-colors" title="Add new category">
+                    <FolderPlus className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
