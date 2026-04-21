@@ -46,9 +46,9 @@ router.get("/", async (req, res) => {
       },
     });
 
-    // ✅ Group by category name for frontend consumption
+    // ✅ null-safe: papers with no category go under "Uncategorised"
     const grouped = papers.reduce((acc, paper) => {
-      const catName = paper.examCategory.name;
+      const catName = paper.examCategory?.name || "Uncategorised";
       if (!acc[catName]) acc[catName] = [];
       acc[catName].push(paper);
       return acc;
