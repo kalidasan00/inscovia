@@ -1,13 +1,13 @@
 // backend/src/controllers/notification.controller.js
 import prisma from "../lib/prisma.js";
 
-// Get notifications for logged-in institute
+// Get notifications for logged-in user/institute
 export const getMyNotifications = async (req, res) => {
   try {
-    const instituteId = req.userId;
+    const userId = req.userId;
 
     const notifications = await prisma.notification.findMany({
-      where: { instituteId },
+      where: { userId },
       orderBy: { createdAt: "desc" }
     });
 
@@ -24,10 +24,10 @@ export const getMyNotifications = async (req, res) => {
 export const markNotificationRead = async (req, res) => {
   try {
     const { id } = req.params;
-    const instituteId = req.userId;
+    const userId = req.userId;
 
     await prisma.notification.update({
-      where: { id, instituteId },
+      where: { id, userId },
       data: { isRead: true }
     });
 
@@ -41,10 +41,10 @@ export const markNotificationRead = async (req, res) => {
 // Mark all as read
 export const markAllNotificationsRead = async (req, res) => {
   try {
-    const instituteId = req.userId;
+    const userId = req.userId;
 
     await prisma.notification.updateMany({
-      where: { instituteId, isRead: false },
+      where: { userId, isRead: false },
       data: { isRead: true }
     });
 
