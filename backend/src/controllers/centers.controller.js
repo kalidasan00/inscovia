@@ -122,12 +122,16 @@ export const updateCenter = async (req, res) => {
     const center = await prisma.center.findUnique({ where: { slug } });
     if (!center) return res.status(404).json({ error: "Center not found" });
 
-    // ✅ FIXED: check orgId instead of userId
-    if (center.orgId !== req.orgId) {
+    // ✅ FIXED: allow access via orgId OR userId (for legacy accounts)
+    const authorizedByOrg = center.orgId && center.orgId === req.orgId;
+    const authorizedByUser = center.userId && center.userId === req.userId;
+    if (!authorizedByOrg && !authorizedByUser) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
-    if (updateData.courses) {
+    // ✅ FIXED: only auto-parse courses→courseDetails when courseDetails
+    // is NOT explicitly provided (prevents overwriting school tuition object)
+    if (updateData.courses && !updateData.courseDetails) {
       const courseDetails = parseCourseDetails(updateData.courses);
       updateData.courseDetails = courseDetails;
       updateData.courses = courseDetails.map(c => c.name);
@@ -151,8 +155,10 @@ export const uploadLogo = async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const center = await prisma.center.findUnique({ where: { slug } });
-    // ✅ FIXED: check orgId instead of userId
-    if (!center || center.orgId !== req.orgId) {
+    // ✅ FIXED: allow via orgId OR userId
+    const authorizedByOrg = center?.orgId && center.orgId === req.orgId;
+    const authorizedByUser = center?.userId && center.userId === req.userId;
+    if (!center || (!authorizedByOrg && !authorizedByUser)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -179,8 +185,10 @@ export const uploadCoverImage = async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const center = await prisma.center.findUnique({ where: { slug } });
-    // ✅ FIXED: check orgId instead of userId
-    if (!center || center.orgId !== req.orgId) {
+    // ✅ FIXED: allow via orgId OR userId
+    const authorizedByOrg = center?.orgId && center.orgId === req.orgId;
+    const authorizedByUser = center?.userId && center.userId === req.userId;
+    if (!center || (!authorizedByOrg && !authorizedByUser)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
