@@ -82,7 +82,7 @@ export default function InstituteDashboard() {
       for (const file of files) {
         const formData = new FormData();
         formData.append("image", file);
-        const centerId = center?.id || centerSlug;
+        const centerId = center?.slug || centerSlug;
         const response = await fetch(`${API_URL}/centers/${centerId}/upload-gallery`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -106,7 +106,7 @@ export default function InstituteDashboard() {
     if (!confirm("Are you sure you want to delete this image?")) return;
     const token = localStorage.getItem("instituteToken");
     try {
-      const centerId = center?.id || centerSlug;
+      const centerId = center?.slug || centerSlug;
       const response = await fetch(`${API_URL}/centers/${centerId}/delete-gallery`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

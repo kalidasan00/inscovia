@@ -16,17 +16,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
       },
-      // ✅ ADDED: Unsplash (was causing the runtime error)
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
-      // ✅ ADDED: Flaticon CDN (was causing the latest runtime error)
       {
         protocol: 'https',
         hostname: 'cdn-icons-png.flaticon.com',
       },
-      // ✅ Other common image hosts — remove any you don't use
       {
         protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
@@ -42,10 +39,10 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
-  // ✅ Build output tracing (required for standalone Docker)
+  // ✅ Build output tracing
   experimental: {
     outputFileTracingRoot: require('path').join(__dirname),
-    isrMemoryCacheSize: 52428800, // 50MB ISR cache
+    isrMemoryCacheSize: 52428800,
   },
 
   // ✅ Bundle optimization
@@ -75,21 +72,18 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Static assets — cache aggressively
         source: '/_next/static/(.*)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
       {
-        // Images
         source: '/_next/image(.*)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
       {
-        // All pages — security + smart caching
         source: '/(.*)',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -100,12 +94,14 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              // ✅ FIXED: Added GTM and Google Analytics
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              // ✅ FIXED: Added unsplash to img-src so CSP doesn't block it
-              "img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com https://cdn-icons-png.flaticon.com",
-              "connect-src 'self' https://inscovia.onrender.com https://*.onrender.com",
+              // ✅ FIXED: Added map tile domains and cdnjs for Leaflet icons
+              "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://cdn-icons-png.flaticon.com https://*.tile.openstreetmap.org https://unpkg.com https://cdnjs.cloudflare.com",
+              // ✅ FIXED: Added OpenStreetMap tile and nominatim domains
+              "connect-src 'self' https://inscovia.onrender.com https://*.onrender.com https://*.tile.openstreetmap.org https://nominatim.openstreetmap.org https://www.google-analytics.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },
@@ -118,7 +114,7 @@ const nextConfig = {
     ];
   },
 
-  // ✅ Trailing slash redirects enforced
+  // ✅ Trailing slash redirects
   async redirects() {
     return [
       {
