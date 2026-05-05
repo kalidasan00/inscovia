@@ -29,7 +29,7 @@ export const uploadGalleryImage = async (req, res) => {
   let uploadedImageUrl = null;
 
   try {
-    const { id } = req.params;
+    const { slug } = req.params;
 
     // Check authentication
     if (!req.userId) {
@@ -50,7 +50,7 @@ export const uploadGalleryImage = async (req, res) => {
     // ✅ OPTIMIZED: Single query to verify ownership AND get current gallery
     const center = await prisma.center.findFirst({
       where: {
-        id,
+        slug,
         userId: req.userId // Verify ownership in query
       },
       select: {
@@ -171,7 +171,7 @@ export const uploadGalleryImage = async (req, res) => {
 // ✅ OPTIMIZED: Delete gallery image
 export const deleteGalleryImage = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { slug } = req.params;
     const { imageUrl } = req.body;
 
     if (!imageUrl) {
@@ -185,7 +185,7 @@ export const deleteGalleryImage = async (req, res) => {
     // ✅ OPTIMIZED: Single query to verify ownership AND get gallery
     const center = await prisma.center.findFirst({
       where: {
-        id,
+        slug,
         userId: req.userId
       },
       select: {
