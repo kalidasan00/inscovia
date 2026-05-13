@@ -3,7 +3,6 @@ import CenterDetailClient from './center-detail-client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-// ✅ FIX #1: Sanitize strings going into JSON-LD to prevent XSS
 function sanitizeForJsonLd(str) {
   if (typeof str !== "string") return str;
   return str.replace(/<\/script>/gi, "<\\/script>").replace(/<!--/g, "<\\!--");
@@ -44,13 +43,10 @@ export async function generateMetadata({ params }) {
 
   const category = center.primaryCategory?.replace(/_/g, ' ').toLowerCase() || 'training';
   const shortDesc = center.description?.substring(0, 150) || `${center.name} in ${center.city}`;
-  // ✅ SEO FIX: removed courseKeywords — no longer needed after keywords removal
 
   return {
     title: `${center.name} - ${center.city} | Reviews, Courses & Admission`,
     description: `${center.name} in ${center.city}, ${center.state}. ${shortDesc}... Read reviews, compare courses, and get admission details.`,
-    // ✅ SEO FIX #1: removed keywords[] — Google has ignored this meta tag since 2009.
-    // keeping it was dead weight and can signal spam to Bing crawler.
     openGraph: {
       title: `${center.name} - ${center.city}`,
       description: shortDesc,
@@ -72,10 +68,6 @@ export async function generateMetadata({ params }) {
       images: [center.image || center.logo || '/og-image.png'],
     },
     alternates: {
-      // ✅ SEO FIX #2: changed inscovia.com → www.inscovia.com
-      // layout.js uses www. as the metadataBase. Google treats inscovia.com and
-      // www.inscovia.com as two different sites — inconsistent canonicals cause
-      // duplicate content issues and split link equity between both versions.
       canonical: `https://www.inscovia.com/centers/${params.slug}`,
     },
     robots: {
@@ -92,7 +84,6 @@ export async function generateMetadata({ params }) {
 }
 
 function buildSchemas(center) {
-  // ✅ FIX #1: sanitize center data before injecting into JSON-LD
   const c = sanitizeCenter(center);
 
   const localBusinessSchema = {
@@ -100,7 +91,6 @@ function buildSchemas(center) {
     '@type': 'EducationalOrganization',
     name: c.name,
     description: c.description,
-    // ✅ SEO FIX #2: www consistency
     url: `https://www.inscovia.com/centers/${c.slug}`,
     image: c.image || c.logo,
     logo: c.logo,
@@ -112,10 +102,6 @@ function buildSchemas(center) {
       addressRegion: c.state,
       addressCountry: 'IN',
     },
-    // ✅ SEO FIX #3: changed (c.rating > 0) → (c.rating > 0 && c.reviewCount > 0)
-    // previously used reviewCount || 1 which meant if reviewCount was 0 or undefined,
-    // Google was told there is 1 review when there isn't. Google can penalize
-    // structured data that doesn't match actual page content — this is a trust signal.
     ...(c.rating > 0 && c.reviewCount > 0 && {
       aggregateRating: {
         '@type': 'AggregateRating',
@@ -132,7 +118,6 @@ function buildSchemas(center) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      // ✅ SEO FIX #2: www consistency across all breadcrumb URLs
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.inscovia.com' },
       { '@type': 'ListItem', position: 2, name: 'Centers', item: 'https://www.inscovia.com/centers' },
       { '@type': 'ListItem', position: 3, name: c.city, item: `https://www.inscovia.com/centers?city=${c.city}` },
@@ -140,27 +125,28 @@ function buildSchemas(center) {
     ],
   };
 
-  const courseSchemas = center.courseDetails?.slice(0, 5).map((course) => ({
-    '@context': 'https://schema.org',
-    '@type': 'Course',
-    name: sanitizeForJsonLd(course.name),
-    provider: {
-      '@type': 'Organization',
-      name: c.name,
-      // ✅ SEO FIX #2: www consistency
-      url: `https://www.inscovia.com/centers/${c.slug}`,
-    },
-    ...(course.fees && {
-      offers: { '@type': 'Offer', price: course.fees, priceCurrency: 'INR' },
-    }),
-    ...(course.duration && { duration: course.duration }),
-  })) || [];
+  // ✅ FIXED: guard against school tuition courseDetails which is an object not array
+  const courseSchemas = Array.isArray(center.courseDetails)
+    ? center.courseDetails.slice(0, 5).map((course) => ({
+        '@context': 'https://schema.org',
+        '@type': 'Course',
+        name: sanitizeForJsonLd(course.name),
+        provider: {
+          '@type': 'Organization',
+          name: c.name,
+          url: `https://www.inscovia.com/centers/${c.slug}`,
+        },
+        ...(course.fees && {
+          offers: { '@type': 'Offer', price: course.fees, priceCurrency: 'INR' },
+        }),
+        ...(course.duration && { duration: course.duration }),
+      }))
+    : [];
 
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Inscovia',
-    // ✅ SEO FIX #2: www consistency
     url: 'https://www.inscovia.com',
     logo: 'https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png',
     contactPoint: {
@@ -203,7 +189,6 @@ export default async function CenterDetailPage({ params }) {
         </>
       )}
 
-      {/* ✅ FIX #5: pass center data as prop so client doesn't fetch again */}
       <CenterDetailClient initialCenter={center} />
     </>
   );

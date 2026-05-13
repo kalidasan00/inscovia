@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AccountSwitcher from "../../../components/AccountSwitcher";
 import Footer from "../../../components/Footer";
-import { X, AlertCircle, LogOut } from "lucide-react";
+import { X, AlertCircle, LogOut, IndianRupee, Clock } from "lucide-react";
 import GallerySection from "./GallerySection";
 import PromoteBannerSection from "./PromoteBannerSection";
 import TeamSection from "./TeamSection";
 import dynamic from "next/dynamic";
 
-// ✅ LocationEditor — ssr:false required for Leaflet
 const LocationEditor = dynamic(() => import("./LocationEditor"), {
   ssr: false,
   loading: () => <div className="h-[340px] bg-gray-100 rounded-2xl animate-pulse mb-3" />,
@@ -123,24 +122,6 @@ export default function InstituteDashboard() {
     }
   };
 
-  const parseCourses = (courses) => {
-    const coursesByCategory = {};
-    if (!courses || courses.length === 0) return coursesByCategory;
-    courses.forEach(course => {
-      if (course.includes(':')) {
-        const [category, courseName] = course.split(':').map(s => s.trim());
-        if (!coursesByCategory[category]) coursesByCategory[category] = [];
-        coursesByCategory[category].push(courseName);
-      } else {
-        if (institute?.primaryCategory) {
-          if (!coursesByCategory[institute.primaryCategory]) coursesByCategory[institute.primaryCategory] = [];
-          coursesByCategory[institute.primaryCategory].push(course);
-        }
-      }
-    });
-    return coursesByCategory;
-  };
-
   const getCategoriesWithCourses = (coursesByCategory) => {
     const categories = [];
     if (institute?.primaryCategory && coursesByCategory[institute.primaryCategory]?.length > 0) {
@@ -152,11 +133,39 @@ export default function InstituteDashboard() {
     return categories;
   };
 
+  // ✅ FIXED: build coursesByCategory from courseDetails (has fees+duration),
+  // fallback to courses string array only if courseDetails is empty
+  const coursesByCategory = (() => {
+    const map = {};
+    if (center?.courseDetails && Array.isArray(center.courseDetails) && center.courseDetails.length > 0) {
+      center.courseDetails.forEach(course => {
+        const cat = course.category || institute?.primaryCategory;
+        if (!cat) return;
+        if (!map[cat]) map[cat] = [];
+        map[cat].push(course);
+      });
+    } else if (center?.courses?.length > 0) {
+      center.courses.forEach(course => {
+        if (typeof course === "string" && course.includes(":")) {
+          const [category, courseName] = course.split(":").map(s => s.trim());
+          if (!map[category]) map[category] = [];
+          map[category].push({ name: courseName, category });
+        } else if (institute?.primaryCategory) {
+          if (!map[institute.primaryCategory]) map[institute.primaryCategory] = [];
+          map[institute.primaryCategory].push({ name: course, category: institute.primaryCategory });
+        }
+      });
+    }
+    return map;
+  })();
+
+  const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
+
   useEffect(() => {
-    if (!institute || !center?.courses || isStudyAbroad || isSchoolTuition) return;
-    const coursesByCategory = parseCourses(center.courses);
-    const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
-    if (categoriesWithCourses.length > 0) setActiveTab(categoriesWithCourses[0]);
+    if (!institute || isStudyAbroad || isSchoolTuition) return;
+    if (categoriesWithCourses.length > 0 && !activeTab) {
+      setActiveTab(categoriesWithCourses[0]);
+    }
   }, [institute, center]);
 
   const formatCategory = (category) => {
@@ -195,32 +204,24 @@ export default function InstituteDashboard() {
 
   if (!institute) { router.push("/institute/login"); return null; }
 
-  const coursesByCategory = center?.courses ? parseCourses(center.courses) : {};
-  const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
-
   return (
     <>
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
 
-        {/* ✅ AccountSwitcher — above the dashboard card, matches user dashboard style */}
         <div className="mb-3">
           <AccountSwitcher mode="institute" />
         </div>
 
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
 
-          {/* Header Banner */}
           <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
             {center?.image && (
               <img src={center.image} alt={institute.instituteName} className="w-full h-full object-cover" />
             )}
-
-            {/* Logout — top-right */}
             <button onClick={() => setShowLogoutModal(true)}
               className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-lg transition-colors shadow-sm" title="Logout">
               <LogOut className="w-4 h-4 text-gray-700" />
             </button>
-
             <div className="absolute -bottom-10 left-3">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-xl border-4 border-white overflow-hidden flex items-center justify-center">
                 {center?.logo ? (
@@ -236,7 +237,6 @@ export default function InstituteDashboard() {
 
           <div className="pt-12 px-3 sm:px-4 pb-4">
 
-            {/* Name & Location */}
             <div className="mb-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">{institute.instituteName}</h1>
@@ -249,7 +249,6 @@ export default function InstituteDashboard() {
               </div>
             </div>
 
-            {/* Tags */}
             <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b">
               <span className="px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
                 {formatCategory(institute.primaryCategory)}
@@ -271,7 +270,6 @@ export default function InstituteDashboard() {
               )}
             </div>
 
-            {/* Study Abroad Stats */}
             {isStudyAbroad && (center?.studentsPlaced || center?.successRate || center?.avgScholarship) && (
               <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b">
                 {center.studentsPlaced && (
@@ -295,7 +293,6 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* School Tuition Stats */}
             {isSchoolTuition && schoolData && (schoolData.studentsCount || schoolData.batchSize || schoolData.feeRange) && (
               <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b">
                 {schoolData.studentsCount && (
@@ -319,7 +316,6 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* Description */}
             <div className="mb-3">
               <div className="flex items-center justify-between mb-1.5">
                 <h2 className="text-sm font-bold text-gray-900">About</h2>
@@ -330,7 +326,6 @@ export default function InstituteDashboard() {
               </p>
             </div>
 
-            {/* STUDY ABROAD */}
             {isStudyAbroad && (
               <>
                 <div className="mb-3">
@@ -341,9 +336,7 @@ export default function InstituteDashboard() {
                   {center?.countries?.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {center.countries.map((country, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded-full">
-                          {country}
-                        </span>
+                        <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium rounded-full">{country}</span>
                       ))}
                     </div>
                   ) : (
@@ -381,9 +374,7 @@ export default function InstituteDashboard() {
                     <h2 className="text-sm font-bold text-gray-900 mb-2">Top Universities</h2>
                     <div className="flex flex-wrap gap-1.5">
                       {center.topUniversities.map((uni, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium rounded-full">
-                          {uni}
-                        </span>
+                        <span key={i} className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium rounded-full">{uni}</span>
                       ))}
                     </div>
                   </div>
@@ -391,7 +382,6 @@ export default function InstituteDashboard() {
               </>
             )}
 
-            {/* SCHOOL TUITION */}
             {isSchoolTuition && (
               <>
                 {schoolData?.boards?.length > 0 && (
@@ -455,7 +445,7 @@ export default function InstituteDashboard() {
               </>
             )}
 
-            {/* COURSES */}
+            {/* ✅ FIXED: Courses section now reads courseDetails for fees + duration */}
             {!isStudyAbroad && !isSchoolTuition && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
@@ -479,11 +469,29 @@ export default function InstituteDashboard() {
                     {activeTab && coursesByCategory[activeTab] && (
                       <div className="grid grid-cols-1 gap-1.5">
                         {coursesByCategory[activeTab].map((course, i) => (
-                          <div key={i} className="px-2.5 py-1.5 bg-gray-50 border rounded-md flex items-center gap-2">
-                            <svg className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-gray-800 text-xs">{course}</span>
+                          <div key={i} className="px-2.5 py-2 bg-gray-50 border rounded-md">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className="text-gray-800 text-xs font-medium">{course.name}</span>
+                            </div>
+                            {(course.fees || course.duration) && (
+                              <div className="flex items-center gap-3 mt-1 ml-5">
+                                {course.fees && (
+                                  <span className="flex items-center gap-0.5 text-xs text-green-700 font-medium">
+                                    <IndianRupee className="w-3 h-3" />
+                                    {Number(course.fees).toLocaleString("en-IN")}
+                                  </span>
+                                )}
+                                {course.duration && (
+                                  <span className="flex items-center gap-0.5 text-xs text-gray-500">
+                                    <Clock className="w-3 h-3" />
+                                    {course.duration}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -498,7 +506,6 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* Contact */}
             {(center?.phone || center?.whatsapp || center?.email || center?.website) && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
@@ -542,7 +549,6 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* Social Media */}
             {(center?.facebook || center?.instagram || center?.linkedin) && (
               <div className="mb-3 pb-3 border-b">
                 <div className="flex items-center gap-2">
@@ -574,7 +580,6 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* ✅ Location Editor */}
             {center?.slug && (
               <div className="mb-3">
                 <LocationEditor
@@ -589,7 +594,6 @@ export default function InstituteDashboard() {
               </div>
             )}
 
-            {/* ✅ Team Section */}
             {(center?.orgId || institute?.role) && (
               <TeamSection
                 orgId={center?.orgId || institute?.organization?.id}
@@ -597,7 +601,6 @@ export default function InstituteDashboard() {
               />
             )}
 
-            {/* Promote Banner Section */}
             {center?.id && (
               <PromoteBannerSection
                 centerId={center.id}
@@ -615,7 +618,6 @@ export default function InstituteDashboard() {
         </div>
       </main>
 
-      {/* Logout Modal */}
       {showLogoutModal && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={() => setShowLogoutModal(false)} />
