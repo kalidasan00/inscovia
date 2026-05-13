@@ -16,9 +16,9 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [isInstituteLoggedIn, setIsInstituteLoggedIn] = useState(false);
 
-  // ── load persisted state (mirrors BottomNav's checkAuth) ─────────────────
+  // ── load persisted state + validate orgs against API ─────────────────────
   useEffect(() => {
-    const loadAuth = () => {
+    const loadAuth = async () => {
       try {
         const instLoggedIn = localStorage.getItem("instituteLoggedIn") === "true";
         const usrLoggedIn = localStorage.getItem("userLoggedIn") === "true";
@@ -31,9 +31,49 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
         const userData = localStorage.getItem("userData");
         if (userData) setUser(JSON.parse(userData));
 
-        // ✅ Always use userOrgs (matches BottomNav)
-        const orgsData = localStorage.getItem("userOrgs");
-        if (orgsData) setOrgs(JSON.parse(orgsData));
+        // Always fetch fresh from API first
+        const localOrgs = JSON.parse(localStorage.getItem("userOrgs") || "[]");
+
+        // ── Validate orgs against the server ─────────────────────────────
+        const token = localStorage.getItem("userToken");
+        if (token) {
+          try {
+            const res = await fetch(`${API_URL}/org/my`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const validOrgs = data.organizations || [];
+              // Update localStorage with fresh list so it stays in sync
+              localStorage.setItem("userOrgs", JSON.stringify(validOrgs));
+              setOrgs(validOrgs);
+
+              // If currently on institute dashboard but that org was deleted, go to user dashboard
+              if (instLoggedIn) {
+                const currentId = localStorage.getItem("currentOrgId");
+                const stillExists = validOrgs.some((o) => o.id === currentId);
+                if (!stillExists) {
+                  // Clean up stale institute session
+                  localStorage.removeItem("instituteLoggedIn");
+                  localStorage.removeItem("instituteToken");
+                  localStorage.removeItem("instituteData");
+                  localStorage.removeItem("instituteCenter");
+                  localStorage.removeItem("currentOrgId");
+                  localStorage.removeItem("currentOrgRole");
+                  localStorage.setItem("lastActiveDashboard", "user");
+                  window.dispatchEvent(new Event("authStateChanged"));
+                  router.push("/user/dashboard");
+                }
+              }
+              return;
+            }
+          } catch {
+            // Network error — fall back to local data silently
+          }
+        }
+
+        // Fallback: use local data as-is
+        setOrgs(localOrgs);
       } catch {}
     };
 
@@ -55,7 +95,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── derived values (mirrors BottomNav) ───────────────────────────────────
+  // ── derived values ────────────────────────────────────────────────────────
   const activeAccount =
     mode === "institute" ? "institute"
     : mode === "user" ? "user"
@@ -63,8 +103,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
 
   const activeOrg = orgs?.[0] ?? null;
 
-  // ✅ BUG 2 FIX: Read currentOrgId from localStorage so it stays fresh
-  // after a switch, not just from the prop (which is stale until page reload)
   const [activeOrgId, setActiveOrgId] = useState(
     currentOrgId || (typeof window !== "undefined" ? localStorage.getItem("currentOrgId") : null)
   );
@@ -83,10 +121,8 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
   const instituteName = activeOrg?.name || currentOrgName || "Institute";
   const instituteInitial = instituteName[0]?.toUpperCase() || "I";
 
-  // ── trigger label ─────────────────────────────────────────────────────────
   const triggerLabel = mode === "institute" ? instituteName : (user?.name || "Account");
 
-  // ── ProfileAvatar — exact copy from BottomNav ────────────────────────────
   const isInst = activeAccount === "institute";
   const avatarLabel = isInst
     ? instituteInitial
@@ -96,7 +132,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
     ? "bg-gradient-to-br from-indigo-500 to-purple-600"
     : "bg-gradient-to-br from-blue-500 to-cyan-500";
 
-  // ── switch to org (always uses userToken — mirrors BottomNav) ────────────
+  // ── switch to org ─────────────────────────────────────────────────────────
   const handleSwitchToInstitute = async (org) => {
     if (mode === "institute" && org.id === activeOrgId) {
       setOpen(false);
@@ -105,7 +141,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
 
     setSwitching(org.id);
     try {
-      // ✅ Always userToken for switching (matches BottomNav)
       const token = localStorage.getItem("userToken");
 
       const res = await fetch(`${API_URL}/org/switch`, {
@@ -119,7 +154,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // ✅ BUG 1 FIX: Save org+center from API response (not stale user data)
       localStorage.setItem("instituteLoggedIn", "true");
       localStorage.setItem("instituteToken", data.token);
       localStorage.setItem("instituteData", JSON.stringify(data.organization));
@@ -132,9 +166,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
 
       window.dispatchEvent(new Event("authStateChanged"));
       setOpen(false);
-
-      // ✅ BUG 3 FIX: Single hard navigation — ensures localStorage is committed
-      // before the dashboard page re-reads it
       window.location.href = "/institute/dashboard";
     } catch (err) {
       console.error("Switch error:", err.message);
@@ -150,7 +181,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
     router.push("/user/dashboard");
   };
 
-  // ✅ Logout — was missing, now matches BottomNav exactly
   const handleLogout = () => {
     [
       "userLoggedIn", "userData", "userToken", "userOrgs",
@@ -173,7 +203,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-colors"
       >
-        {/* ✅ Avatar matches BottomNav exactly — initials + dot badge */}
         <div className={`relative w-8 h-8 rounded-full ring-2 ${ringColor} ring-offset-1 ${bgColor} flex items-center justify-center flex-shrink-0`}>
           <span className="text-white text-[10px] font-bold leading-none">{avatarLabel}</span>
           <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
@@ -202,7 +231,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
 
-          {/* Active account banner — matches BottomNav sheet */}
           {activeAccount && (
             <div className={`flex items-center gap-3 p-3 m-2 rounded-xl ${
               activeAccount === "institute"
@@ -225,7 +253,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
           )}
 
           <div className="p-2 space-y-0.5">
-            {/* Personal account row */}
             {isUserLoggedIn && (
               <button
                 onClick={handleGoToUserDashboard}
@@ -247,7 +274,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
               </button>
             )}
 
-            {/* Institutes list */}
             {orgs.length > 0 && (
               <>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 pt-2 pb-1">
@@ -294,9 +320,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
             )}
           </div>
 
-          {/* Footer actions */}
           <div className="border-t border-gray-100 p-2 space-y-0.5">
-            {/* Add New Institute */}
             <button
               onClick={() => { setOpen(false); router.push("/institute/register"); }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 transition-colors text-left"
@@ -308,7 +332,6 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
               <ChevronRight className="w-4 h-4 text-gray-400" />
             </button>
 
-            {/* ✅ Logout — was missing, now matches BottomNav */}
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-50 transition-colors text-left"

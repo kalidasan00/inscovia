@@ -18,7 +18,6 @@ export default function UserMenuPage() {
   const [canResend, setCanResend] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpExpired, setOtpExpired] = useState(false);
-  // ✅ NEW: show location prompt after login/register
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -46,7 +45,6 @@ export default function UserMenuPage() {
     setSignupData(prev => ({ ...prev, phone: value || "" }));
   };
 
-  // ✅ NEW: called after location prompt is done (city set or skipped)
   const handleLocationDone = (city) => {
     setShowLocationPrompt(false);
     router.push("/user/dashboard");
@@ -69,8 +67,6 @@ export default function UserMenuPage() {
         localStorage.setItem("userData", JSON.stringify(data.user));
         window.dispatchEvent(new Event('authStateChanged'));
         window.dispatchEvent(new Event('storage'));
-        // ✅ CHANGED: show location prompt instead of immediate redirect
-        // only if city not already saved
         const savedCity = localStorage.getItem("userCity");
         if (!savedCity) {
           setShowLocationPrompt(true);
@@ -153,7 +149,6 @@ export default function UserMenuPage() {
       localStorage.setItem("userData", JSON.stringify(registerData.user));
       window.dispatchEvent(new Event('authStateChanged'));
       window.dispatchEvent(new Event('storage'));
-      // ✅ CHANGED: always show location prompt on fresh register
       setShowLocationPrompt(true);
     } catch (err) {
       setError(err.message);
@@ -189,7 +184,6 @@ export default function UserMenuPage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 pb-24">
 
-      {/* ✅ NEW: Location prompt modal */}
       {showLocationPrompt && (
         <LocationPrompt onDone={handleLocationDone} />
       )}
@@ -206,6 +200,7 @@ export default function UserMenuPage() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold">Welcome to Inscovia</h1>
+              <p className="text-blue-100 text-sm mt-1">Discover the best training institutes near you</p>
             </div>
             <div className="p-6 space-y-3">
               <button onClick={() => { setActiveTab("login"); setError(""); }}
@@ -216,12 +211,7 @@ export default function UserMenuPage() {
                 className="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
                 Create New Account
               </button>
-              <div className="text-center pt-4 border-t border-gray-200 mt-4">
-                <p className="text-xs text-gray-500 mb-2">Or continue as</p>
-                <Link href="/institute/login" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  Institute Login →
-                </Link>
-              </div>
+              {/* ✅ FIXED: removed hardcoded institute login link */}
             </div>
           </>
         )}
@@ -238,7 +228,7 @@ export default function UserMenuPage() {
                 Back
               </button>
               <h2 className="text-xl font-bold text-gray-900">Welcome Back</h2>
-              <p className="text-gray-600 text-sm mt-1">Enter your credentials</p>
+              <p className="text-gray-600 text-sm mt-1">Enter your credentials to continue</p>
             </div>
             {error && (
               <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
@@ -288,7 +278,7 @@ export default function UserMenuPage() {
                 Back
               </button>
               <h2 className="text-xl font-bold text-gray-900">Create Account</h2>
-              <p className="text-gray-600 text-sm mt-1">Fill in your details</p>
+              <p className="text-gray-600 text-sm mt-1">Fill in your details to get started</p>
             </div>
             {error && (
               <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
@@ -387,7 +377,7 @@ export default function UserMenuPage() {
                   }`} />
               </div>
               {otpExpired ? (
-                <p className="text-center text-sm text-red-500 font-medium">⚠️ OTP has expired. Please request a new one.</p>
+                <p className="text-center text-sm text-red-500 font-medium">OTP has expired. Please request a new one.</p>
               ) : timer > 0 ? (
                 <p className="text-center text-sm text-gray-600">
                   Code expires in <span className="font-semibold text-blue-600">{formatTime(timer)}</span>
