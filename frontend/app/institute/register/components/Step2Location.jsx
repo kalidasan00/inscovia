@@ -5,7 +5,7 @@ import { getStateNames, getDistrictsByState } from "../../../../lib/locationUtil
 const inputClass = "w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
 const labelClass = "block text-sm font-medium text-gray-700 mb-2";
 
-export default function Step2Location({ formData, onChange, onNext, onBack }) {
+export default function Step2Location({ formData, onChange, onNext, onBack, loading }) {
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
 
@@ -74,13 +74,13 @@ export default function Step2Location({ formData, onChange, onNext, onBack }) {
       </div>
 
       <div className="flex gap-3">
-        <button type="button" onClick={onBack}
-          className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors">
+        <button type="button" onClick={onBack} disabled={loading}
+          className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           ← Back
         </button>
-        <button type="button" onClick={handleNext}
-          className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-          Next →
+        <button type="button" onClick={handleNext} disabled={loading}
+          className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          {loading ? "Registering..." : "Next →"}
         </button>
       </div>
     </div>

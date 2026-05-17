@@ -100,6 +100,7 @@ export default function RegisterInstitute() {
 
   const handleStep2Next = (error) => {
     if (error) { setError(error); return; }
+    if (loading) return; // ✅ CHANGE 1: prevent double submission
     setError("");
     // Existing user: skip account + OTP steps, register directly
     if (isExistingUser) {
@@ -311,6 +312,7 @@ export default function RegisterInstitute() {
               onChange={handleChange}
               onNext={handleStep2Next}
               onBack={() => { setError(""); setStep(1); }}
+              loading={loading}
             />
           )}
           {step === 3 && !isExistingUser && (

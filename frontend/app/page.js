@@ -36,6 +36,41 @@ export const metadata = {
   },
 };
 
+// ✅ JSON-LD schemas
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Inscovia",
+  url: "https://www.inscovia.com",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: "https://www.inscovia.com/centers?q={search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Inscovia",
+  url: "https://www.inscovia.com",
+  logo: "https://res.cloudinary.com/dwddvakdf/image/upload/v1768211226/Inscovia_-_1_2_zbkogh.png",
+  description:
+    "Inscovia is India's coaching center and training institute discovery platform. Find, compare and enroll in top institutes across India.",
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "Customer Support",
+    email: "support@inscovia.com",
+  },
+  sameAs: [
+    "https://www.instagram.com/inscovia",
+    "https://www.linkedin.com/company/inscovia",
+  ],
+};
+
 // ✅ Limited to 12 centers — homepage doesn't need all 500+
 // revalidate reduced to 300s (5 min) so new institutes appear faster
 async function getCenters() {
@@ -56,11 +91,21 @@ export default async function HomePage() {
   const initialCenters = await getCenters();
 
   return (
-    // ✅ Suspense boundary — page shows skeleton instead of hanging
-    // if getCenters() is slow or on revalidation
-    <Suspense fallback={<HomePageSkeleton />}>
-      <HomeClient initialCenters={initialCenters} />
-    </Suspense>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      {/* ✅ Suspense boundary — page shows skeleton instead of hanging
+          if getCenters() is slow or on revalidation */}
+      <Suspense fallback={<HomePageSkeleton />}>
+        <HomeClient initialCenters={initialCenters} />
+      </Suspense>
+    </>
   );
 }
 
