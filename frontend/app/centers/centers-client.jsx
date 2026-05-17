@@ -343,8 +343,7 @@ export default function CentersClient({ initialCenters = [] }) {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
-              {displayFiltered.map((center) => (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 items-stretch">                {displayFiltered.map((center) => (
                 <CenterCard key={center.id} center={center} />
               ))}
             </div>

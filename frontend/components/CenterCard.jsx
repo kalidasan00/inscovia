@@ -1,4 +1,4 @@
-// components/CenterCard.jsx - FIXED
+// components/CenterCard.jsx
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -7,7 +7,6 @@ import { useFavorites } from "../contexts/FavoritesContext";
 import { useCompare } from "../contexts/CompareContext";
 import { Heart, GitCompare, MapPin, Star, CheckCircle, AlertTriangle, Lock, X } from "lucide-react";
 
-// ✅ FIXED: moved outside component — never changes, no need to recreate on every render
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 export default function CenterCard({ center }) {
@@ -30,7 +29,6 @@ export default function CenterCard({ center }) {
         const res = await fetch(`${API_URL}/reviews/center/${center.id}/stats`);
         if (res.ok) setReviewStats(await res.json());
       } catch (err) {
-        // ✅ FIXED: log in dev, silent in prod
         if (process.env.NODE_ENV === 'development') console.warn('Review stats failed:', err);
       }
     }
@@ -70,14 +68,13 @@ export default function CenterCard({ center }) {
   const isLiked = isFavorite(center.id);
   const isComparing = isInCompare(center.id);
 
-  // ✅ FIXED: lucide icons for toast — no emojis
   const toastConfig = {
     "added-fav":       { icon: <Heart className="w-3 h-3 fill-current text-red-400" />,       label: "Added to favorites" },
     "removed-fav":     { icon: <X className="w-3 h-3 text-gray-400" />,                        label: "Removed from favorites" },
     "added-compare":   { icon: <CheckCircle className="w-3 h-3 text-green-400" />,             label: "Added to compare" },
     "removed-compare": { icon: <X className="w-3 h-3 text-gray-400" />,                        label: "Removed from compare" },
-    "compare-limit":   { icon: <AlertTriangle className="w-3 h-3 text-yellow-400" />,          label: "Max 3 centers to compare" },
-    "login-required":  { icon: <Lock className="w-3 h-3 text-gray-400" />,                     label: "Please login to continue" },
+    "compare-limit":   { icon: <AlertTriangle className="w-3 h-3 text-yellow-400" />,          label: "Max 3 centers" },
+    "login-required":  { icon: <Lock className="w-3 h-3 text-gray-400" />,                     label: "Please login" },
   };
 
   const displayRating = reviewStats?.totalReviews > 0
@@ -88,36 +85,41 @@ export default function CenterCard({ center }) {
 
   const totalReviews = reviewStats?.totalReviews || 0;
 
-  return (
-    <div className="relative">
-      <Link href={`/centers/${center.slug}`}>
-        <article className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+  // ✅ clean course names — strip "CATEGORY: " prefix
+  const cleanCourses = (center.courses || []).map(c =>
+    c.includes(":") ? c.split(":")[1].trim() : c
+  );
 
-          {/* Cover Image */}
-          <div className="relative h-24 sm:h-32 w-full bg-gradient-to-br from-gray-100 to-gray-50">
+  return (
+    <div className="relative h-full">
+      <Link href={`/centers/${center.slug}`} className="h-full">
+        {/* ✅ FIXED: h-full + flex flex-col so all cards stretch to same height */}
+        <article className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+
+          {/* Cover Image — fixed height */}
+          <div className="relative h-28 w-full bg-gradient-to-br from-gray-100 to-gray-50 flex-shrink-0">
             {center.image && (
               <img
                 src={center.image}
                 alt={center.name}
                 className="object-cover h-full w-full"
-                loading="lazy" // ✅ FIXED: lazy load — all cards were loading at once
-                onError={e => { e.target.style.display = 'none'; }} // ✅ FIXED: no broken image icon
+                loading="lazy"
+                onError={e => { e.target.style.display = 'none'; }}
               />
             )}
 
             {/* Logo */}
-            <div className="absolute -bottom-4 left-2 sm:left-3">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg shadow-md border-2 border-white flex items-center justify-center overflow-hidden">
+            <div className="absolute -bottom-4 left-3">
+              <div className="w-10 h-10 bg-white rounded-lg shadow-md border-2 border-white flex items-center justify-center overflow-hidden">
                 {(center.logo || center.image) ? (
                   <img
                     src={center.logo || center.image}
                     alt={`${center.name} logo`}
                     className="w-full h-full object-cover"
-                    onError={e => { e.target.style.display = 'none'; }} // ✅ FIXED: fallback
+                    onError={e => { e.target.style.display = 'none'; }}
                   />
                 ) : (
-                  // ✅ fallback placeholder if no logo and no image
-                  <span className="text-gray-400 text-xs font-bold">
+                  <span className="text-gray-400 text-sm font-bold">
                     {center.name?.charAt(0) || "?"}
                   </span>
                 )}
@@ -126,71 +128,71 @@ export default function CenterCard({ center }) {
 
             {/* Rating badge */}
             {displayRating && (
-              <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-semibold text-yellow-600 bg-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md shadow-sm">
+              <div className="absolute top-2 right-2 flex items-center gap-0.5 text-xs font-semibold text-yellow-600 bg-white px-1.5 py-0.5 rounded-md shadow-sm">
                 {displayRating}
-                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
+                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
               </div>
             )}
           </div>
 
-          <div className="pt-5 sm:pt-7 px-2.5 sm:px-3 pb-2.5 sm:pb-3">
-            <h3 className="font-semibold text-xs sm:text-sm leading-tight truncate">{center.name}</h3>
+          {/* ✅ FIXED: flex-1 so content fills remaining space equally across cards */}
+          <div className="pt-6 px-3 pb-3 flex flex-col flex-1">
 
-            <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 flex items-center gap-1">
-              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-              <span className="truncate">{center.location}</span>
-              {center.type && (
-                <>
-                  <span className="hidden sm:inline">•</span>
-                  <span className="hidden sm:inline">{center.type}</span>
-                </>
-              )}
+            {/* Name */}
+            <h3 className="font-semibold text-sm leading-tight line-clamp-1">{center.name}</h3>
+
+            {/* Location */}
+            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{center.city}{center.state ? `, ${center.state}` : ""}</span>
             </div>
 
+            {/* Reviews */}
             {totalReviews > 0 && (
-              <div className="mt-1 text-[10px] sm:text-xs text-gray-600">
+              <div className="mt-1 text-xs text-gray-500">
                 {totalReviews} review{totalReviews !== 1 ? 's' : ''}
               </div>
             )}
 
-            {/* ✅ FIXED: course badges — was duplicating "+N" on desktop */}
-            <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
-              {center.courses.slice(0, 2).map((course, idx) => (
+            {/* ✅ FIXED: flex-1 pushes courses+buttons to bottom consistently */}
+            <div className="flex-1" />
+
+            {/* Course badges */}
+            <div className="mt-2 flex flex-wrap gap-1 min-h-[22px]">
+              {cleanCourses.slice(0, 2).map((course, idx) => (
                 <span key={idx}
-                  className="text-[10px] sm:text-xs px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded truncate max-w-[80px]">
+                  className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded truncate max-w-[90px]">
                   {course}
                 </span>
               ))}
-              {center.courses.length > 2 && (
-                <span className="text-[10px] sm:text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
-                  +{center.courses.length - 2}
+              {cleanCourses.length > 2 && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
+                  +{cleanCourses.length - 2}
                 </span>
               )}
             </div>
 
             {/* Action buttons */}
-            <div className="mt-2 sm:mt-3 flex gap-1.5">
+            <div className="mt-2 flex gap-1.5">
               <button onClick={handleFavoriteClick}
-                className={`flex-1 flex items-center justify-center gap-1 text-[10px] sm:text-xs font-medium px-2 py-1.5 rounded-md transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium px-2 py-1.5 rounded-lg transition-all ${
                   isLiked ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}>
                 <Heart className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
-                <span className="hidden sm:inline">{isLiked ? 'Saved' : 'Save'}</span>
               </button>
 
               <button onClick={handleCompareClick}
                 disabled={!canAddMore() && !isComparing}
-                className={`flex-1 flex items-center justify-center gap-1 text-[10px] sm:text-xs font-medium px-2 py-1.5 rounded-md transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium px-2 py-1.5 rounded-lg transition-all ${
                   isComparing
                     ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed'
                 }`}>
                 <GitCompare className="w-3 h-3" />
-                <span className="hidden sm:inline">{isComparing ? 'Added' : 'Compare'}</span>
               </button>
             </div>
 
-            <button className="mt-1.5 sm:mt-2 w-full text-center text-[10px] sm:text-xs font-medium px-2 sm:px-3 py-1.5 sm:py-2 bg-accent text-white rounded-md hover:bg-accent/90 transition-colors">
+            <button className="mt-2 w-full text-center text-xs font-medium px-3 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
               View Details
             </button>
           </div>
