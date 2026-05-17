@@ -1,7 +1,8 @@
+// components/FeaturedBanner.jsx
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Star, MapPin, Sparkles } from "lucide-react";
+import { Star, MapPin } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -10,44 +11,55 @@ export default function FeaturedBanner() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchBanners();
-  }, []);
+    const controller = new AbortController();
+    const signal = controller.signal;
 
-  const fetchBanners = async () => {
-    try {
-      // Try FEATURED first, fall back to HERO if empty
-      const res = await fetch(`${API_URL}/banners/active?placement=FEATURED`);
-      const data = await res.json();
-      console.log("[FeaturedBanner] FEATURED response:", data);
+    const fetchBanners = async () => {
+      try {
+        const res = await fetch(`${API_URL}/banners/active?placement=FEATURED`, {
+          signal,
+          cache: "no-store",
+        });
+        const data = await res.json();
+        let found = data.banners || [];
 
-      let found = data.banners || [];
+        if (found.length === 0) {
+          const res2 = await fetch(`${API_URL}/banners/active?placement=HERO`, {
+            signal,
+            cache: "no-store",
+          });
+          const data2 = await res2.json();
+          found = data2.banners || [];
+        }
 
-      if (found.length === 0) {
-        console.log("[FeaturedBanner] No FEATURED banners, trying HERO...");
-        const res2 = await fetch(`${API_URL}/banners/active?placement=HERO`);
-        const data2 = await res2.json();
-        console.log("[FeaturedBanner] HERO response:", data2);
-        found = data2.banners || [];
+        setBanners(found);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("[FeaturedBanner] fetch error:", err);
+        }
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setBanners(found);
-    } catch (err) {
-      console.error("[FeaturedBanner] fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchBanners();
+    return () => controller.abort();
+  }, []);
 
   if (loading) {
     return (
       <div className="mb-4">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Featured Institutes</span>
+        <div className="mb-2">
+          <span className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+            Featured Institutes
+          </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[0, 1].map(i => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl animate-pulse">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl animate-pulse"
+            >
               <div className="w-12 h-12 rounded-xl bg-gray-200 flex-shrink-0" />
               <div className="flex-1 space-y-2">
                 <div className="h-3 bg-gray-200 rounded w-1/3" />
@@ -65,9 +77,10 @@ export default function FeaturedBanner() {
 
   return (
     <div className="mb-4">
-      <div className="flex items-center gap-1.5 mb-2">
-        <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Featured Institutes</span>
+      <div className="mb-2">
+        <span className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+          Featured Institutes
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -87,10 +100,12 @@ export default function FeaturedBanner() {
                     src={center.logo || center.image}
                     alt={center.name}
                     className="w-full h-full object-cover"
-                    onError={e => { e.currentTarget.style.display = "none"; }}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
                 ) : (
-                  <span className="text-indigo-600 font-bold text-lg">{center.name?.charAt(0)}</span>
+                  <span className="text-indigo-600 font-bold text-lg">
+                    {center.name?.charAt(0)}
+                  </span>
                 )}
               </div>
 
@@ -107,11 +122,13 @@ export default function FeaturedBanner() {
                 )}
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                    <MapPin className="w-2.5 h-2.5" />{center.city}
+                    <MapPin className="w-2.5 h-2.5" />
+                    {center.city}
                   </span>
                   {center.rating > 0 && (
                     <span className="text-[10px] text-yellow-600 flex items-center gap-0.5">
-                      <Star className="w-2.5 h-2.5 fill-yellow-400" />{center.rating.toFixed(1)}
+                      <Star className="w-2.5 h-2.5 fill-yellow-400" />
+                      {center.rating.toFixed(1)}
                     </span>
                   )}
                 </div>
