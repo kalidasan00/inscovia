@@ -166,11 +166,13 @@ export default function CentersClient({ initialCenters = [] }) {
   let displayFiltered = filtered;
   const isFallback = city && !distanceKm && filtered.length === 0 && userLat && userLng && !loading;
 
+  // ✅ FIXED: use distanceKm if set, else default 50km
+  const fallbackRadius = distanceKm || 50;
   if (isFallback) {
     displayFiltered = centers.filter((c) => {
       if (c.primaryCategory === "STUDY_ABROAD") return false;
       if (!c.latitude || !c.longitude) return false;
-      return getDistanceKm(userLat, userLng, c.latitude, c.longitude) <= 50;
+      return getDistanceKm(userLat, userLng, c.latitude, c.longitude) <= fallbackRadius;
     });
   }
 
@@ -195,14 +197,10 @@ export default function CentersClient({ initialCenters = [] }) {
     router.push(`/centers${params.toString() ? '?' + params.toString() : ''}`);
   };
 
+  // ✅ FIXED: truly clears everything including city
   const clearAllFilters = () => {
     setDistanceKm(null);
-    const savedCity = localStorage.getItem("userCity");
-    if (savedCity) {
-      router.push(`/centers?city=${encodeURIComponent(savedCity)}`);
-    } else {
-      router.push('/centers');
-    }
+    router.push('/centers');
   };
 
   const pageTitle = isStudyAbroadMode
@@ -217,55 +215,32 @@ export default function CentersClient({ initialCenters = [] }) {
     <>
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-20 md:pb-8">
 
-        {/* ── Header row ── */}
         <div className="mb-3 sm:mb-4">
           <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
 
-            {/* Title + single subtitle */}
             <div className="min-w-0 flex-1">
               <h1 className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight truncate">
                 {pageTitle}
               </h1>
 
-              {/* ONE subtitle line — no stacking */}
-              <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1 flex-wrap leading-snug">
-                {isStudyAbroadMode && "Find trusted consultants for studying abroad"}
-
-                {city && !isStudyAbroadMode && !distanceKm && (
-                  <>
-                    <span className="font-medium text-blue-600">{city}</span>
-                    <button
-                      onClick={() => router.push('/centers')}
-                      className="text-gray-400 hover:text-red-500 transition-colors underline"
-                    >
-                      (show all)
-                    </button>
-                  </>
-                )}
-
-                {distanceKm && (
-                  <>
-                    Within{" "}
-                    <span className="font-medium text-blue-600">
-                      {distanceKm >= 100 ? "100+ km" : `${distanceKm} km`}
-                    </span>
-                    <button
-                      onClick={() => setDistanceKm(null)}
-                      className="text-gray-400 hover:text-red-500 transition-colors underline"
-                    >
-                      (clear)
-                    </button>
-                  </>
-                )}
-              </p>
+              {/* ✅ FIXED: removed city subtitle (show all) — only show distance info */}
+              {distanceKm && (
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                  Within{" "}
+                  <span className="font-medium text-blue-600">
+                    {distanceKm >= 100 ? "100+ km" : `${distanceKm} km`}
+                  </span>
+                  <button onClick={() => setDistanceKm(null)}
+                    className="text-gray-400 hover:text-red-500 transition-colors underline">
+                    (clear)
+                  </button>
+                </p>
+              )}
             </div>
 
-            {/* Filters / Back button */}
             {!isStudyAbroadMode && (
-              <button
-                onClick={() => setShowMobileFilters(true)}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
-              >
+              <button onClick={() => setShowMobileFilters(true)}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors">
                 <SlidersHorizontal className="w-4 h-4" />
                 <span className="hidden xs:inline">Filters</span>
                 {activeFiltersCount > 0 && (
@@ -275,10 +250,8 @@ export default function CentersClient({ initialCenters = [] }) {
             )}
 
             {isStudyAbroadMode && (
-              <button
-                onClick={clearAllFilters}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-              >
+              <button onClick={clearAllFilters}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
                 ← All
               </button>
             )}
@@ -286,7 +259,6 @@ export default function CentersClient({ initialCenters = [] }) {
 
           <SmartSearch centers={centers} />
 
-          {/* Active filter chips */}
           {activeFiltersCount > 0 && !isStudyAbroadMode && (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="text-xs font-medium text-gray-500">Filters:</span>
@@ -327,6 +299,7 @@ export default function CentersClient({ initialCenters = [] }) {
                   <button onClick={() => setDistanceKm(null)} className="hover:text-red-500">×</button>
                 </span>
               )}
+              {/* ✅ FIXED: clear all goes to /centers with no params */}
               <button onClick={clearAllFilters} className="text-xs text-accent hover:text-accent/80 font-medium underline ml-1">
                 Clear all
               </button>
@@ -334,10 +307,7 @@ export default function CentersClient({ initialCenters = [] }) {
           )}
         </div>
 
-        {/* ── Results area ── */}
         <div className="flex-1 min-w-0">
-
-          {/* Count + inline fallback notice — single line */}
           {!loading && (
             <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">
               {displayFiltered.length}{" "}
@@ -349,7 +319,7 @@ export default function CentersClient({ initialCenters = [] }) {
               {distanceKm && distanceKm < 100 && ` within ${distanceKm}km`}
               {isFallback && displayFiltered.length > 0 && (
                 <span className="ml-1 text-amber-600">
-                  — no centers in <strong>{city}</strong>, showing nearby (50km)
+                  — no centers in <strong>{city}</strong>, showing nearby ({fallbackRadius}km)
                 </span>
               )}
             </p>
