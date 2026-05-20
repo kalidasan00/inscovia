@@ -103,8 +103,13 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  orgMemberships OrgMember[]
-  notifications  Notification[]
+  orgMemberships   OrgMember[]
+  notifications    Notification[]
+  posts            Post[]
+  postLikes        PostLike[]
+  postSaves        PostSave[]
+  postComments     PostComment[]
+  postCommentLikes PostCommentLike[]
 
   @@index([email])
   @@index([role])
@@ -297,7 +302,6 @@ model PreviousYearPaper {
   id       String @id @default(cuid())
   slug     String @unique
 
-  // ✅ nullable so existing 421 rows are not affected
   examCategoryId String?
   examCategory   ExamCategory? @relation(fields: [examCategoryId], references: [id])
 
@@ -448,4 +452,89 @@ model InstituteUser {
   updatedAt           DateTime           @updatedAt
 
   @@index([email])
+}
+
+// ─── Feed ────────────────────────────────────────────────────────────────────
+
+model Post {
+  id            String   @id @default(cuid())
+  content       String   @db.Text
+  image         String?
+  pdf           String?
+  pdfName       String?
+  pdfSize       String?
+  authorId      String
+  author        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  savesCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  likes    PostLike[]
+  saves    PostSave[]
+  comments PostComment[]
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model PostSave {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model PostComment {
+  id         String        @id @default(cuid())
+  content    String        @db.Text
+  postId     String
+  post       Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId   String?
+  parent     PostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    PostComment[] @relation("CommentReplies")
+  likesCount Int           @default(0)
+  createdAt  DateTime      @default(now())
+
+  likes PostCommentLike[]
+
+  @@index([postId])
+  @@index([parentId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostCommentLike {
+  id        String      @id @default(cuid())
+  commentId String
+  comment   PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
 }
