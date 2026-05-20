@@ -1,7 +1,7 @@
 // app/admin/users/page.js
 "use client";
 import { useState, useEffect } from "react";
-import { Users, Search, Trash2, UserCheck, UserX, X, Mail, Phone, Calendar } from "lucide-react";
+import { Users, Search, Trash2, UserCheck, UserX, X, AlertTriangle } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -23,11 +23,79 @@ function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = "Confirm", 
   );
 }
 
+// ✅ ADDED: Hard delete confirmation modal — user must type DELETE
+function DeleteUserModal({ user, onConfirm, onCancel }) {
+  const [typed, setTyped] = useState("");
+  const canDelete = typed === "DELETE";
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Delete User</h3>
+            <p className="text-xs text-gray-500">This action cannot be undone</p>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 mb-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Name</span>
+            <span className="text-sm font-semibold text-gray-900">{user.name}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Email</span>
+            <span className="text-sm text-gray-700">{user.email}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">Phone</span>
+            <span className="text-sm text-gray-700">{user.phone}</span>
+          </div>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p className="text-xs text-red-700 font-medium">This will permanently delete:</p>
+          <ul className="text-xs text-red-600 mt-1 space-y-0.5 list-disc list-inside">
+            <li>The user account and all personal data</li>
+            <li>All saved centers and comparisons</li>
+            <li>All reviews written by this user</li>
+            <li>All notifications</li>
+          </ul>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            Type <span className="font-bold text-red-600">DELETE</span> to confirm
+          </label>
+          <input type="text" value={typed} onChange={e => setTyped(e.target.value)}
+            placeholder="Type DELETE here"
+            className="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-400 font-mono" />
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onCancel}
+            className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+            Cancel
+          </button>
+          <button onClick={onConfirm} disabled={!canDelete}
+            className="flex-1 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+            Delete User
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [confirm, setConfirm] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // ✅ ADDED
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -51,33 +119,33 @@ export default function AdminUsers() {
     }
   };
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => fetchUsers(searchQuery), 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // ✅ CHANGED: now opens DeleteUserModal instead of simple confirm
   const handleDelete = (user) => {
-    setConfirm({
-      message: `Delete user "${user.name}"? This cannot be undone.`,
-      confirmLabel: "Delete",
-      confirmClass: "bg-red-600 hover:bg-red-700",
-      onConfirm: async () => {
-        setConfirm(null);
-        try {
-          const token = localStorage.getItem("adminToken");
-          const res = await fetch(`${API_URL}/admin/users/${user.id}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (!res.ok) throw new Error();
-          setSuccess("User deleted.");
-          fetchUsers(searchQuery);
-        } catch {
-          setError("Failed to delete user");
-        }
-      }
-    });
+    setDeleteTarget(user);
+  };
+
+  // ✅ ADDED: actual delete after typing DELETE
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/admin/users/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error();
+      setSuccess("User deleted.");
+      setDeleteTarget(null);
+      fetchUsers(searchQuery);
+    } catch {
+      setError("Failed to delete user");
+      setDeleteTarget(null);
+    }
   };
 
   const handleToggle = (user) => {
@@ -114,6 +182,14 @@ export default function AdminUsers() {
           onCancel={() => setConfirm(null)}
         />
       )}
+      {/* ✅ ADDED: hard delete modal */}
+      {deleteTarget && (
+        <DeleteUserModal
+          user={deleteTarget}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
 
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Users</h2>
@@ -133,7 +209,6 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* Search */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
         <div className="relative">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -147,7 +222,6 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
