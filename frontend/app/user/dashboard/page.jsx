@@ -1,4 +1,3 @@
-// app/user/dashboard/page.jsx
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -7,9 +6,9 @@ import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
 import {
   Heart, GitCompare, Search, MessageSquare,
-  Mail, Phone, LogOut, X, AlertCircle,
-  Camera, Loader2, ChevronRight, LayoutList,
-  PenSquare, Settings
+  LogOut, X, AlertCircle, Camera, Loader2,
+  ChevronRight, Settings, FileText, Image as ImageIcon,
+  MessageCircle, Bookmark
 } from "lucide-react";
 import AccountSwitcher from "../../../components/AccountSwitcher";
 
@@ -26,6 +25,8 @@ export default function UserDashboard() {
   const [avatarFile,      setAvatarFile]      = useState(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError,     setAvatarError]     = useState("");
+  const [myPosts,         setMyPosts]         = useState([]);
+  const [loadingPosts,    setLoadingPosts]    = useState(false);
   const fileInputRef = useRef(null);
   const router = useRouter();
   const { favoritesCount } = useFavorites();
@@ -43,8 +44,26 @@ export default function UserDashboard() {
       setAvatarPreview(u.avatar || null);
       const savedOrgs = localStorage.getItem("userOrgs");
       if (savedOrgs) setOrgs(JSON.parse(savedOrgs));
+      loadMyPosts(u);
     } catch { router.push("/login"); }
     finally  { setLoading(false); }
+  };
+
+  const loadMyPosts = async (u) => {
+    setLoadingPosts(true);
+    try {
+      const token = localStorage.getItem("userToken");
+      const res = await fetch(`${API_URL}/feed?limit=5`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // filter only current user's posts
+        const mine = (data.posts ?? []).filter(p => p.author.name === u.name);
+        setMyPosts(mine);
+      }
+    } catch {}
+    finally { setLoadingPosts(false); }
   };
 
   const handleAvatarChange = (e) => {
@@ -86,25 +105,6 @@ export default function UserDashboard() {
     }
   };
 
-  const handleSwitchToInstitute = async (org) => {
-    try {
-      const userToken = localStorage.getItem("userToken");
-      const res  = await fetch(`${API_URL}/org/switch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${userToken}` },
-        body: JSON.stringify({ orgId: org.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      localStorage.setItem("instituteLoggedIn", "true");
-      localStorage.setItem("instituteToken",    data.token);
-      localStorage.setItem("instituteData",     JSON.stringify(user));
-      localStorage.setItem("instituteOrgs",     JSON.stringify(orgs));
-      window.dispatchEvent(new Event("authStateChanged"));
-      router.push("/institute/dashboard");
-    } catch (err) { console.error("Switch error:", err.message); }
-  };
-
   const handleLeaveOrg = async () => {
     if (!showLeaveModal) return;
     setLeavingOrg(showLeaveModal.id);
@@ -140,18 +140,15 @@ export default function UserDashboard() {
   };
 
   if (loading) return (
-    <main className="max-w-2xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-      </div>
+    <main className="max-w-lg mx-auto px-4 py-10 flex justify-center">
+      <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
     </main>
   );
 
   if (!user) return (
-    <main className="max-w-2xl mx-auto px-4 py-6 text-center">
-      <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
-      <p className="text-sm text-gray-500 mb-4">Please login to access your dashboard.</p>
-      <Link href="/login" className="inline-flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">
+    <main className="max-w-lg mx-auto px-4 py-10 text-center">
+      <p className="text-sm text-gray-500 mb-4">Please login to continue.</p>
+      <Link href="/login" className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">
         Go to Login
       </Link>
     </main>
@@ -161,115 +158,148 @@ export default function UserDashboard() {
 
   return (
     <>
-      <main className="max-w-2xl mx-auto px-4 py-4 pb-24 md:pb-8 space-y-4">
+      <main className="max-w-lg mx-auto px-4 py-4 pb-24 md:pb-8 space-y-3">
 
         <AccountSwitcher mode="user" onLogout={() => setShowLogoutModal(true)} />
 
-        {/* ── Hero profile card ── */}
-        <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-5 text-white relative overflow-hidden">
-          {/* decorative circle */}
-          <div className="absolute -top-8 -right-8 w-36 h-36 bg-white/10 rounded-full" />
-          <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full" />
-
-          <div className="relative flex items-center gap-4">
+        {/* ── Profile card ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {/* top strip */}
+          <div className="h-16 bg-gradient-to-r from-indigo-500 to-violet-500" />
+          <div className="px-4 pb-4 -mt-8 flex items-end justify-between gap-3">
             {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/20 flex items-center justify-center ring-2 ring-white/40">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden border-4 border-white shadow-sm bg-indigo-100 flex items-center justify-center">
                 {avatarPreview
-                  ? <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
-                  : <span className="text-xl font-bold text-white">{initials}</span>
+                  ? <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
+                  : <span className="text-xl font-bold text-indigo-600">{initials}</span>
                 }
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-lg flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+                className="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-sm hover:bg-indigo-50 transition-colors"
               >
                 <Camera className="w-3 h-3 text-indigo-600" />
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold text-white truncate">{user.name}</h2>
-              <p className="text-sm text-white/70 truncate">{user.email}</p>
-              <p className="text-xs text-white/50 mt-0.5">{user.phone}</p>
-            </div>
-
-            <Link href="/user/profile/edit" className="flex-shrink-0 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors">
-              <Settings className="w-4 h-4 text-white" />
+            <Link href="/user/profile/edit" className="mb-1 flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+              <Settings className="w-3.5 h-3.5" /> Edit Profile
             </Link>
           </div>
 
-          {/* Upload button */}
-          {avatarFile && (
-            <div className="relative mt-3 flex items-center gap-2">
-              <button
-                onClick={handleAvatarUpload}
-                disabled={uploadingAvatar}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-white text-indigo-600 text-xs font-bold rounded-full shadow hover:bg-white/90 disabled:opacity-60 transition-all"
-              >
-                {uploadingAvatar ? <><Loader2 className="w-3 h-3 animate-spin" />Uploading...</> : "Save Photo"}
-              </button>
-              <button onClick={() => { setAvatarFile(null); setAvatarPreview(user.avatar || null); }}
-                className="text-xs text-white/70 hover:text-white transition-colors">Cancel</button>
+          <div className="px-4 pb-4">
+            <h2 className="text-base font-bold text-gray-900">{user.name}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
+            {user.phone && <p className="text-xs text-gray-400">{user.phone}</p>}
+
+            {/* Save photo button */}
+            {avatarFile && (
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={handleAvatarUpload}
+                  disabled={uploadingAvatar}
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full disabled:opacity-60 hover:bg-indigo-700 transition-colors"
+                >
+                  {uploadingAvatar ? <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</> : "Save Photo"}
+                </button>
+                <button
+                  onClick={() => { setAvatarFile(null); setAvatarPreview(user.avatar || null); }}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            {avatarError && <p className="mt-1 text-xs text-red-500">{avatarError}</p>}
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-4 border-t border-gray-100">
+            {[
+              { href: "/user/saved",   label: "Saved",   value: favoritesCount },
+              { href: "/user/compare", label: "Compare", value: compareCount   },
+              { href: "/user/reviews", label: "Reviews", value: "—"            },
+              { href: "/feed",         label: "Feed",    value: myPosts.length },
+            ].map(({ href, label, value }, i, arr) => (
+              <Link key={label} href={href}
+                className={`flex flex-col items-center py-3 hover:bg-gray-50 transition-colors ${i < arr.length - 1 ? "border-r border-gray-100" : ""}`}>
+                <span className="text-sm font-bold text-gray-900">{value}</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">{label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* ── My recent activity ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <span className="text-sm font-semibold text-gray-900">My Posts</span>
+            <Link href="/feed" className="text-xs text-indigo-600 font-medium hover:text-indigo-700">View feed</Link>
+          </div>
+
+          {loadingPosts ? (
+            <div className="py-6 flex justify-center">
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+            </div>
+          ) : myPosts.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-xs text-gray-400">No posts yet.</p>
+              <Link href="/feed" className="mt-2 inline-block text-xs text-indigo-600 font-medium hover:text-indigo-700">
+                Share something →
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {myPosts.map((post) => (
+                <Link href="/feed" key={post.id} className="flex gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                  {/* thumbnail if image */}
+                  {post.image
+                    ? <img src={post.image} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                    : (
+                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        {post.pdf
+                          ? <FileText className="w-5 h-5 text-red-400" />
+                          : <MessageCircle className="w-5 h-5 text-gray-300" />
+                        }
+                      </div>
+                    )
+                  }
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 leading-snug line-clamp-2">
+                      {post.content || (post.image ? "📷 Photo" : "📄 Attachment")}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="text-[10px] text-gray-400">{post.time}</span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                        <Heart className="w-3 h-3" /> {post.likesCount}
+                      </span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                        <MessageCircle className="w-3 h-3" /> {post.commentsCount}
+                      </span>
+                      <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                        <Bookmark className="w-3 h-3" /> {post.savesCount}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
-          {avatarError && <p className="relative mt-2 text-xs text-red-300">{avatarError}</p>}
-        </div>
-
-        {/* ── Stats row ── */}
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { href: "/user/saved",   icon: Heart,         label: "Saved",   value: favoritesCount, color: "text-red-500",    bg: "bg-red-50" },
-            { href: "/user/compare", icon: GitCompare,    label: "Compare", value: compareCount,   color: "text-blue-500",   bg: "bg-blue-50" },
-            { href: "/user/reviews", icon: MessageSquare, label: "Reviews", value: null,           color: "text-purple-500", bg: "bg-purple-50" },
-            { href: "/centers",      icon: Search,        label: "Browse",  value: null,           color: "text-indigo-500", bg: "bg-indigo-50" },
-          ].map(({ href, icon: Icon, label, value, color, bg }) => (
-            <Link key={label} href={href}
-              className="bg-white rounded-xl border border-gray-100 p-3 flex flex-col items-center gap-1.5 hover:shadow-md hover:border-indigo-100 transition-all">
-              <div className={`w-9 h-9 ${bg} rounded-lg flex items-center justify-center`}>
-                <Icon className={`w-4 h-4 ${color}`} />
-              </div>
-              {value !== null && <span className="text-base font-bold text-gray-900 leading-none">{value}</span>}
-              <span className="text-[10px] text-gray-500 font-medium">{label}</span>
-            </Link>
-          ))}
-        </div>
-
-        {/* ── Feed CTA ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-semibold text-gray-900">Learning Feed</span>
-            <Link href="/feed" className="flex items-center gap-1 text-xs text-indigo-600 font-medium hover:text-indigo-700">
-              <LayoutList className="w-3.5 h-3.5" /> View all
-            </Link>
-          </div>
-          <Link href="/feed"
-            className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all group">
-            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 text-sm font-bold text-indigo-700">
-              {initials}
-            </div>
-            <span className="flex-1 text-sm text-gray-400 group-hover:text-indigo-500 transition-colors">
-              Share notes, tips or a question...
-            </span>
-            <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <PenSquare className="w-3.5 h-3.5 text-white" />
-            </div>
-          </Link>
         </div>
 
         {/* ── Quick links ── */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           {[
-            { href: "/centers",      icon: Search,        label: "Browse Centers",  sub: "Find training centers near you",  color: "bg-blue-50 text-blue-600" },
-            { href: "/user/saved",   icon: Heart,         label: "Saved Centers",   sub: `${favoritesCount} centers saved`,  color: "bg-red-50 text-red-600" },
-            { href: "/user/reviews", icon: MessageSquare, label: "My Reviews",      sub: "Manage your reviews",             color: "bg-purple-50 text-purple-600" },
-          ].map(({ href, icon: Icon, label, sub, color }, i, arr) => (
+            { href: "/centers",      Icon: Search,        label: "Browse Centers",  sub: "Find training centers near you"  },
+            { href: "/user/saved",   Icon: Heart,         label: "Saved Centers",   sub: `${favoritesCount} centers saved` },
+            { href: "/user/reviews", Icon: MessageSquare, label: "My Reviews",      sub: "Manage your reviews"             },
+          ].map(({ href, Icon, label, sub }, i, arr) => (
             <Link key={label} href={href}
               className={`flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors ${i < arr.length - 1 ? "border-b border-gray-100" : ""}`}>
-              <div className={`w-9 h-9 ${color} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                <Icon className="w-4 h-4" />
+              <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Icon className="w-4 h-4 text-gray-500" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900">{label}</p>
@@ -300,9 +330,7 @@ export default function UserDashboard() {
                 <AlertCircle className="w-7 h-7 text-red-600" />
               </div>
               <h3 className="text-base font-bold text-gray-900 text-center mb-1">Leave Institute?</h3>
-              <p className="text-sm text-gray-500 text-center mb-5">
-                Are you sure you want to leave <strong>{showLeaveModal.name}</strong>?
-              </p>
+              <p className="text-sm text-gray-500 text-center mb-5">Are you sure you want to leave <strong>{showLeaveModal.name}</strong>?</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowLeaveModal(null)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors">Cancel</button>
                 <button onClick={handleLeaveOrg} disabled={leavingOrg === showLeaveModal.id}
@@ -321,9 +349,6 @@ export default function UserDashboard() {
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowLogoutModal(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
-              <button onClick={() => setShowLogoutModal(false)} className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600">
-                <X className="w-4 h-4" />
-              </button>
               <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <LogOut className="w-7 h-7 text-red-600" />
               </div>
@@ -331,7 +356,7 @@ export default function UserDashboard() {
               <p className="text-sm text-gray-500 text-center mb-5">Are you sure you want to logout?</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors">Cancel</button>
-                <button onClick={handleLogout} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors">Logout</button>
+                <button onClick={() => handleLogout()} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors">Logout</button>
               </div>
             </div>
           </div>
