@@ -25,6 +25,7 @@ import orgRouter from "./routes/org.routes.js";
 import { runAudit } from "./controllers/auditAgent.controller.js";
 import { expireOldBanners } from "./controllers/banner.controller.js";
 import feedRoutes from "./routes/feed.routes.js";
+import socialRouter from "./routes/social.routes.js";
 
 dotenv.config();
 
@@ -95,6 +96,7 @@ app.use("/api/banners", bannerRouter);
 app.use("/api/aptitude", aptitudeRouter);
 app.use("/api/org", orgRouter);
 app.use("/api/feed", feedRoutes);
+app.use("/api/social", socialRouter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Inscovia API is running ✅" });
