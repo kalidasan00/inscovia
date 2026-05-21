@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Avatar from "./components/Avatar";
 import {
   Heart, MessageCircle, Bookmark, Share2,
-  FileText, MoreHorizontal, Image as ImageIcon,
+  FileText, Download, MoreHorizontal, Image as ImageIcon,
   GraduationCap, Building2, User, ChevronDown,
   Search, Bell, Plus, X, Send, Loader2,
 } from "lucide-react";
 
+// ─── Config ───────────────────────────────────────────────────────────────────
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 const MAX_CHARS = 500;
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
 
 function getToken() {
   if (typeof window === "undefined") return null;
@@ -21,34 +26,8 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-const AVATAR_COLORS = {
-  purple: "bg-purple-100 text-purple-700",
-  blue:   "bg-blue-100   text-blue-700",
-  teal:   "bg-teal-100   text-teal-700",
-  coral:  "bg-red-100    text-red-700",
-  amber:  "bg-amber-100  text-amber-800",
-  green:  "bg-green-100  text-green-700",
-  gray:   "bg-gray-100   text-gray-600",
-};
 
-const AVATAR_SIZES = {
-  sm: "w-7 h-7 text-[10px]",
-  md: "w-9 h-9 text-xs",
-  lg: "w-10 h-10 text-sm",
-};
-
-function Avatar({ initials = "?", color = "gray", size = "md" }) {
-  return (
-    <div className={`
-      ${AVATAR_SIZES[size] ?? AVATAR_SIZES.md}
-      ${AVATAR_COLORS[color] ?? AVATAR_COLORS.gray}
-      rounded-full flex items-center justify-center font-bold
-      flex-shrink-0 ring-2 ring-white
-    `}>
-      {initials}
-    </div>
-  );
-}
+// ─── Role Badge ───────────────────────────────────────────────────────────────
 
 const ROLE_BADGE = {
   institute: { label: "Institute", cls: "bg-blue-50   text-blue-700   border border-blue-100",   Icon: Building2 },
@@ -68,10 +47,31 @@ function RoleBadge({ role }) {
   );
 }
 
-function isLoggedInClient() {
-  if (typeof window === "undefined") return false;
-  return !!getToken();
+// ─── PDF Card ─────────────────────────────────────────────────────────────────
+
+function PdfCard({ pdf }) {
+  return (
+    <a
+      href={pdf.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3 mt-3 hover:bg-gray-100 hover:border-gray-300 transition-all group"
+    >
+      <div className="w-10 h-10 bg-red-50 border border-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+        <FileText className="w-5 h-5 text-red-500" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-gray-800 truncate">{pdf.name || "Attachment"}</p>
+        {pdf.size && <p className="text-xs text-gray-400 mt-0.5">{pdf.size}</p>}
+      </div>
+      <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center group-hover:border-indigo-300 transition-colors flex-shrink-0">
+        <Download className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+      </div>
+    </a>
+  );
 }
+
+// ─── Comment ─────────────────────────────────────────────────────────────────
 
 function CommentBubble({ comment, currentUser, postId, nested = false, onCommentAdded }) {
   const [liked, setLiked]           = useState(comment.liked ?? false);
@@ -119,7 +119,7 @@ function CommentBubble({ comment, currentUser, postId, nested = false, onComment
   return (
     <div className="flex gap-2">
       <div className="flex flex-col items-center flex-shrink-0" style={{ width: nested ? 24 : 28 }}>
-        <Avatar initials={comment.author.initials} color={comment.author.color} size="sm" />
+        <Avatar initials={comment.author.initials} color={comment.author.color} size="sm" src={comment.author.avatar || null} />
         {hasThread && <div className="w-px bg-gray-200 flex-1 mt-1" style={{ minHeight: 12 }} />}
       </div>
 
@@ -141,7 +141,7 @@ function CommentBubble({ comment, currentUser, postId, nested = false, onComment
             <Heart className={`w-3.5 h-3.5 ${liked ? "fill-red-500" : ""}`} />
             {likes > 0 && <span>{likes}</span>}
           </button>
-          {isLoggedInClient() && (
+          {getToken() && (
             <button
               onClick={() => setReply((v) => !v)}
               className="text-xs font-semibold text-gray-400 hover:text-indigo-600 transition-colors min-h-0 min-w-0"
@@ -175,7 +175,7 @@ function CommentBubble({ comment, currentUser, postId, nested = false, onComment
 
         {showReplyBox && (
           <div className="flex items-center gap-2 mt-2">
-            <Avatar initials={currentUser?.initials ?? "?"} color={currentUser?.color ?? "gray"} size="sm" />
+            <Avatar initials={currentUser?.initials ?? "?"} color={currentUser?.color ?? "gray"} size="sm" src={currentUser?.avatar || null} />
             <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-3 py-1.5 focus-within:border-indigo-300 focus-within:bg-white transition-all">
               <input
                 value={replyText}
@@ -196,6 +196,8 @@ function CommentBubble({ comment, currentUser, postId, nested = false, onComment
     </div>
   );
 }
+
+// ─── Post Card ────────────────────────────────────────────────────────────────
 
 function PostCard({ post, currentUser }) {
   const [liked, setLiked]             = useState(post.liked ?? false);
@@ -283,7 +285,7 @@ function PostCard({ post, currentUser }) {
     <div className="bg-white border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
       <div className="flex items-start gap-3 px-4 pt-4 pb-0">
         <div className="flex flex-col items-center flex-shrink-0" style={{ width: 40 }}>
-          <Avatar initials={post.author.initials} color={post.author.color} size="lg" />
+          <Avatar initials={post.author.initials} color={post.author.color} size="lg" src={post.author.avatar || null} />
           {showComments && comments.length > 0 && (
             <div className="w-px bg-gray-200 flex-1 mt-1.5" style={{ minHeight: 16 }} />
           )}
@@ -314,8 +316,14 @@ function PostCard({ post, currentUser }) {
           </div>
 
           {post.image && (
-            <img src={post.image} alt="post" className="w-full rounded-xl mt-2 object-cover max-h-80" />
+            <img
+              src={post.image}
+              alt="post"
+              className="w-full rounded-xl mt-2 object-cover max-h-80"
+            />
           )}
+
+          {post.pdf && <PdfCard pdf={post.pdf} />}
 
           <div className="flex items-center mt-3 -ml-2 mb-1">
             <button
@@ -380,10 +388,10 @@ function PostCard({ post, currentUser }) {
         </div>
       )}
 
-      {showComments && isLoggedInClient() && (
+      {showComments && getToken() && (
         <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-50">
           <div style={{ width: 40 }} className="flex justify-center">
-            <Avatar initials={currentUser?.initials ?? "?"} color={currentUser?.color ?? "gray"} size="sm" />
+            <Avatar initials={currentUser?.initials ?? "?"} color={currentUser?.color ?? "gray"} size="sm" src={currentUser?.avatar || null} />
           </div>
           <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-3.5 py-2 focus-within:border-indigo-300 focus-within:bg-white transition-all">
             <input
@@ -404,6 +412,8 @@ function PostCard({ post, currentUser }) {
   );
 }
 
+// ─── Create Post Modal ────────────────────────────────────────────────────────
+
 function CreatePostModal({ onClose, currentUser, onPostCreated }) {
   const [text, setText]                 = useState("");
   const [posting, setPosting]           = useState(false);
@@ -414,6 +424,7 @@ function CreatePostModal({ onClose, currentUser, onPostCreated }) {
   const [uploadedUrl, setUploadedUrl]   = useState(null);
   const fileInputRef                    = useRef(null);
 
+  // Revoke blob URL on unmount
   useEffect(() => {
     return () => { if (imagePreview) URL.revokeObjectURL(imagePreview); };
   }, [imagePreview]);
@@ -422,8 +433,14 @@ function CreatePostModal({ onClose, currentUser, onPostCreated }) {
     const file = e.target.files?.[0];
     if (!file) return;
     const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-    if (!allowed.includes(file.type)) { setError("Only JPG, PNG, GIF or WebP images are allowed."); return; }
-    if (file.size > 5 * 1024 * 1024) { setError("Image must be under 5MB."); return; }
+    if (!allowed.includes(file.type)) {
+      setError("Only JPG, PNG, GIF or WebP images are allowed.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be under 5MB.");
+      return;
+    }
     setError("");
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImageFile(file);
@@ -447,7 +464,9 @@ function CreatePostModal({ onClose, currentUser, onPostCreated }) {
       const formData = new FormData();
       formData.append("image", imageFile);
       const res = await fetch(`${API_URL}/feed/upload/image`, {
-        method: "POST", headers: authHeaders(), body: formData,
+        method: "POST",
+        headers: authHeaders(), // no Content-Type — browser sets multipart boundary
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed");
@@ -492,19 +511,26 @@ function CreatePostModal({ onClose, currentUser, onPostCreated }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end md:items-center justify-center">
       <div className="bg-white w-full max-w-lg rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden">
+
+        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors min-h-0 min-w-0">
             <X className="w-4 h-4 text-gray-500" />
           </button>
           <span className="text-sm font-bold text-gray-900">New Post</span>
-          <button onClick={handlePost} disabled={!canPost} className="flex items-center gap-1.5 text-sm font-bold px-4 py-1.5 bg-indigo-600 text-white rounded-full disabled:opacity-30 hover:bg-indigo-700 active:scale-95 transition-all min-h-0">
+          <button
+            onClick={handlePost}
+            disabled={!canPost}
+            className="flex items-center gap-1.5 text-sm font-bold px-4 py-1.5 bg-indigo-600 text-white rounded-full disabled:opacity-30 hover:bg-indigo-700 active:scale-95 transition-all min-h-0"
+          >
             {(posting || uploadingImg) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Post
           </button>
         </div>
 
+        {/* Body */}
         <div className="flex gap-3 p-4 pb-2">
-          <Avatar initials={currentUser?.initials ?? "?"} color={currentUser?.color ?? "gray"} size="lg" />
+          <Avatar initials={currentUser?.initials ?? "?"} color={currentUser?.color ?? "gray"} size="lg" src={currentUser?.avatar || null} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-gray-900 mb-2">{currentUser?.name ?? "You"}</p>
             <textarea
@@ -516,10 +542,15 @@ function CreatePostModal({ onClose, currentUser, onPostCreated }) {
               className="w-full text-sm text-gray-800 placeholder-gray-400 resize-none outline-none leading-relaxed"
               autoFocus
             />
+
+            {/* Image preview */}
             {imagePreview && (
               <div className="relative mt-2 rounded-xl overflow-hidden border border-gray-200">
                 <img src={imagePreview} alt="preview" className="w-full object-cover max-h-56" />
-                <button onClick={removeImage} className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-colors min-h-0 min-w-0">
+                <button
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-colors min-h-0 min-w-0"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
                 {uploadingImg && (
@@ -529,17 +560,33 @@ function CreatePostModal({ onClose, currentUser, onPostCreated }) {
                 )}
               </div>
             )}
+
             {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
           </div>
         </div>
 
+        {/* Footer */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
           <div className="flex gap-1">
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" className="hidden" onChange={handleImagePick} />
-            <button onClick={() => fileInputRef.current?.click()} disabled={!!imagePreview} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-all font-semibold min-h-0 min-w-0">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handleImagePick}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!!imagePreview}
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-all font-semibold min-h-0 min-w-0"
+            >
               <ImageIcon className="w-3.5 h-3.5" /> Photo
             </button>
-            <button disabled title="Coming soon" className="flex items-center gap-1.5 text-xs text-gray-300 px-3 py-1.5 rounded-lg font-semibold min-h-0 min-w-0 cursor-not-allowed">
+            <button
+              disabled
+              title="Coming soon"
+              className="flex items-center gap-1.5 text-xs text-gray-300 px-3 py-1.5 rounded-lg font-semibold min-h-0 min-w-0 cursor-not-allowed"
+            >
               <FileText className="w-3.5 h-3.5" /> PDF
             </button>
           </div>
@@ -547,23 +594,21 @@ function CreatePostModal({ onClose, currentUser, onPostCreated }) {
             {MAX_CHARS - text.length}
           </span>
         </div>
+
       </div>
     </div>
   );
 }
+
+// ─── Feed Page ────────────────────────────────────────────────────────────────
 
 export default function FeedClient() {
   const [currentUser, setCurrentUser] = useState(null);
   const [posts, setPosts]             = useState([]);
   const [loading, setLoading]         = useState(true);
   const [showModal, setShowModal]     = useState(false);
-  const [isLoggedIn, setIsLoggedIn]   = useState(false);
 
-  useEffect(() => {
-    setIsLoggedIn(!!getToken());
-  }, []);
-
-  useEffect(() => {
+  function loadUserFromStorage() {
     try {
       const raw = localStorage.getItem("userData") || sessionStorage.getItem("userData");
       if (raw) {
@@ -574,9 +619,18 @@ export default function FeedClient() {
           initials: u.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
           role:     u.role?.toLowerCase() ?? "user",
           color:    "blue",
+          avatar:   u.avatar || null,
         });
       }
     } catch {}
+  }
+
+  // Load on mount + re-read whenever tab becomes visible (picks up avatar changes from dashboard)
+  useEffect(() => {
+    loadUserFromStorage();
+    const onVisible = () => { if (document.visibilityState === "visible") loadUserFromStorage(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   const loadPosts = useCallback(async () => {
@@ -594,8 +648,12 @@ export default function FeedClient() {
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  useEffect(() => { setIsLoggedIn(!!getToken()); }, []);
+
   return (
     <div className="bg-gray-50 min-h-screen pb-20 md:pb-8">
+
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-900">Feed</h1>
@@ -613,11 +671,17 @@ export default function FeedClient() {
       <div className="max-w-2xl mx-auto">
         {isLoggedIn && (
           <div className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
-            <Avatar initials={currentUser?.initials ?? "?"} color="blue" size="lg" />
-            <button onClick={() => setShowModal(true)} className="flex-1 text-left text-sm text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 hover:bg-gray-100 hover:border-gray-300 transition-all min-h-0">
+            <Avatar initials={currentUser?.initials ?? "?"} color="blue" size="lg" src={currentUser?.avatar || null} />
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex-1 text-left text-sm text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 hover:bg-gray-100 hover:border-gray-300 transition-all min-h-0"
+            >
               Share notes, tips or a question...
             </button>
-            <button onClick={() => setShowModal(true)} className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex-shrink-0 min-h-0 min-w-0">
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex-shrink-0 min-h-0 min-w-0"
+            >
               <Plus className="w-4 h-4 text-white" />
             </button>
           </div>
@@ -643,7 +707,11 @@ export default function FeedClient() {
       </div>
 
       {isLoggedIn && (
-        <button onClick={() => setShowModal(true)} className="fixed bottom-24 right-4 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all md:hidden z-20 min-h-0 min-w-0" style={{ width: 52, height: 52 }}>
+        <button
+          onClick={() => setShowModal(true)}
+          className="fixed bottom-24 right-4 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all md:hidden z-20 min-h-0 min-w-0"
+          style={{ width: 52, height: 52 }}
+        >
           <Plus className="w-5 h-5" />
         </button>
       )}

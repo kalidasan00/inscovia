@@ -1,5 +1,6 @@
-// components/Avatar.jsx
-// Reusable circular avatar with initials and role-based color
+"use client";
+
+import { useState, useEffect } from "react";
 
 const COLOR_MAP = {
   purple: "bg-purple-100 text-purple-700",
@@ -18,11 +19,27 @@ const SIZE_MAP = {
   lg: "w-11 h-11 text-sm",
 };
 
-export default function Avatar({ initials = "?", color = "gray", size = "md" }) {
+export default function Avatar({ initials = "?", color = "gray", size = "md", src = null }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const sizeClass = SIZE_MAP[size] ?? SIZE_MAP.md;
+
+  // Always render <div> on server and before mount to avoid hydration mismatch
+  if (mounted && src) {
+    return (
+      <img
+        src={src}
+        alt={initials}
+        className={`${sizeClass} rounded-full object-cover flex-shrink-0 ring-2 ring-white`}
+      />
+    );
+  }
+
   return (
     <div
       className={`
-        ${SIZE_MAP[size] ?? SIZE_MAP.md}
+        ${sizeClass}
         ${COLOR_MAP[color] ?? COLOR_MAP.gray}
         rounded-full flex items-center justify-center
         font-bold flex-shrink-0 ring-2 ring-white
