@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma.js";
 import { sendOTPEmail } from "../utils/emailService.js";
 import { authenticate } from "../middleware/auth.middleware.js";
+import cloudinary from "../config/cloudinary.js";
+import { uploadSingle, handleUploadError } from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -119,7 +121,6 @@ router.post("/register", async (req, res) => {
       data: { name, email, phone, gender, password: hashedPassword }
     });
 
-    // Auto welcome notification
     await prisma.notification.create({
       data: {
         title: "Welcome to Inscovia! 🎉",
@@ -127,7 +128,7 @@ router.post("/register", async (req, res) => {
         type: "SUCCESS",
         userId: user.id
       }
-    }).catch(() => {}); // silent fail — don't block registration
+    }).catch(() => {});
 
     const token = jwt.sign(
       { id: user.id, email: user.email, type: 'user' },
@@ -168,11 +169,52 @@ router.post("/login", async (req, res) => {
       success: true,
       message: "Login successful",
       token,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, gender: user.gender }
+      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, gender: user.gender, avatar: user.avatar ?? null }
     });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// ============= AVATAR UPLOAD =============
+
+router.post("/avatar", authenticate, uploadSingle, handleUploadError, async (req, res) => {
+  try {
+    if (!req.file?.buffer) {
+      return res.status(400).json({ error: "No image provided" });
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("Upload timeout")), 30000);
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "avatars",
+          transformation: [
+            { width: 400, height: 400, crop: "fill", gravity: "face" },
+            { quality: "auto:good" },
+            { fetch_format: "auto" },
+          ],
+        },
+        (error, result) => {
+          clearTimeout(timeout);
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data:  { avatar: result.secure_url },
+    });
+
+    // update userData in localStorage via response
+    res.json({ success: true, avatar: user.avatar });
+  } catch (error) {
+    console.error("❌ Avatar upload error:", error);
+    res.status(500).json({ error: "Avatar upload failed" });
   }
 });
 
