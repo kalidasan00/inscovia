@@ -2,8 +2,6 @@
 import prisma from "../lib/prisma.js";
 import cloudinary from "../config/cloudinary.js";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function timeAgo(date) {
   const diff = Math.floor((Date.now() - new Date(date)) / 1000);
   if (diff < 60)    return `${diff}s`;
@@ -36,6 +34,7 @@ function formatPost(post, userId) {
       role:     post.author.role.toLowerCase(),
       sub:      post.author.orgMemberships?.[0]?.org?.name ?? "",
       color:    roleColor(post.author.role),
+      avatar:   post.author.avatar || null,
     },
     likesCount:    post.likesCount,
     commentsCount: post.commentsCount,
@@ -57,6 +56,7 @@ function formatComment(comment, userId) {
       initials: getInitials(comment.author.name),
       role:     comment.author.role.toLowerCase(),
       color:    roleColor(comment.author.role),
+      avatar:   comment.author.avatar || null,
     },
     likesCount: comment.likesCount,
     liked:      userId ? comment.likes.some((l) => l.userId === userId) : false,
@@ -68,12 +68,11 @@ function formatComment(comment, userId) {
   };
 }
 
-// include block for posts
 function postInclude(userId) {
   return {
     author: {
       select: {
-        id: true, name: true, role: true,
+        id: true, name: true, role: true, avatar: true,
         orgMemberships: {
           where:  { status: "ACTIVE" },
           take:   1,
@@ -92,10 +91,9 @@ function postInclude(userId) {
   };
 }
 
-// include block for comments (3 levels deep)
 function commentInclude(userId) {
-  const likeWhere = userId ? { userId } : { userId: "___none___" };
-  const authorSelect = { id: true, name: true, role: true };
+  const likeWhere   = userId ? { userId } : { userId: "___none___" };
+  const authorSelect = { id: true, name: true, role: true, avatar: true };
 
   return {
     author: { select: authorSelect },
@@ -118,11 +116,8 @@ function commentInclude(userId) {
   };
 }
 
-// ─── GET /api/feed ────────────────────────────────────────────────────────────
-
 export async function getFeed(req, res) {
   try {
-    // optionally read userId from token without requiring auth
     let userId = null;
     const authHeader = req.headers.authorization;
     if (authHeader) {
@@ -138,10 +133,7 @@ export async function getFeed(req, res) {
 
     const { role, cursor, limit = "15" } = req.query;
     const take = Math.min(parseInt(limit) || 15, 30);
-
-    const where = role && role !== "all"
-      ? { author: { role: role.toUpperCase() } }
-      : {};
+    const where = role && role !== "all" ? { author: { role: role.toUpperCase() } } : {};
 
     const posts = await prisma.post.findMany({
       where,
@@ -152,29 +144,18 @@ export async function getFeed(req, res) {
     });
 
     const nextCursor = posts.length === take ? posts[posts.length - 1].id : null;
-
-    res.json({
-      posts:      posts.map((p) => formatPost(p, userId)),
-      nextCursor,
-    });
+    res.json({ posts: posts.map((p) => formatPost(p, userId)), nextCursor });
   } catch (error) {
     console.error("❌ getFeed error:", error);
     res.status(500).json({ error: "Failed to fetch feed" });
   }
 }
 
-// ─── POST /api/feed ───────────────────────────────────────────────────────────
-
 export async function createPost(req, res) {
   try {
     const { content, image, pdfName, pdfSize } = req.body;
-
-    if (!content?.trim() && !image) {
-      return res.status(400).json({ error: "Post must have content or an image" });
-    }
-    if (content && content.length > 500) {
-      return res.status(400).json({ error: "Max 500 characters" });
-    }
+    if (!content?.trim() && !image) return res.status(400).json({ error: "Post must have content or an image" });
+    if (content && content.length > 500) return res.status(400).json({ error: "Max 500 characters" });
 
     const post = await prisma.post.create({
       data: {
@@ -194,15 +175,12 @@ export async function createPost(req, res) {
   }
 }
 
-// ─── DELETE /api/feed/:id ─────────────────────────────────────────────────────
-
 export async function deletePost(req, res) {
   try {
     const post = await prisma.post.findUnique({ where: { id: req.params.id } });
     if (!post)                        return res.status(404).json({ error: "Post not found" });
     if (post.authorId !== req.userId) return res.status(403).json({ error: "Not your post" });
 
-    // delete image from cloudinary if exists
     if (post.image) {
       try {
         const publicId = post.image.split("/upload/")[1]?.replace(/\.[^/.]+$/, "");
@@ -218,23 +196,16 @@ export async function deletePost(req, res) {
   }
 }
 
-// ─── PATCH /api/feed/:id/like ─────────────────────────────────────────────────
-
 export async function toggleLike(req, res) {
   try {
-    const { id }   = req.params;
-    const userId   = req.userId;
-
-    const existing = await prisma.postLike.findUnique({
-      where: { postId_userId: { postId: id, userId } },
-    });
-
+    const { id } = req.params;
+    const userId = req.userId;
+    const existing = await prisma.postLike.findUnique({ where: { postId_userId: { postId: id, userId } } });
     if (existing) {
       await prisma.postLike.delete({ where: { postId_userId: { postId: id, userId } } });
       await prisma.post.update({ where: { id }, data: { likesCount: { decrement: 1 } } });
       return res.json({ liked: false });
     }
-
     await prisma.postLike.create({ data: { postId: id, userId } });
     await prisma.post.update({ where: { id }, data: { likesCount: { increment: 1 } } });
     res.json({ liked: true });
@@ -244,23 +215,16 @@ export async function toggleLike(req, res) {
   }
 }
 
-// ─── PATCH /api/feed/:id/save ─────────────────────────────────────────────────
-
 export async function toggleSave(req, res) {
   try {
     const { id } = req.params;
     const userId = req.userId;
-
-    const existing = await prisma.postSave.findUnique({
-      where: { postId_userId: { postId: id, userId } },
-    });
-
+    const existing = await prisma.postSave.findUnique({ where: { postId_userId: { postId: id, userId } } });
     if (existing) {
       await prisma.postSave.delete({ where: { postId_userId: { postId: id, userId } } });
       await prisma.post.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
       return res.json({ saved: false });
     }
-
     await prisma.postSave.create({ data: { postId: id, userId } });
     await prisma.post.update({ where: { id }, data: { savesCount: { increment: 1 } } });
     res.json({ saved: true });
@@ -270,8 +234,6 @@ export async function toggleSave(req, res) {
   }
 }
 
-// ─── GET /api/feed/:id/comments ───────────────────────────────────────────────
-
 export async function getComments(req, res) {
   try {
     let userId = null;
@@ -279,20 +241,15 @@ export async function getComments(req, res) {
     if (authHeader) {
       try {
         const { default: jwt } = await import("jsonwebtoken");
-        const decoded = jwt.verify(
-          authHeader.split(" ")[1],
-          process.env.JWT_SECRET || "your-secret-key"
-        );
+        const decoded = jwt.verify(authHeader.split(" ")[1], process.env.JWT_SECRET || "your-secret-key");
         userId = decoded.id;
       } catch {}
     }
-
     const comments = await prisma.postComment.findMany({
       where:   { postId: req.params.id, parentId: null },
       orderBy: { createdAt: "asc" },
       include: commentInclude(userId),
     });
-
     res.json({ comments: comments.map((c) => formatComment(c, userId)) });
   } catch (error) {
     console.error("❌ getComments error:", error);
@@ -300,13 +257,10 @@ export async function getComments(req, res) {
   }
 }
 
-// ─── POST /api/feed/:id/comments ─────────────────────────────────────────────
-
 export async function addComment(req, res) {
   try {
     const { content, parentId } = req.body;
     if (!content?.trim()) return res.status(400).json({ error: "Comment cannot be empty" });
-
     const comment = await prisma.postComment.create({
       data: {
         content:  content.trim(),
@@ -316,12 +270,7 @@ export async function addComment(req, res) {
       },
       include: commentInclude(req.userId),
     });
-
-    await prisma.post.update({
-      where: { id: req.params.id },
-      data:  { commentsCount: { increment: 1 } },
-    });
-
+    await prisma.post.update({ where: { id: req.params.id }, data: { commentsCount: { increment: 1 } } });
     res.status(201).json({ comment: formatComment(comment, req.userId) });
   } catch (error) {
     console.error("❌ addComment error:", error);
@@ -329,23 +278,16 @@ export async function addComment(req, res) {
   }
 }
 
-// ─── PATCH /api/feed/comments/:commentId/like ────────────────────────────────
-
 export async function toggleCommentLike(req, res) {
   try {
     const { commentId } = req.params;
     const userId        = req.userId;
-
-    const existing = await prisma.postCommentLike.findUnique({
-      where: { commentId_userId: { commentId, userId } },
-    });
-
+    const existing = await prisma.postCommentLike.findUnique({ where: { commentId_userId: { commentId, userId } } });
     if (existing) {
       await prisma.postCommentLike.delete({ where: { commentId_userId: { commentId, userId } } });
       await prisma.postComment.update({ where: { id: commentId }, data: { likesCount: { decrement: 1 } } });
       return res.json({ liked: false });
     }
-
     await prisma.postCommentLike.create({ data: { commentId, userId } });
     await prisma.postComment.update({ where: { id: commentId }, data: { likesCount: { increment: 1 } } });
     res.json({ liked: true });
@@ -355,24 +297,16 @@ export async function toggleCommentLike(req, res) {
   }
 }
 
-// ─── POST /api/feed/upload/image ─────────────────────────────────────────────
-// Same pattern as gallery.controller.js
-
 export async function uploadFeedImage(req, res) {
   try {
-    if (!req.file?.buffer) {
-      return res.status(400).json({ error: "No image file provided" });
-    }
+    if (!req.file?.buffer) return res.status(400).json({ error: "No image file provided" });
 
     const result = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error("Upload timeout after 30 seconds"));
-      }, 30000);
-
+      const timeout = setTimeout(() => reject(new Error("Upload timeout after 30 seconds")), 30000);
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder:            "feed",
-          resource_type:     "auto",
+          folder:        "feed",
+          resource_type: "auto",
           transformation: [
             { width: 1080, crop: "limit" },
             { quality: "auto:good" },
@@ -385,7 +319,6 @@ export async function uploadFeedImage(req, res) {
           else resolve(result);
         }
       );
-
       uploadStream.end(req.file.buffer);
     });
 
@@ -393,9 +326,7 @@ export async function uploadFeedImage(req, res) {
     res.json({ url: result.secure_url });
   } catch (error) {
     console.error("❌ uploadFeedImage error:", error);
-    if (error.message.includes("timeout")) {
-      return res.status(408).json({ error: "Upload timeout — please try again" });
-    }
+    if (error.message.includes("timeout")) return res.status(408).json({ error: "Upload timeout — please try again" });
     res.status(500).json({ error: "Image upload failed" });
   }
 }
