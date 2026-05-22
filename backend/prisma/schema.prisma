@@ -96,6 +96,7 @@ model User {
   password    String
   gender      String?
   avatar      String?
+  username    String?   @unique
   role        UserRole  @default(USER)
   adminRole   AdminRole @default(ADMIN)
   permissions String[]  @default([])
@@ -117,6 +118,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([adminRole])
+  @@index([username])
 }
 
 // ─── Organization ────────────────────────────────────────────────────────────
