@@ -147,22 +147,27 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
           position: "fixed", inset: 0,
           background: "rgba(0,0,0,0.5)",
           zIndex: 998,
+          /* Tap outside to close */
         }}
       />
 
-      {/* Sheet — sits above nav (z-50 = 50) using z-index 999, bottom 64px = nav height */}
+      {/* Modal — centred in the visible viewport using dvh so Safari's
+          bottom bar is automatically excluded from the height calculation */}
       <div style={{
         position:      "fixed",
-        left:          0,
-        right:         0,
-        bottom:        64,            /* nav height — keeps modal above nav */
+        left:          "50%",
+        top:           "50%",
+        transform:     "translate(-50%, -50%)",
         zIndex:        999,
+        width:         "calc(100% - 32px)",
+        maxWidth:      480,
         background:    "var(--color-background-primary, #fff)",
-        borderRadius:  "20px 20px 0 0",
-        boxShadow:     "0 -8px 32px rgba(0,0,0,0.18)",
+        borderRadius:  20,
+        boxShadow:     "0 8px 40px rgba(0,0,0,0.22)",
         display:       "flex",
         flexDirection: "column",
-        maxHeight:     "calc(85dvh - 64px)",
+        /* Use dvh so the modal never overflows behind Safari's chrome */
+        maxHeight:     "calc(80dvh)",
       }}>
 
         {/* Drag handle */}
