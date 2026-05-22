@@ -1,4 +1,4 @@
-// app/users/page.jsx
+// frontend/app/users/page.jsx
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -29,8 +29,8 @@ function avatarColor(name = "") {
 }
 
 const ROLE_BADGE = {
-  institute: { label: "Institute", cls: "bg-blue-50 text-blue-700 border border-blue-100", Icon: Building2 },
-  user:      { label: "Student",   cls: "bg-green-50 text-green-700 border border-green-100", Icon: User },
+  institute: { label: "Institute", cls: "bg-blue-50 text-blue-700 border border-blue-100",     Icon: Building2     },
+  user:      { label: "Student",   cls: "bg-green-50 text-green-700 border border-green-100",   Icon: User          },
   admin:     { label: "Admin",     cls: "bg-purple-50 text-purple-700 border border-purple-100", Icon: GraduationCap },
 };
 
@@ -48,19 +48,21 @@ function UserCard({ user, currentUserId }) {
   const [following, setFollowing] = useState(user.isFollowing ?? false);
   const [loading,   setLoading]   = useState(false);
 
-  const isMe = user.id === currentUserId;
+  const isMe       = user.id === currentUserId;
+  const profileUrl = `/users/${user.username ?? user.id}`;
 
-  async function toggleFollow() {
+  async function toggleFollow(e) {
+    e.preventDefault();
     if (!getToken() || isMe) return;
     setLoading(true);
     const wasFollowing = following;
     setFollowing(v => !v);
     try {
       const res = await fetch(`${API_URL}/social/${user.id}/follow`, {
-        method: wasFollowing ? "DELETE" : "POST",
+        method:  wasFollowing ? "DELETE" : "POST",
         headers: authHeaders(),
       });
-      if (!res.ok) setFollowing(wasFollowing); // revert on error
+      if (!res.ok) setFollowing(wasFollowing);
     } catch {
       setFollowing(wasFollowing);
     } finally {
@@ -69,7 +71,7 @@ function UserCard({ user, currentUserId }) {
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+    <Link href={profileUrl} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
       {/* Avatar */}
       <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${avatarColor(user.name)}`}>
         {user.avatar
@@ -85,12 +87,12 @@ function UserCard({ user, currentUserId }) {
           <RoleBadge role={user.role} />
         </div>
         <p className="text-xs text-gray-400 truncate mt-0.5">
-          {user.orgName ? user.orgName : `@${user.name.toLowerCase().replace(/\s+/g, "")}`}
+          {user.username ? `@${user.username}` : user.orgName ?? ""}
         </p>
       </div>
 
-      {/* Follow button */}
-      {!isMe && (
+      {/* Follow / You */}
+      {!isMe ? (
         <button
           onClick={toggleFollow}
           disabled={loading}
@@ -105,14 +107,12 @@ function UserCard({ user, currentUserId }) {
             : following ? "Following" : <><UserPlus className="w-3 h-3" /> Follow</>
           }
         </button>
-      )}
-      {isMe && (
-        <Link href="/user/dashboard"
-          className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500">
+      ) : (
+        <span className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500">
           You
-        </Link>
+        </span>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -120,7 +120,6 @@ export default function UsersPage() {
   const [users,       setUsers]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [search,      setSearch]      = useState("");
-  const [filter,      setFilter]      = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -134,25 +133,18 @@ export default function UsersPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search)           params.set("q",    search);
-      if (filter !== "all") params.set("role", filter);
+      if (search) params.set("q", search);
       const res  = await fetch(`${API_URL}/social/users?${params}`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) setUsers(data.users ?? []);
     } catch {}
     finally { setLoading(false); }
-  }, [search, filter]);
+  }, [search]);
 
   useEffect(() => {
     const t = setTimeout(loadUsers, 300);
     return () => clearTimeout(t);
   }, [loadUsers]);
-
-  const FILTERS = [
-    { key: "all",       label: "All"        },
-    { key: "user",      label: "Students"   },
-    { key: "institute", label: "Institutes" },
-  ];
 
   return (
     <div className="max-w-lg mx-auto pb-24 md:pb-8">
@@ -164,8 +156,6 @@ export default function UsersPage() {
             <Users className="w-5 h-5 text-indigo-500" /> People
           </h1>
         </div>
-
-        {/* Search */}
         <div className="px-4 pb-3">
           <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
             <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -176,20 +166,6 @@ export default function UsersPage() {
               className="flex-1 bg-transparent text-sm outline-none text-gray-800 placeholder-gray-400"
             />
           </div>
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex px-4 gap-2 pb-3">
-          {FILTERS.map(f => (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                filter === f.key
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-              }`}>
-              {f.label}
-            </button>
-          ))}
         </div>
       </div>
 

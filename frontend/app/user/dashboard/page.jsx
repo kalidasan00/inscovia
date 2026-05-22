@@ -1,3 +1,4 @@
+// frontend/app/user/dashboard/page.jsx
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,7 @@ export default function UserDashboard() {
   const [loadingPosts,    setLoadingPosts]    = useState(false);
   const [activeTab,       setActiveTab]       = useState("feed");
   const [copied,          setCopied]          = useState("");
+  const [socialCounts,    setSocialCounts]    = useState({ followers: 0, following: 0, posts: 0 });
   const fileInputRef = useRef(null);
   const router = useRouter();
   const { favoritesCount } = useFavorites();
@@ -56,8 +58,27 @@ export default function UserDashboard() {
       const savedOrgs = localStorage.getItem("userOrgs");
       if (savedOrgs) setOrgs(JSON.parse(savedOrgs));
       loadMyPosts(u);
+      loadSocialCounts(u);
     } catch { router.push("/login"); }
     finally  { setLoading(false); }
+  };
+
+  const loadSocialCounts = async (u) => {
+    if (!u.username) return;
+    try {
+      const token = localStorage.getItem("userToken");
+      const res   = await fetch(`${API_URL}/social/users/${u.username}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSocialCounts({
+          followers: data.user.followersCount,
+          following: data.user.followingCount,
+          posts:     data.user.postsCount,
+        });
+      }
+    } catch {}
   };
 
   const loadMyPosts = async (u) => {
@@ -171,10 +192,10 @@ export default function UserDashboard() {
     </main>
   );
 
-  const initials  = user.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";
-  const username  = genUsername(user.name);
-  const userId    = genUserId(user.id);
-  const joinedAt  = user.createdAt
+  const initials = user.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() ?? "?";
+  const username = user.username ? `@${user.username}` : genUsername(user.name);
+  const userId   = genUserId(user.id);
+  const joinedAt = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
     : null;
 
@@ -202,7 +223,6 @@ export default function UserDashboard() {
                     : <span className="text-xl font-bold text-white">{initials}</span>
                   }
                 </div>
-                {/* Online dot */}
                 <div className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -253,13 +273,13 @@ export default function UserDashboard() {
             {avatarError && <p className="text-xs text-red-300 mb-2">{avatarError}</p>}
           </div>
 
-          {/* Stats row — white bg */}
+          {/* Stats row */}
           <div className="bg-white grid grid-cols-4">
             {[
-              { href: "/user/saved",   Icon: Bookmark,      label: "Saved",   value: favoritesCount },
-              { href: "/user/compare", Icon: GitCompare,     label: "Compare", value: compareCount   },
-              { href: "/user/reviews", Icon: MessageSquare,  label: "Reviews", value: myPosts.length },
-              { href: "/feed",         Icon: MessageCircle,  label: "Feed",    value: myPosts.length },
+              { href: "/user/saved",   Icon: Bookmark,      label: "Saved",     value: favoritesCount        },
+              { href: "/user/compare", Icon: GitCompare,     label: "Compare",   value: compareCount          },
+              { href: "/users",        Icon: MessageSquare,  label: "Followers", value: socialCounts.followers },
+              { href: "/feed",         Icon: MessageCircle,  label: "Posts",     value: socialCounts.posts     },
             ].map(({ href, Icon, label, value }, i, arr) => (
               <Link key={label} href={href}
                 className={`flex flex-col items-center py-3 hover:bg-gray-50 transition-colors ${i < arr.length - 1 ? "border-r border-gray-100" : ""}`}>
@@ -274,10 +294,10 @@ export default function UserDashboard() {
         {/* ── Info card ── */}
         <div className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden">
           {[
-            { Icon: Mail,     label: user.email,          key: "email",    copyVal: user.email },
-            { Icon: Phone,    label: user.phone,           key: "phone",    copyVal: user.phone },
-            { Icon: Hash,     label: `User ID: ${userId}`, key: "uid",      copyVal: userId },
-            ...(city ? [{ Icon: MapPin, label: city, key: "city", copyVal: null }] : []),
+            { Icon: Mail,     label: user.email,           key: "email",  copyVal: user.email },
+            { Icon: Phone,    label: user.phone,            key: "phone",  copyVal: user.phone },
+            { Icon: Hash,     label: `User ID: ${userId}`,  key: "uid",    copyVal: userId     },
+            ...(city     ? [{ Icon: MapPin,   label: city,               key: "city",   copyVal: null }] : []),
             ...(joinedAt ? [{ Icon: Calendar, label: `Joined ${joinedAt}`, key: "joined", copyVal: null }] : []),
           ].map(({ Icon, label, key, copyVal }, i, arr) => (
             <div key={key}
@@ -296,13 +316,12 @@ export default function UserDashboard() {
 
         {/* ── Activity tabs ── */}
         <div className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          {/* Tab bar */}
           <div className="flex border-b border-gray-100">
             {[
               { key: "feed",     label: "My Feed"  },
               { key: "comments", label: "Comments" },
               { key: "saved",    label: "Saved"    },
-            ].map((tab, i) => (
+            ].map((tab) => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`flex-1 py-3 text-xs font-semibold transition-colors ${
                   activeTab === tab.key
@@ -314,7 +333,6 @@ export default function UserDashboard() {
             ))}
           </div>
 
-          {/* Feed tab */}
           {activeTab === "feed" && (
             loadingPosts ? (
               <div className="py-8 flex justify-center">
