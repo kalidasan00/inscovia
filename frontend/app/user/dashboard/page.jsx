@@ -6,11 +6,11 @@ import Link from "next/link";
 import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
 import {
-  Heart, GitCompare, MessageSquare, LogOut, X,
-  AlertCircle, Camera, Loader2, Settings,
-  FileText, MessageCircle, Bookmark, Mail,
+  Heart, GitCompare, MessageSquare, LogOut,
+  AlertCircle, Camera, Loader2,
+  MessageCircle, Bookmark, Mail,
   Phone, Hash, MapPin, Calendar, Copy,
-  MoreHorizontal, PenLine
+  MoreHorizontal, PenLine, Globe
 } from "lucide-react";
 import AccountSwitcher from "../../../components/AccountSwitcher";
 
@@ -41,33 +41,64 @@ export default function UserDashboard() {
   const [copied,          setCopied]          = useState("");
   const [socialCounts,    setSocialCounts]    = useState({ followers: 0, following: 0, posts: 0 });
   const fileInputRef = useRef(null);
-  const router = useRouter();
+  const router       = useRouter();
   const { favoritesCount } = useFavorites();
   const { compareCount }   = useCompare();
 
   useEffect(() => { checkAuth(); }, []);
 
-  const checkAuth = () => {
+  const freshProfile = async (token) => {
+    try {
+      const res  = await fetch(`${API_URL}/user/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const existing = JSON.parse(localStorage.getItem("userData") || "{}");
+        const merged   = { ...existing, ...data.user };
+        localStorage.setItem("userData", JSON.stringify(merged));
+        return merged;
+      }
+    } catch {}
+    return null;
+  };
+
+  const checkAuth = async () => {
     const isLoggedIn = localStorage.getItem("userLoggedIn") === "true";
     const userData   = localStorage.getItem("userData");
     if (!isLoggedIn || !userData) { router.push("/login"); return; }
     try {
-      const u = JSON.parse(userData);
-      setUser(u);
-      setAvatarPreview(u.avatar || null);
+      const token  = localStorage.getItem("userToken");
+      const cached = JSON.parse(userData);
+      setUser(cached);
+      setAvatarPreview(cached.avatar || null);
       const savedOrgs = localStorage.getItem("userOrgs");
       if (savedOrgs) setOrgs(JSON.parse(savedOrgs));
-      loadMyPosts(u);
-      loadSocialCounts(u);
+      loadMyPosts(cached);
+      loadSocialCounts(cached);
+      const fresh = await freshProfile(token);
+      if (fresh) {
+        setUser(fresh);
+        setAvatarPreview(fresh.avatar || null);
+        loadSocialCounts(fresh);
+      }
     } catch { router.push("/login"); }
     finally  { setLoading(false); }
   };
 
   const loadSocialCounts = async (u) => {
-    if (!u.username) return;
     try {
       const token = localStorage.getItem("userToken");
-      const res   = await fetch(`${API_URL}/social/users/${u.username}`, {
+      let username = u?.username;
+      if (!username) {
+        const res  = await fetch(`${API_URL}/user/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok) username = data.user.username;
+      }
+      if (!username) return;
+      const res  = await fetch(`${API_URL}/social/users/${username}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -85,7 +116,7 @@ export default function UserDashboard() {
     setLoadingPosts(true);
     try {
       const token = localStorage.getItem("userToken");
-      const res = await fetch(`${API_URL}/feed?limit=20`, {
+      const res   = await fetch(`${API_URL}/feed?limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -198,7 +229,6 @@ export default function UserDashboard() {
   const joinedAt = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
     : null;
-
   const city = localStorage.getItem("userCity") || null;
 
   return (
@@ -209,11 +239,10 @@ export default function UserDashboard() {
           <AccountSwitcher mode="user" onLogout={() => setShowLogoutModal(true)} />
         </div>
 
-        {/* ── Hero profile card ── */}
+        {/* ── Hero card ── */}
         <div className="mx-4 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-600 text-white">
-          <div className="px-4 pt-4 pb-5">
+          <div className="px-4 pt-4 pb-4">
 
-            {/* Top row: avatar + name + actions */}
             <div className="flex items-start gap-3 mb-3">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
@@ -224,44 +253,57 @@ export default function UserDashboard() {
                   }
                 </div>
                 <div className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-5 h-5 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors"
-                >
+                <button onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 w-5 h-5 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors">
                   <Camera className="w-2.5 h-2.5 text-indigo-600" />
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               </div>
 
-              {/* Name + username */}
+              {/* Name + username + location */}
               <div className="flex-1 min-w-0 pt-1">
-                <h2 className="text-base font-bold text-white leading-tight">{user.name}</h2>
+                <h2 className="text-base font-bold text-white leading-tight truncate">{user.name}</h2>
                 <span className="inline-block mt-1 text-[11px] font-medium bg-white/20 text-white/90 px-2 py-0.5 rounded-full">
                   {username}
                 </span>
+                {user.location && (
+                  <p className="flex items-center gap-1 mt-1 text-[11px] text-white/60">
+                    <MapPin className="w-2.5 h-2.5" />{user.location}
+                  </p>
+                )}
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-1.5 pt-1 flex-shrink-0">
+              {/* Edit button */}
+              <div className="flex-shrink-0 pt-1">
                 <Link href="/user/profile/edit"
                   className="flex items-center gap-1 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-semibold text-white transition-colors">
-                  <PenLine className="w-3 h-3" /> Edit Profile
+                  <PenLine className="w-3 h-3" /> Edit
                 </Link>
-                <button className="w-7 h-7 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors">
-                  <MoreHorizontal className="w-3.5 h-3.5 text-white" />
-                </button>
               </div>
             </div>
 
             {/* Bio */}
-            <p className="text-xs text-white/80 leading-relaxed mb-3">
-              Sharing thoughts, ideas & experiences.<br />
-              Exploring | Learning | Growing
-            </p>
+            {user.bio ? (
+              <p className="text-xs text-white/80 leading-relaxed mb-2">{user.bio}</p>
+            ) : (
+              <Link href="/user/profile/edit"
+                className="inline-flex items-center gap-1 text-xs text-white/50 hover:text-white/80 mb-2 transition-colors">
+                <PenLine className="w-3 h-3" /> Add a bio
+              </Link>
+            )}
+
+            {/* Website */}
+            {user.website && (
+              <a href={user.website} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white/90 mb-2 transition-colors">
+                <Globe className="w-3 h-3" />
+                {user.website.replace(/^https?:\/\//, "")}
+              </a>
+            )}
 
             {/* Save photo */}
             {avatarFile && (
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mt-2">
                 <button onClick={handleAvatarUpload} disabled={uploadingAvatar}
                   className="flex items-center gap-1.5 px-4 py-1.5 bg-white text-indigo-600 text-xs font-bold rounded-full disabled:opacity-60 hover:bg-white/90 transition-colors">
                   {uploadingAvatar ? <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</> : "Save Photo"}
@@ -270,16 +312,16 @@ export default function UserDashboard() {
                   className="text-xs text-white/70 hover:text-white transition-colors">Cancel</button>
               </div>
             )}
-            {avatarError && <p className="text-xs text-red-300 mb-2">{avatarError}</p>}
+            {avatarError && <p className="text-xs text-red-300 mt-1">{avatarError}</p>}
           </div>
 
-          {/* Stats row */}
+          {/* Stats */}
           <div className="bg-white grid grid-cols-4">
             {[
-              { href: "/user/saved",   Icon: Bookmark,      label: "Saved",     value: favoritesCount        },
-              { href: "/user/compare", Icon: GitCompare,     label: "Compare",   value: compareCount          },
-              { href: "/users",        Icon: MessageSquare,  label: "Followers", value: socialCounts.followers },
-              { href: "/feed",         Icon: MessageCircle,  label: "Posts",     value: socialCounts.posts     },
+              { href: "/user/saved",   Icon: Bookmark,     label: "Saved",     value: favoritesCount        },
+              { href: "/user/compare", Icon: GitCompare,    label: "Compare",   value: compareCount          },
+              { href: "/users",        Icon: MessageSquare, label: "Followers", value: socialCounts.followers },
+              { href: "/feed",         Icon: MessageCircle, label: "Posts",     value: socialCounts.posts     },
             ].map(({ href, Icon, label, value }, i, arr) => (
               <Link key={label} href={href}
                 className={`flex flex-col items-center py-3 hover:bg-gray-50 transition-colors ${i < arr.length - 1 ? "border-r border-gray-100" : ""}`}>
@@ -294,10 +336,10 @@ export default function UserDashboard() {
         {/* ── Info card ── */}
         <div className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden">
           {[
-            { Icon: Mail,     label: user.email,           key: "email",  copyVal: user.email },
-            { Icon: Phone,    label: user.phone,            key: "phone",  copyVal: user.phone },
-            { Icon: Hash,     label: `User ID: ${userId}`,  key: "uid",    copyVal: userId     },
-            ...(city     ? [{ Icon: MapPin,   label: city,               key: "city",   copyVal: null }] : []),
+            { Icon: Mail,     label: user.email,            key: "email",  copyVal: user.email },
+            { Icon: Phone,    label: user.phone,             key: "phone",  copyVal: user.phone },
+            { Icon: Hash,     label: `User ID: ${userId}`,   key: "uid",    copyVal: userId     },
+            ...(city     ? [{ Icon: MapPin,   label: city,                key: "city",   copyVal: null }] : []),
             ...(joinedAt ? [{ Icon: Calendar, label: `Joined ${joinedAt}`, key: "joined", copyVal: null }] : []),
           ].map(({ Icon, label, key, copyVal }, i, arr) => (
             <div key={key}
@@ -321,7 +363,7 @@ export default function UserDashboard() {
               { key: "feed",     label: "My Feed"  },
               { key: "comments", label: "Comments" },
               { key: "saved",    label: "Saved"    },
-            ].map((tab) => (
+            ].map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`flex-1 py-3 text-xs font-semibold transition-colors ${
                   activeTab === tab.key
@@ -345,7 +387,7 @@ export default function UserDashboard() {
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {myPosts.map((post) => (
+                {myPosts.map(post => (
                   <Link href="/feed" key={post.id} className="block px-4 py-3 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="w-7 h-7 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center flex-shrink-0">
@@ -367,7 +409,7 @@ export default function UserDashboard() {
                       <img src={post.image} alt="" className="w-full rounded-xl object-cover max-h-40 mb-2" />
                     )}
                     {post.content && (
-                      <p className="text-sm font-semibold text-gray-900 mb-2">{post.content}</p>
+                      <p className="text-sm text-gray-800 mb-2">{post.content}</p>
                     )}
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -379,7 +421,6 @@ export default function UserDashboard() {
                       <span className="flex items-center gap-1 text-xs text-gray-400">
                         <Bookmark className="w-3.5 h-3.5" /> {post.savesCount}
                       </span>
-                      <Bookmark className="w-3.5 h-3.5 text-gray-300 ml-auto" />
                     </div>
                   </Link>
                 ))}
