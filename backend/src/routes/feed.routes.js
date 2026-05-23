@@ -14,14 +14,14 @@ const router = express.Router();
 router.get("/", getFeed);
 router.get("/:id/comments", getComments);
 
+// ✅ Specific static routes FIRST (before any /:id routes)
+router.post("/upload/image", authenticate, uploadSingle, handleUploadError, uploadFeedImage);
+
 // ✅ Auth required
 router.post("/", authenticate, createPost);
 router.patch("/:id/like", authenticate, toggleLike);
 router.patch("/:id/save", authenticate, toggleSave);
 router.post("/:id/comments", authenticate, addComment);
 router.patch("/comments/:commentId/like", authenticate, toggleCommentLike);
-
-// ✅ Image upload for feed posts
-router.post("/upload/image", authenticate, uploadSingle, handleUploadError, uploadFeedImage);
 
 export default router;
