@@ -58,13 +58,14 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
   const photoRef = useRef(null);
   const pdfRef   = useRef(null);
 
-  const [text,       setText]       = useState("");
-  const [posting,    setPosting]    = useState(false);
-  const [error,      setError]      = useState("");
-  const [attachType, setAttachType] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [fileName,   setFileName]   = useState(null);
-  const [fileSize,   setFileSize]   = useState(null);
+  const [text,        setText]        = useState("");
+  const [posting,     setPosting]     = useState(false);
+  const [error,       setError]       = useState("");
+  const [attachType,  setAttachType]  = useState(null);
+  const [previewUrl,  setPreviewUrl]  = useState(null);
+  const [fileName,    setFileName]    = useState(null);
+  const [fileSize,    setFileSize]    = useState(null);
+  const [uploading,   setUploading]   = useState(false);
 
   // Lock body scroll
   useEffect(() => {
@@ -76,9 +77,33 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
   function handleFileSelect(e, type) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate photo
+    if (type === "photo") {
+      const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+      if (!allowed.includes(file.type)) {
+        setError("Only JPG, PNG, GIF or WebP images are allowed.");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image must be under 5MB.");
+        return;
+      }
+    }
+
+    // Validate PDF
+    if (type === "pdf") {
+      if (file.size > 10 * 1024 * 1024) {
+        setError("PDF must be under 10MB.");
+        return;
+      }
+    }
+
+    setError("");
     setAttachType(type);
     setFileName(file.name);
     setFileSize((file.size / (1024 * 1024)).toFixed(1) + " MB");
+
     if (type === "photo") {
       const reader = new FileReader();
       reader.onload = ev => setPreviewUrl(ev.target.result);
@@ -93,6 +118,7 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
     setPreviewUrl(null);
     setFileName(null);
     setFileSize(null);
+    setError("");
     if (photoRef.current) photoRef.current.value = "";
     if (pdfRef.current)   pdfRef.current.value   = "";
   }
@@ -104,14 +130,41 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
 
     setPosting(true);
     setError("");
+
     try {
+      let imageUrl = null;
+
+      // ── Upload image first if one is selected ──
+      if (attachType === "photo" && photoRef.current?.files?.[0]) {
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("image", photoRef.current.files[0]);
+
+        const uploadRes = await fetch(`${API_URL}/feed/upload/image`, {
+          method:  "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body:    formData,
+        });
+        const uploadData = await uploadRes.json();
+        setUploading(false);
+
+        if (!uploadRes.ok) {
+          setError(uploadData.error || "Image upload failed.");
+          setPosting(false);
+          return;
+        }
+        imageUrl = uploadData.url;
+      }
+
+      // ── Create the post ──
       const res = await fetch(`${API_URL}/feed`, {
         method:  "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           content: text.trim(),
-          pdfName: attachType === "pdf" ? fileName : null,
-          pdfSize: attachType === "pdf" ? fileSize : null,
+          image:   imageUrl   || undefined,
+          pdfName: attachType === "pdf" ? fileName : undefined,
+          pdfSize: attachType === "pdf" ? fileSize : undefined,
         }),
       });
 
@@ -126,17 +179,21 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         return;
       }
 
-      if (!res.ok) { setError(data.error || "Failed to post"); return; }
+      if (!res.ok) { setError(data.error || "Failed to post."); return; }
+
       onPostCreated?.(data.post);
       onClose();
+
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setPosting(false);
+      setUploading(false);
     }
   }
 
-  const canPost = (text.trim().length > 0 || !!attachType) && !posting;
+  const canPost = (text.trim().length > 0 || !!attachType) && !posting && !uploading;
+  const isBusy  = posting || uploading;
 
   return (
     <>
@@ -147,12 +204,10 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
           position: "fixed", inset: 0,
           background: "rgba(0,0,0,0.5)",
           zIndex: 998,
-          /* Tap outside to close */
         }}
       />
 
-      {/* Modal — centred in the visible viewport using dvh so Safari's
-          bottom bar is automatically excluded from the height calculation */}
+      {/* Modal */}
       <div style={{
         position:      "fixed",
         left:          "50%",
@@ -166,7 +221,6 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         boxShadow:     "0 8px 40px rgba(0,0,0,0.22)",
         display:       "flex",
         flexDirection: "column",
-        /* Use dvh so the modal never overflows behind Safari's chrome */
         maxHeight:     "calc(80dvh)",
       }}>
 
@@ -206,13 +260,13 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
               background: canPost ? "#4F46E5" : "var(--color-background-secondary, #f3f4f6)",
               color:      canPost ? "#fff"    : "var(--color-text-tertiary, #9ca3af)",
               borderRadius:20, border:"none",
-              cursor: canPost ? "pointer" : "default",
-              transition:"all .15s",
+              cursor:  canPost ? "pointer" : "default",
               opacity: canPost ? 1 : 0.6,
+              transition:"all .15s",
             }}
           >
-            {posting && <Loader2 size={13} className="animate-spin" />}
-            Post
+            {isBusy && <Loader2 size={13} className="animate-spin" />}
+            {uploading ? "Uploading..." : posting ? "Posting..." : "Post"}
           </button>
         </div>
 
@@ -232,6 +286,7 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                 rows={previewUrl || (attachType === "pdf" && fileName) ? 3 : 5}
                 placeholder="Share notes, tips, or ask a question..."
                 autoFocus
+                autoComplete="off"
                 style={{
                   width:"100%", fontSize:14,
                   color:"var(--color-text-primary, #111827)",
@@ -246,20 +301,32 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                 <div style={{ position:"relative", marginTop:8, borderRadius:12, overflow:"hidden", border:"0.5px solid var(--color-border-tertiary, #f3f4f6)" }}>
                   <img
                     src={previewUrl} alt="preview"
-                    style={{ width:"100%", maxHeight:180, objectFit:"cover", display:"block" }}
+                    style={{ width:"100%", maxHeight:200, objectFit:"cover", display:"block" }}
                   />
-                  <button
-                    onClick={removeAttachment}
-                    style={{
-                      position:"absolute", top:8, right:8,
-                      width:28, height:28,
-                      background:"rgba(0,0,0,0.55)", border:"none",
-                      borderRadius:"50%", cursor:"pointer",
+                  {/* Uploading overlay */}
+                  {uploading && (
+                    <div style={{
+                      position:"absolute", inset:0,
+                      background:"rgba(255,255,255,0.65)",
                       display:"flex", alignItems:"center", justifyContent:"center",
-                    }}
-                  >
-                    <X size={13} color="white" />
-                  </button>
+                    }}>
+                      <Loader2 size={24} color="#4F46E5" className="animate-spin" />
+                    </div>
+                  )}
+                  {!uploading && (
+                    <button
+                      onClick={removeAttachment}
+                      style={{
+                        position:"absolute", top:8, right:8,
+                        width:28, height:28,
+                        background:"rgba(0,0,0,0.55)", border:"none",
+                        borderRadius:"50%", cursor:"pointer",
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                      }}
+                    >
+                      <X size={13} color="white" />
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -276,8 +343,12 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                     <FileText size={16} color="#993C1D" />
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:12, fontWeight:500, color:"var(--color-text-primary, #111827)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{fileName}</div>
-                    <div style={{ fontSize:11, color:"var(--color-text-tertiary, #9ca3af)", marginTop:2 }}>{fileSize}</div>
+                    <div style={{ fontSize:12, fontWeight:500, color:"var(--color-text-primary, #111827)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {fileName}
+                    </div>
+                    <div style={{ fontSize:11, color:"var(--color-text-tertiary, #9ca3af)", marginTop:2 }}>
+                      {fileSize}
+                    </div>
                   </div>
                   <button onClick={removeAttachment} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--color-text-tertiary, #9ca3af)", padding:4 }}>
                     <X size={14} />
@@ -299,11 +370,11 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
           borderTop:"0.5px solid var(--color-border-tertiary, #f3f4f6)",
         }}>
           <div style={{ display:"flex", gap:4 }}>
-            <input ref={photoRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e => handleFileSelect(e, "photo")} />
-            <input ref={pdfRef}   type="file" accept=".pdf"    style={{ display:"none" }} onChange={e => handleFileSelect(e, "pdf")} />
+            <input ref={photoRef} type="file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" style={{ display:"none" }} onChange={e => handleFileSelect(e, "photo")} />
+            <input ref={pdfRef}   type="file" accept=".pdf" style={{ display:"none" }} onChange={e => handleFileSelect(e, "pdf")} />
 
             <button
-              onClick={() => photoRef.current?.click()}
+              onClick={() => { removeAttachment(); setTimeout(() => photoRef.current?.click(), 50); }}
               style={{
                 display:"flex", alignItems:"center", gap:5,
                 fontSize:12, fontWeight:500, padding:"6px 12px",
@@ -316,7 +387,7 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
             </button>
 
             <button
-              onClick={() => pdfRef.current?.click()}
+              onClick={() => { removeAttachment(); setTimeout(() => pdfRef.current?.click(), 50); }}
               style={{
                 display:"flex", alignItems:"center", gap:5,
                 fontSize:12, fontWeight:500, padding:"6px 12px",
@@ -336,7 +407,6 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
             {MAX_CHARS - text.length}
           </span>
         </div>
-
       </div>
     </>
   );
