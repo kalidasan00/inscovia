@@ -97,6 +97,9 @@ model User {
   gender      String?
   avatar      String?
   username    String?   @unique
+  bio         String?   @db.Text
+  location    String?
+  website     String?
   role        UserRole  @default(USER)
   adminRole   AdminRole @default(ADMIN)
   permissions String[]  @default([])

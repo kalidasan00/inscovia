@@ -1,3 +1,4 @@
+// backend/src/routes/user.routes.js
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -9,13 +10,8 @@ import { uploadSingle, handleUploadError } from "../middleware/upload.js";
 
 const router = express.Router();
 
-// Store OTPs temporarily
 const otpStore = new Map();
-
-// Generate 6-digit OTP
-const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // ============= OTP ROUTES =============
 
@@ -107,7 +103,6 @@ router.post("/reset-password", async (req, res) => {
 
 // ============= AUTH ROUTES =============
 
-// Register — auto welcome notification
 router.post("/register", async (req, res) => {
   try {
     const { name, email, phone, gender, password } = req.body;
@@ -131,7 +126,7 @@ router.post("/register", async (req, res) => {
     }).catch(() => {});
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, type: 'user' },
+      { id: user.id, email: user.email, type: "user" },
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "7d" }
     );
@@ -140,7 +135,11 @@ router.post("/register", async (req, res) => {
       success: true,
       message: "Registration successful",
       token,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, gender: user.gender }
+      user: {
+        id: user.id, name: user.name, email: user.email,
+        phone: user.phone, gender: user.gender,
+        username: null, bio: null, location: null, website: null,
+      },
     });
   } catch (error) {
     console.error("Registration error:", error);
@@ -148,7 +147,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -160,7 +158,7 @@ router.post("/login", async (req, res) => {
     if (!isPasswordValid) return res.status(401).json({ error: "Invalid credentials" });
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, type: 'user' },
+      { id: user.id, email: user.email, type: "user" },
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "7d" }
     );
@@ -169,7 +167,15 @@ router.post("/login", async (req, res) => {
       success: true,
       message: "Login successful",
       token,
-      user: { id: user.id, name: user.name, email: user.email, phone: user.phone, gender: user.gender, avatar: user.avatar ?? null }
+      user: {
+        id: user.id, name: user.name, email: user.email,
+        phone: user.phone, gender: user.gender,
+        avatar:   user.avatar   ?? null,
+        username: user.username ?? null,
+        bio:      user.bio      ?? null,
+        location: user.location ?? null,
+        website:  user.website  ?? null,
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -181,9 +187,7 @@ router.post("/login", async (req, res) => {
 
 router.post("/avatar", authenticate, uploadSingle, handleUploadError, async (req, res) => {
   try {
-    if (!req.file?.buffer) {
-      return res.status(400).json({ error: "No image provided" });
-    }
+    if (!req.file?.buffer) return res.status(400).json({ error: "No image provided" });
 
     const result = await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error("Upload timeout")), 30000);
@@ -198,8 +202,7 @@ router.post("/avatar", authenticate, uploadSingle, handleUploadError, async (req
         },
         (error, result) => {
           clearTimeout(timeout);
-          if (error) reject(error);
-          else resolve(result);
+          if (error) reject(error); else resolve(result);
         }
       );
       stream.end(req.file.buffer);
@@ -210,7 +213,6 @@ router.post("/avatar", authenticate, uploadSingle, handleUploadError, async (req
       data:  { avatar: result.secure_url },
     });
 
-    // update userData in localStorage via response
     res.json({ success: true, avatar: user.avatar });
   } catch (error) {
     console.error("❌ Avatar upload error:", error);
@@ -218,14 +220,66 @@ router.post("/avatar", authenticate, uploadSingle, handleUploadError, async (req
   }
 });
 
+// ============= PROFILE =============
+
+router.get("/profile", authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: {
+        id: true, name: true, email: true, phone: true,
+        username: true, bio: true, location: true, website: true,
+        avatar: true, isVerified: true, createdAt: true,
+      },
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json({ user });
+  } catch (error) {
+    console.error("❌ Get profile error:", error);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+router.patch("/profile", authenticate, async (req, res) => {
+  try {
+    const { name, username, bio, location, website } = req.body;
+
+    if (username) {
+      const existing = await prisma.user.findUnique({ where: { username } });
+      if (existing && existing.id !== req.userId) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        ...(name     !== undefined && { name }),
+        ...(username !== undefined && { username }),
+        ...(bio      !== undefined && { bio }),
+        ...(location !== undefined && { location }),
+        ...(website  !== undefined && { website }),
+      },
+      select: {
+        id: true, name: true, email: true, phone: true,
+        username: true, bio: true, location: true, website: true,
+        avatar: true, isVerified: true, createdAt: true,
+      },
+    });
+
+    res.json({ success: true, user: updated });
+  } catch (error) {
+    console.error("❌ Profile update error:", error);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
 // ============= NOTIFICATION ROUTES =============
 
-// Get my notifications
 router.get("/notifications", authenticate, async (req, res) => {
   try {
-    const userId = req.userId;
     const notifications = await prisma.notification.findMany({
-      where: { userId },
+      where: { userId: req.userId },
       orderBy: { createdAt: "desc" }
     });
     const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -236,13 +290,10 @@ router.get("/notifications", authenticate, async (req, res) => {
   }
 });
 
-// Mark one as read
 router.put("/notifications/:id/read", authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.userId;
     await prisma.notification.update({
-      where: { id, userId },
+      where: { id: req.params.id, userId: req.userId },
       data: { isRead: true }
     });
     res.json({ success: true });
@@ -251,12 +302,10 @@ router.put("/notifications/:id/read", authenticate, async (req, res) => {
   }
 });
 
-// Mark all as read
 router.put("/notifications/read-all", authenticate, async (req, res) => {
   try {
-    const userId = req.userId;
     await prisma.notification.updateMany({
-      where: { userId, isRead: false },
+      where: { userId: req.userId, isRead: false },
       data: { isRead: true }
     });
     res.json({ success: true });
