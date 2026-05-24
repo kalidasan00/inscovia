@@ -1,7 +1,7 @@
 // backend/src/routes/feed.routes.js
 import express from "express";
 import {
-  getFeed, createPost, toggleLike, toggleSave,
+  getFeed, createPost, deletePost, toggleLike, toggleSave,
   getComments, addComment, toggleCommentLike,
   uploadFeedImage,
 } from "../controllers/feed.controller.js";
@@ -19,6 +19,7 @@ router.post("/upload/image", authenticate, uploadSingle, handleUploadError, uplo
 
 // ✅ Auth required
 router.post("/", authenticate, createPost);
+router.delete("/:id", authenticate, deletePost);
 router.patch("/:id/like", authenticate, toggleLike);
 router.patch("/:id/save", authenticate, toggleSave);
 router.post("/:id/comments", authenticate, addComment);
