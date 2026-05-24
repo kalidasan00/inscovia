@@ -13,6 +13,20 @@ const router = express.Router();
 const otpStore = new Map();
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// ── Helper: generate unique username ──────────────────────────────────────────
+async function generateUniqueUsername(name) {
+  const base = name
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+  let username = base;
+  let suffix   = 1;
+  while (await prisma.user.findUnique({ where: { username } })) {
+    username = `${base}_${suffix++}`;
+  }
+  return username;
+}
+
 // ============= OTP ROUTES =============
 
 router.post("/send-otp", async (req, res) => {
@@ -112,17 +126,21 @@ router.post("/register", async (req, res) => {
     if (existingUser) return res.status(400).json({ error: "Email already registered" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ Auto-generate unique username from name
+    const username = await generateUniqueUsername(name);
+
     const user = await prisma.user.create({
-      data: { name, email, phone, gender, password: hashedPassword }
+      data: { name, email, phone, gender, password: hashedPassword, username }
     });
 
     await prisma.notification.create({
       data: {
-        title: "Welcome to Inscovia! 🎉",
+        title:   "Welcome to Inscovia! 🎉",
         message: `Hi ${name}! Your account is ready. Browse top coaching centers, practice aptitude tests, and download previous year papers.`,
-        type: "SUCCESS",
-        userId: user.id
-      }
+        type:    "SUCCESS",
+        userId:  user.id,
+      },
     }).catch(() => {});
 
     const token = jwt.sign(
@@ -136,9 +154,15 @@ router.post("/register", async (req, res) => {
       message: "Registration successful",
       token,
       user: {
-        id: user.id, name: user.name, email: user.email,
-        phone: user.phone, gender: user.gender,
-        username: null, bio: null, location: null, website: null,
+        id:       user.id,
+        name:     user.name,
+        email:    user.email,
+        phone:    user.phone,
+        gender:   user.gender,
+        username: user.username,
+        bio:      null,
+        location: null,
+        website:  null,
       },
     });
   } catch (error) {
@@ -168,8 +192,11 @@ router.post("/login", async (req, res) => {
       message: "Login successful",
       token,
       user: {
-        id: user.id, name: user.name, email: user.email,
-        phone: user.phone, gender: user.gender,
+        id:       user.id,
+        name:     user.name,
+        email:    user.email,
+        phone:    user.phone,
+        gender:   user.gender,
         avatar:   user.avatar   ?? null,
         username: user.username ?? null,
         bio:      user.bio      ?? null,
@@ -191,7 +218,7 @@ router.post("/avatar", authenticate, uploadSingle, handleUploadError, async (req
 
     const result = await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error("Upload timeout")), 30000);
-      const stream = cloudinary.uploader.upload_stream(
+      const stream  = cloudinary.uploader.upload_stream(
         {
           folder: "avatars",
           transformation: [
@@ -279,8 +306,8 @@ router.patch("/profile", authenticate, async (req, res) => {
 router.get("/notifications", authenticate, async (req, res) => {
   try {
     const notifications = await prisma.notification.findMany({
-      where: { userId: req.userId },
-      orderBy: { createdAt: "desc" }
+      where:   { userId: req.userId },
+      orderBy: { createdAt: "desc" },
     });
     const unreadCount = notifications.filter(n => !n.isRead).length;
     res.json({ notifications, unreadCount });
@@ -294,7 +321,7 @@ router.put("/notifications/:id/read", authenticate, async (req, res) => {
   try {
     await prisma.notification.update({
       where: { id: req.params.id, userId: req.userId },
-      data: { isRead: true }
+      data:  { isRead: true },
     });
     res.json({ success: true });
   } catch (error) {
@@ -306,7 +333,7 @@ router.put("/notifications/read-all", authenticate, async (req, res) => {
   try {
     await prisma.notification.updateMany({
       where: { userId: req.userId, isRead: false },
-      data: { isRead: true }
+      data:  { isRead: true },
     });
     res.json({ success: true });
   } catch (error) {
