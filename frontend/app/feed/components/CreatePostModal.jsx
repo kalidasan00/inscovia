@@ -58,16 +58,15 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
   const photoRef = useRef(null);
   const pdfRef   = useRef(null);
 
-  const [text,        setText]        = useState("");
-  const [posting,     setPosting]     = useState(false);
-  const [error,       setError]       = useState("");
-  const [attachType,  setAttachType]  = useState(null);
-  const [previewUrl,  setPreviewUrl]  = useState(null);
-  const [fileName,    setFileName]    = useState(null);
-  const [fileSize,    setFileSize]    = useState(null);
-  const [uploading,   setUploading]   = useState(false);
+  const [text,       setText]       = useState("");
+  const [posting,    setPosting]    = useState(false);
+  const [error,      setError]      = useState("");
+  const [attachType, setAttachType] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [fileName,   setFileName]   = useState(null);
+  const [fileSize,   setFileSize]   = useState(null);
+  const [uploading,  setUploading]  = useState(false);
 
-  // Lock body scroll
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -78,25 +77,14 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate photo
     if (type === "photo") {
       const allowed = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-      if (!allowed.includes(file.type)) {
-        setError("Only JPG, PNG, GIF or WebP images are allowed.");
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image must be under 5MB.");
-        return;
-      }
+      if (!allowed.includes(file.type)) { setError("Only JPG, PNG, GIF or WebP images are allowed."); return; }
+      if (file.size > 5 * 1024 * 1024) { setError("Image must be under 5MB."); return; }
     }
 
-    // Validate PDF
     if (type === "pdf") {
-      if (file.size > 10 * 1024 * 1024) {
-        setError("PDF must be under 10MB.");
-        return;
-      }
+      if (file.size > 10 * 1024 * 1024) { setError("PDF must be under 10MB."); return; }
     }
 
     setError("");
@@ -134,11 +122,13 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
     try {
       let imageUrl = null;
 
-      // ── Upload image first if one is selected ──
+      // ── Step 1: Upload image ──
       if (attachType === "photo" && photoRef.current?.files?.[0]) {
         setUploading(true);
         const formData = new FormData();
         formData.append("image", photoRef.current.files[0]);
+
+        console.log("1. Uploading to:", `${API_URL}/feed/upload/image`);
 
         const uploadRes = await fetch(`${API_URL}/feed/upload/image`, {
           method:  "POST",
@@ -148,27 +138,37 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         const uploadData = await uploadRes.json();
         setUploading(false);
 
+        console.log("2. Upload status:", uploadRes.status);
+        console.log("3. Upload response:", uploadData);
+
         if (!uploadRes.ok) {
           setError(uploadData.error || "Image upload failed.");
           setPosting(false);
           return;
         }
+
         imageUrl = uploadData.url;
+        console.log("4. imageUrl:", imageUrl);
       }
 
-      // ── Create the post ──
+      // ── Step 2: Create post ──
+      const body = {
+        content: text.trim(),
+        image:   imageUrl   || undefined,
+        pdfName: attachType === "pdf" ? fileName : undefined,
+        pdfSize: attachType === "pdf" ? fileSize : undefined,
+      };
+
+      console.log("5. Sending to /feed:", JSON.stringify(body));
+
       const res = await fetch(`${API_URL}/feed`, {
         method:  "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          content: text.trim(),
-          image:   imageUrl   || undefined,
-          pdfName: attachType === "pdf" ? fileName : undefined,
-          pdfSize: attachType === "pdf" ? fileSize : undefined,
-        }),
+        body:    JSON.stringify(body),
       });
 
       const data = await res.json();
+      console.log("6. Post response:", res.status, data);
 
       if (res.status === 401) {
         ["userToken","instituteToken","userLoggedIn","instituteLoggedIn","userData","instituteData"]
@@ -184,7 +184,8 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
       onPostCreated?.(data.post);
       onClose();
 
-    } catch {
+    } catch (err) {
+      console.log("7. Caught error:", err);
       setError("Network error. Please try again.");
     } finally {
       setPosting(false);
@@ -197,7 +198,6 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
@@ -207,7 +207,6 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
         }}
       />
 
-      {/* Modal */}
       <div style={{
         position:      "fixed",
         left:          "50%",
@@ -303,7 +302,6 @@ export default function CreatePostModal({ onClose, onPostCreated }) {
                     src={previewUrl} alt="preview"
                     style={{ width:"100%", maxHeight:200, objectFit:"cover", display:"block" }}
                   />
-                  {/* Uploading overlay */}
                   {uploading && (
                     <div style={{
                       position:"absolute", inset:0,

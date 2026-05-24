@@ -10,7 +10,7 @@ import {
   AlertCircle, Camera, Loader2,
   MessageCircle, Bookmark, Mail,
   Phone, Hash, MapPin, Calendar, Copy,
-  MoreHorizontal, PenLine, Globe
+  MoreHorizontal, PenLine, Globe, Trash2,
 } from "lucide-react";
 import AccountSwitcher from "../../../components/AccountSwitcher";
 
@@ -40,12 +40,23 @@ export default function UserDashboard() {
   const [activeTab,       setActiveTab]       = useState("feed");
   const [copied,          setCopied]          = useState("");
   const [socialCounts,    setSocialCounts]    = useState({ followers: 0, following: 0, posts: 0 });
+  const [menuOpenId,      setMenuOpenId]      = useState(null);
+  const [confirmDelId,    setConfirmDelId]    = useState(null);
+  const [deletingId,      setDeletingId]      = useState(null);
+
   const fileInputRef = useRef(null);
   const router       = useRouter();
   const { favoritesCount } = useFavorites();
   const { compareCount }   = useCompare();
 
   useEffect(() => { checkAuth(); }, []);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick() { setMenuOpenId(null); }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const freshProfile = async (token) => {
     try {
@@ -128,6 +139,22 @@ export default function UserDashboard() {
     finally { setLoadingPosts(false); }
   };
 
+  const handleDeletePost = async (postId) => {
+    setDeletingId(postId);
+    try {
+      const token = localStorage.getItem("userToken");
+      const res   = await fetch(`${API_URL}/feed/${postId}`, {
+        method:  "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setMyPosts(prev => prev.filter(p => p.id !== postId));
+        setSocialCounts(prev => ({ ...prev, posts: Math.max(0, prev.posts - 1) }));
+      }
+    } catch {}
+    finally { setDeletingId(null); setConfirmDelId(null); }
+  };
+
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -178,8 +205,8 @@ export default function UserDashboard() {
     if (!showLeaveModal) return;
     setLeavingOrg(showLeaveModal.id);
     try {
-      const userToken  = localStorage.getItem("userToken");
-      const membersRes = await fetch(`${API_URL}/org/${showLeaveModal.id}/members`, {
+      const userToken   = localStorage.getItem("userToken");
+      const membersRes  = await fetch(`${API_URL}/org/${showLeaveModal.id}/members`, {
         headers: { Authorization: `Bearer ${userToken}` },
       });
       const membersData = await membersRes.json();
@@ -388,7 +415,9 @@ export default function UserDashboard() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {myPosts.map(post => (
-                  <Link href="/feed" key={post.id} className="block px-4 py-3 hover:bg-gray-50 transition-colors">
+                  <div key={post.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
+
+                    {/* Post header */}
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="w-7 h-7 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center flex-shrink-0">
                         {avatarPreview
@@ -396,33 +425,55 @@ export default function UserDashboard() {
                           : <span className="text-[10px] font-bold text-indigo-600">{initials}</span>
                         }
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold text-gray-900">{user.name}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-900 truncate">{user.name}</p>
                         <p className="text-[10px] text-gray-400">{username}</p>
                       </div>
-                      <button className="ml-auto p-1 text-gray-300 hover:text-gray-500">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+
+                      {/* Three dots menu */}
+                      <div className="relative flex-shrink-0" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)}
+                          className="p-1 text-gray-300 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                        {menuOpenId === post.id && (
+                          <div className="absolute right-0 top-7 z-50 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[140px]">
+                            <button
+                              onClick={() => { setMenuOpenId(null); setConfirmDelId(post.id); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Delete post
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400 mb-1">{post.time} ago</p>
-                    {post.image && (
-                      <img src={post.image} alt="" className="w-full rounded-xl object-cover max-h-40 mb-2" />
-                    )}
-                    {post.content && (
-                      <p className="text-sm text-gray-800 mb-2">{post.content}</p>
-                    )}
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1 text-xs text-gray-400">
-                        <Heart className="w-3.5 h-3.5" /> {post.likesCount}
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-gray-400">
-                        <MessageCircle className="w-3.5 h-3.5" /> {post.commentsCount}
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-gray-400">
-                        <Bookmark className="w-3.5 h-3.5" /> {post.savesCount}
-                      </span>
-                    </div>
-                  </Link>
+
+                    {/* Post body — links to feed */}
+                    <Link href="/feed" className="block">
+                      <p className="text-xs text-gray-400 mb-1">{post.time} ago</p>
+                      {post.image && (
+                        <img src={post.image} alt="" className="w-full rounded-xl object-cover max-h-40 mb-2" />
+                      )}
+                      {post.content && (
+                        <p className="text-sm text-gray-800 mb-2 break-words whitespace-pre-wrap">{post.content}</p>
+                      )}
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <Heart className="w-3.5 h-3.5" /> {post.likesCount}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <MessageCircle className="w-3.5 h-3.5" /> {post.commentsCount}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <Bookmark className="w-3.5 h-3.5" /> {post.savesCount}
+                        </span>
+                      </div>
+                    </Link>
+                  </div>
                 ))}
               </div>
             )
@@ -452,7 +503,7 @@ export default function UserDashboard() {
 
       </main>
 
-      {/* Leave org modal */}
+      {/* ── Leave org modal ── */}
       {showLeaveModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowLeaveModal(null)} />
@@ -475,7 +526,7 @@ export default function UserDashboard() {
         </>
       )}
 
-      {/* Logout modal */}
+      {/* ── Logout modal ── */}
       {showLogoutModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowLogoutModal(false)} />
@@ -489,6 +540,38 @@ export default function UserDashboard() {
               <div className="flex gap-3">
                 <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors">Cancel</button>
                 <button onClick={handleLogout} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors">Logout</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Delete post confirm modal ── */}
+      {confirmDelId && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setConfirmDelId(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
+              <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7 text-red-600" />
+              </div>
+              <h3 className="text-[15px] font-bold text-gray-900 text-center mb-1">Delete post?</h3>
+              <p className="text-sm text-gray-400 text-center mb-5">This can't be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDelId(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeletePost(confirmDelId)}
+                  disabled={!!deletingId}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {deletingId && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Delete
+                </button>
               </div>
             </div>
           </div>

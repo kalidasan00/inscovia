@@ -60,7 +60,7 @@ export default function FeedClient() {
   return (
     <div className="bg-gray-50 min-h-screen pb-20 md:pb-8">
 
-      {/* Header — tabs only, composer row removed (handled by page) */}
+      {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-2xl mx-auto flex">
           {[{ key: "my", label: "My Feed" }, { key: "community", label: "Community" }].map(tab => (
@@ -97,7 +97,12 @@ export default function FeedClient() {
         ) : (
           <div className="space-y-3">
             {posts.map(post => (
-              <PostCard key={post.id} post={post} currentUser={currentUser} />
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUser={currentUser}
+                onDeleted={id => setPosts(prev => prev.filter(p => p.id !== id))}
+              />
             ))}
           </div>
         )}
