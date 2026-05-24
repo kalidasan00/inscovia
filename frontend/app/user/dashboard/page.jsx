@@ -1,18 +1,18 @@
 // frontend/app/user/dashboard/page.jsx
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFavorites } from "../../../contexts/FavoritesContext";
 import { useCompare } from "../../../contexts/CompareContext";
 import {
-  Heart, GitCompare, MessageSquare, LogOut,
-  AlertCircle, Camera, Loader2,
-  MessageCircle, Bookmark, Mail,
-  Phone, Hash, MapPin, Calendar, Copy,
-  MoreHorizontal, PenLine, Globe, Trash2,
+  GitCompare, LogOut, AlertCircle, Loader2,
+  MessageCircle, Bookmark, Mail, Phone,
+  Hash, MapPin, Calendar, Copy, PenLine,
+  Globe, MessageSquare, Camera, Users, Heart,
 } from "lucide-react";
 import AccountSwitcher from "../../../components/AccountSwitcher";
+import PostCard from "../../feed/components/PostCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -31,32 +31,17 @@ export default function UserDashboard() {
   const [orgs,            setOrgs]            = useState([]);
   const [leavingOrg,      setLeavingOrg]      = useState(null);
   const [showLeaveModal,  setShowLeaveModal]  = useState(null);
-  const [avatarPreview,   setAvatarPreview]   = useState(null);
-  const [avatarFile,      setAvatarFile]      = useState(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [avatarError,     setAvatarError]     = useState("");
   const [myPosts,         setMyPosts]         = useState([]);
   const [loadingPosts,    setLoadingPosts]    = useState(false);
   const [activeTab,       setActiveTab]       = useState("feed");
   const [copied,          setCopied]          = useState("");
   const [socialCounts,    setSocialCounts]    = useState({ followers: 0, following: 0, posts: 0 });
-  const [menuOpenId,      setMenuOpenId]      = useState(null);
-  const [confirmDelId,    setConfirmDelId]    = useState(null);
-  const [deletingId,      setDeletingId]      = useState(null);
 
-  const fileInputRef = useRef(null);
-  const router       = useRouter();
+  const router = useRouter();
   const { favoritesCount } = useFavorites();
   const { compareCount }   = useCompare();
 
   useEffect(() => { checkAuth(); }, []);
-
-  // Close menu on outside click
-  useEffect(() => {
-    function handleClick() { setMenuOpenId(null); }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
   const freshProfile = async (token) => {
     try {
@@ -82,44 +67,35 @@ export default function UserDashboard() {
       const token  = localStorage.getItem("userToken");
       const cached = JSON.parse(userData);
       setUser(cached);
-      setAvatarPreview(cached.avatar || null);
       const savedOrgs = localStorage.getItem("userOrgs");
       if (savedOrgs) setOrgs(JSON.parse(savedOrgs));
       loadMyPosts(cached);
-      loadSocialCounts(cached);
       const fresh = await freshProfile(token);
-      if (fresh) {
-        setUser(fresh);
-        setAvatarPreview(fresh.avatar || null);
-        loadSocialCounts(fresh);
-      }
+      const active = fresh || cached;
+      if (fresh) setUser(fresh);
+      await loadSocialCounts(active.username, token);
     } catch { router.push("/login"); }
     finally  { setLoading(false); }
   };
 
-  const loadSocialCounts = async (u) => {
+  const loadSocialCounts = async (username, token) => {
     try {
-      const token = localStorage.getItem("userToken");
-      let username = u?.username;
+      const t = token || localStorage.getItem("userToken");
       if (!username) {
-        const res  = await fetch(`${API_URL}/user/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res  = await fetch(`${API_URL}/user/profile`, { headers: { Authorization: `Bearer ${t}` } });
         const data = await res.json();
         if (res.ok) username = data.user.username;
       }
       if (!username) return;
       const res  = await fetch(`${API_URL}/social/users/${username}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${t}` },
       });
       const data = await res.json();
-      if (res.ok) {
-        setSocialCounts({
-          followers: data.user.followersCount,
-          following: data.user.followingCount,
-          posts:     data.user.postsCount,
-        });
-      }
+      if (res.ok) setSocialCounts({
+        followers: data.user.followersCount ?? 0,
+        following: data.user.followingCount ?? 0,
+        posts:     data.user.postsCount     ?? 0,
+      });
     } catch {}
   };
 
@@ -132,66 +108,11 @@ export default function UserDashboard() {
       });
       const data = await res.json();
       if (res.ok) {
-        const mine = (data.posts ?? []).filter(p => p.author.name === u.name);
+        const mine = (data.posts ?? []).filter(p => p.author.id === u.id || p.author.name === u.name);
         setMyPosts(mine);
       }
     } catch {}
     finally { setLoadingPosts(false); }
-  };
-
-  const handleDeletePost = async (postId) => {
-    setDeletingId(postId);
-    try {
-      const token = localStorage.getItem("userToken");
-      const res   = await fetch(`${API_URL}/feed/${postId}`, {
-        method:  "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setMyPosts(prev => prev.filter(p => p.id !== postId));
-        setSocialCounts(prev => ({ ...prev, posts: Math.max(0, prev.posts - 1) }));
-      }
-    } catch {}
-    finally { setDeletingId(null); setConfirmDelId(null); }
-  };
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setAvatarError("Image must be under 5MB."); return; }
-    if (!file.type.startsWith("image/")) { setAvatarError("Please select an image file."); return; }
-    setAvatarError("");
-    setAvatarFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setAvatarPreview(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const handleAvatarUpload = async () => {
-    if (!avatarFile) return;
-    setUploadingAvatar(true);
-    setAvatarError("");
-    try {
-      const token = localStorage.getItem("userToken");
-      const fd    = new FormData();
-      fd.append("image", avatarFile);
-      const res  = await fetch(`${API_URL}/user/avatar`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      const updated = { ...user, avatar: data.avatar };
-      setUser(updated);
-      setAvatarPreview(data.avatar);
-      setAvatarFile(null);
-      localStorage.setItem("userData", JSON.stringify(updated));
-    } catch (err) {
-      setAvatarError(err.message);
-    } finally {
-      setUploadingAvatar(false);
-    }
   };
 
   const copyToClipboard = (text, key) => {
@@ -225,7 +146,7 @@ export default function UserDashboard() {
       window.dispatchEvent(new Event("authStateChanged"));
       setShowLeaveModal(null);
     } catch (err) { alert(err.message); }
-    finally      { setLeavingOrg(null); }
+    finally { setLeavingOrg(null); }
   };
 
   const handleLogout = () => {
@@ -258,6 +179,15 @@ export default function UserDashboard() {
     : null;
   const city = localStorage.getItem("userCity") || null;
 
+  const currentUser = {
+    id:       user.id,
+    name:     user.name,
+    initials,
+    role:     user.role?.toLowerCase() ?? "user",
+    color:    "blue",
+    avatar:   user.avatar || null,
+  };
+
   return (
     <>
       <main className="max-w-lg mx-auto pb-24 md:pb-8 space-y-3">
@@ -267,134 +197,144 @@ export default function UserDashboard() {
         </div>
 
         {/* ── Hero card ── */}
-        <div className="mx-4 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-600 text-white">
-          <div className="px-4 pt-4 pb-4">
+        <div className="mx-4 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-600 text-white shadow-lg">
 
-            <div className="flex items-start gap-3 mb-3">
+          {/* Top section: avatar + name + edit */}
+          <div className="px-4 pt-5 pb-4">
+            <div className="flex items-start gap-4">
+
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                  {avatarPreview
-                    ? <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
-                    : <span className="text-xl font-bold text-white">{initials}</span>
+                <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-white/30 bg-white/20 flex items-center justify-center shadow-lg">
+                  {user.avatar
+                    ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                    : <span className="text-2xl font-bold text-white">{initials}</span>
                   }
                 </div>
-                <div className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
-                <button onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-5 h-5 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors">
-                  <Camera className="w-2.5 h-2.5 text-indigo-600" />
-                </button>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-indigo-500" />
+                <Link href="/user/profile/edit"
+                  className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white transition-colors">
+                  <Camera className="w-3 h-3 text-indigo-600" />
+                </Link>
               </div>
 
               {/* Name + username + location */}
-              <div className="flex-1 min-w-0 pt-1">
-                <h2 className="text-base font-bold text-white leading-tight truncate">{user.name}</h2>
-                <span className="inline-block mt-1 text-[11px] font-medium bg-white/20 text-white/90 px-2 py-0.5 rounded-full">
-                  {username}
-                </span>
-                {user.location && (
-                  <p className="flex items-center gap-1 mt-1 text-[11px] text-white/60">
-                    <MapPin className="w-2.5 h-2.5" />{user.location}
+              <div className="flex-1 min-w-0 pt-0.5">
+                <h2 className="text-lg font-bold text-white leading-tight">{user.name}</h2>
+                <p className="text-sm text-white/70 font-medium mt-0.5">{username}</p>
+                {(user.location || city) && (
+                  <p className="flex items-center gap-1 mt-1.5 text-xs text-white/55">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    {user.location || city}
                   </p>
+                )}
+                {user.website && (
+                  <a href={user.website} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 mt-1 text-xs text-white/55 hover:text-white/80 transition-colors truncate">
+                    <Globe className="w-3 h-3 flex-shrink-0" />
+                    {user.website.replace(/^https?:\/\//, "")}
+                  </a>
                 )}
               </div>
 
               {/* Edit button */}
-              <div className="flex-shrink-0 pt-1">
-                <Link href="/user/profile/edit"
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-semibold text-white transition-colors">
-                  <PenLine className="w-3 h-3" /> Edit
-                </Link>
-              </div>
+              <Link href="/user/profile/edit"
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl text-xs font-semibold text-white transition-colors mt-0.5">
+                <PenLine className="w-3 h-3" /> Edit
+              </Link>
             </div>
 
             {/* Bio */}
-            {user.bio ? (
-              <p className="text-xs text-white/80 leading-relaxed mb-2">{user.bio}</p>
-            ) : (
-              <Link href="/user/profile/edit"
-                className="inline-flex items-center gap-1 text-xs text-white/50 hover:text-white/80 mb-2 transition-colors">
-                <PenLine className="w-3 h-3" /> Add a bio
+            <div className="mt-3">
+              {user.bio ? (
+                <p className="text-sm text-white/80 leading-relaxed">{user.bio}</p>
+              ) : (
+                <Link href="/user/profile/edit"
+                  className="inline-flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors">
+                  <PenLine className="w-3 h-3" /> Add a bio…
+                </Link>
+              )}
+            </div>
+
+            {/* Followers / Following row */}
+            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-white/15">
+              <Link href="/users" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                <Users className="w-3.5 h-3.5 text-white/60" />
+                <span className="text-sm font-bold text-white">{socialCounts.followers}</span>
+                <span className="text-xs text-white/55">Followers</span>
               </Link>
-            )}
-
-            {/* Website */}
-            {user.website && (
-              <a href={user.website} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white/90 mb-2 transition-colors">
-                <Globe className="w-3 h-3" />
-                {user.website.replace(/^https?:\/\//, "")}
-              </a>
-            )}
-
-            {/* Save photo */}
-            {avatarFile && (
-              <div className="flex items-center gap-2 mt-2">
-                <button onClick={handleAvatarUpload} disabled={uploadingAvatar}
-                  className="flex items-center gap-1.5 px-4 py-1.5 bg-white text-indigo-600 text-xs font-bold rounded-full disabled:opacity-60 hover:bg-white/90 transition-colors">
-                  {uploadingAvatar ? <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</> : "Save Photo"}
-                </button>
-                <button onClick={() => { setAvatarFile(null); setAvatarPreview(user.avatar || null); }}
-                  className="text-xs text-white/70 hover:text-white transition-colors">Cancel</button>
-              </div>
-            )}
-            {avatarError && <p className="text-xs text-red-300 mt-1">{avatarError}</p>}
+              <Link href="/users" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                <Heart className="w-3.5 h-3.5 text-white/60" />
+                <span className="text-sm font-bold text-white">{socialCounts.following}</span>
+                <span className="text-xs text-white/55">Following</span>
+              </Link>
+              <Link href="/feed" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                <MessageCircle className="w-3.5 h-3.5 text-white/60" />
+                <span className="text-sm font-bold text-white">{socialCounts.posts}</span>
+                <span className="text-xs text-white/55">Posts</span>
+              </Link>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div className="bg-white grid grid-cols-4">
+          {/* Stats bar — Saved & Compare */}
+          <div className="bg-white grid grid-cols-2">
             {[
-              { href: "/user/saved",   Icon: Bookmark,     label: "Saved",     value: favoritesCount        },
-              { href: "/user/compare", Icon: GitCompare,    label: "Compare",   value: compareCount          },
-              { href: "/users",        Icon: MessageSquare, label: "Followers", value: socialCounts.followers },
-              { href: "/feed",         Icon: MessageCircle, label: "Posts",     value: socialCounts.posts     },
+              { href: "/user/saved",   Icon: Bookmark,  label: "Saved",   value: favoritesCount },
+              { href: "/user/compare", Icon: GitCompare, label: "Compare", value: compareCount   },
             ].map(({ href, Icon, label, value }, i, arr) => (
               <Link key={label} href={href}
-                className={`flex flex-col items-center py-3 hover:bg-gray-50 transition-colors ${i < arr.length - 1 ? "border-r border-gray-100" : ""}`}>
-                <Icon className="w-4 h-4 text-gray-400 mb-1" />
+                className={`flex items-center justify-center gap-2 py-3 hover:bg-gray-50 transition-colors ${i < arr.length - 1 ? "border-r border-gray-100" : ""}`}>
+                <Icon className="w-4 h-4 text-indigo-400" />
                 <span className="text-sm font-bold text-gray-900">{value}</span>
-                <span className="text-[10px] text-gray-400">{label}</span>
+                <span className="text-xs text-gray-400">{label}</span>
               </Link>
             ))}
           </div>
         </div>
 
         {/* ── Info card ── */}
-        <div className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          {[
-            { Icon: Mail,     label: user.email,            key: "email",  copyVal: user.email },
-            { Icon: Phone,    label: user.phone,             key: "phone",  copyVal: user.phone },
-            { Icon: Hash,     label: `User ID: ${userId}`,   key: "uid",    copyVal: userId     },
-            ...(city     ? [{ Icon: MapPin,   label: city,                key: "city",   copyVal: null }] : []),
-            ...(joinedAt ? [{ Icon: Calendar, label: `Joined ${joinedAt}`, key: "joined", copyVal: null }] : []),
-          ].map(({ Icon, label, key, copyVal }, i, arr) => (
-            <div key={key}
-              className={`flex items-center gap-3 px-4 py-3 ${i < arr.length - 1 ? "border-b border-gray-100" : ""}`}>
-              <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="flex-1 text-sm text-gray-700 truncate">{label}</span>
-              {copyVal && (
-                <button onClick={() => copyToClipboard(copyVal, key)}
-                  className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                  <Copy className={`w-3.5 h-3.5 ${copied === key ? "text-green-500" : "text-gray-300"}`} />
-                </button>
-              )}
-            </div>
-          ))}
+        <div className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+          <div className="px-4 py-2.5 border-b border-gray-50">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Account Info</p>
+          </div>
+          <div className="grid grid-cols-2 divide-x divide-y divide-gray-50">
+            {[
+              { Icon: Mail,     label: "Email",   value: user.email,  key: "email",  copyVal: user.email },
+              { Icon: Phone,    label: "Phone",   value: user.phone,  key: "phone",  copyVal: user.phone },
+              { Icon: Hash,     label: "User ID", value: userId,      key: "uid",    copyVal: userId     },
+              { Icon: Calendar, label: "Joined",  value: joinedAt,    key: "joined", copyVal: null       },
+              ...(city ? [{ Icon: MapPin, label: "City", value: city, key: "city", copyVal: null }] : []),
+            ].map(({ Icon, label, value, key, copyVal }) => (
+              <div key={key} className="flex items-center gap-2.5 px-4 py-3">
+                <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-3.5 h-3.5 text-indigo-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
+                  <p className="text-xs text-gray-800 font-semibold truncate">{value ?? "—"}</p>
+                </div>
+                {copyVal && (
+                  <button onClick={() => copyToClipboard(copyVal, key)} className="flex-shrink-0 p-1">
+                    <Copy className={`w-3 h-3 transition-colors ${copied === key ? "text-emerald-500" : "text-gray-300 hover:text-gray-400"}`} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ── Activity tabs ── */}
-        <div className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="mx-4 bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
           <div className="flex border-b border-gray-100">
             {[
-              { key: "feed",     label: "My Feed"  },
+              { key: "feed",     label: "My Posts" },
               { key: "comments", label: "Comments" },
               { key: "saved",    label: "Saved"    },
             ].map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                 className={`flex-1 py-3 text-xs font-semibold transition-colors ${
                   activeTab === tab.key
-                    ? "text-indigo-600 border-b-2 border-indigo-600"
+                    ? "text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50"
                     : "text-gray-400 hover:text-gray-600"
                 }`}>
                 {tab.label}
@@ -404,106 +344,70 @@ export default function UserDashboard() {
 
           {activeTab === "feed" && (
             loadingPosts ? (
-              <div className="py-8 flex justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+              <div className="py-10 flex justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
               </div>
             ) : myPosts.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-xs text-gray-400">No posts yet.</p>
-                <Link href="/feed" className="mt-1.5 inline-block text-xs text-indigo-600 font-medium">Share something →</Link>
+              <div className="py-12 text-center px-6">
+                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <MessageCircle className="w-5 h-5 text-indigo-300" />
+                </div>
+                <p className="text-sm font-semibold text-gray-500 mb-1">No posts yet</p>
+                <p className="text-xs text-gray-400 mb-3">Share something with the community</p>
+                <Link href="/feed" className="inline-flex items-center gap-1 text-xs text-indigo-600 font-semibold bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors">
+                  Go to Feed →
+                </Link>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-50">
                 {myPosts.map(post => (
-                  <div key={post.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
-
-                    {/* Post header */}
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-7 h-7 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                        {avatarPreview
-                          ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
-                          : <span className="text-[10px] font-bold text-indigo-600">{initials}</span>
-                        }
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 truncate">{user.name}</p>
-                        <p className="text-[10px] text-gray-400">{username}</p>
-                      </div>
-
-                      {/* Three dots menu */}
-                      <div className="relative flex-shrink-0" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => setMenuOpenId(menuOpenId === post.id ? null : post.id)}
-                          className="p-1 text-gray-300 hover:text-gray-500 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                        {menuOpenId === post.id && (
-                          <div className="absolute right-0 top-7 z-50 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[140px]">
-                            <button
-                              onClick={() => { setMenuOpenId(null); setConfirmDelId(post.id); }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              Delete post
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Post body — links to feed */}
-                    <Link href="/feed" className="block">
-                      <p className="text-xs text-gray-400 mb-1">{post.time} ago</p>
-                      {post.image && (
-                        <img src={post.image} alt="" className="w-full rounded-xl object-cover max-h-40 mb-2" />
-                      )}
-                      {post.content && (
-                        <p className="text-sm text-gray-800 mb-2 break-words whitespace-pre-wrap">{post.content}</p>
-                      )}
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <Heart className="w-3.5 h-3.5" /> {post.likesCount}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <MessageCircle className="w-3.5 h-3.5" /> {post.commentsCount}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <Bookmark className="w-3.5 h-3.5" /> {post.savesCount}
-                        </span>
-                      </div>
-                    </Link>
-                  </div>
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    currentUser={currentUser}
+                    onDeleted={id => {
+                      setMyPosts(prev => prev.filter(p => p.id !== id));
+                      setSocialCounts(prev => ({ ...prev, posts: Math.max(0, prev.posts - 1) }));
+                    }}
+                  />
                 ))}
               </div>
             )
           )}
 
           {activeTab === "comments" && (
-            <div className="py-10 text-center">
-              <p className="text-xs text-gray-400">Your comments will appear here.</p>
+            <div className="py-12 text-center px-6">
+              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <MessageSquare className="w-5 h-5 text-gray-300" />
+              </div>
+              <p className="text-sm font-semibold text-gray-400">No comments yet</p>
             </div>
           )}
 
           {activeTab === "saved" && (
-            <div className="py-10 text-center">
-              <p className="text-xs text-gray-400">Your saved posts will appear here.</p>
-              <Link href="/user/saved" className="mt-1.5 inline-block text-xs text-indigo-600 font-medium">View saved centers →</Link>
+            <div className="py-12 text-center px-6">
+              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Bookmark className="w-5 h-5 text-gray-300" />
+              </div>
+              <p className="text-sm font-semibold text-gray-400 mb-1">No saved posts</p>
+              <Link href="/user/saved" className="inline-flex items-center gap-1 text-xs text-indigo-600 font-semibold bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors">
+                View saved centers →
+              </Link>
             </div>
           )}
         </div>
 
         {/* ── Logout ── */}
-        <div className="mx-4">
+        <div className="mx-4 pb-2">
           <button onClick={() => setShowLogoutModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-100 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors">
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-100 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors">
             <LogOut className="w-4 h-4" /> Logout
           </button>
         </div>
 
       </main>
 
-      {/* ── Leave org modal ── */}
+      {/* Leave org modal */}
       {showLeaveModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowLeaveModal(null)} />
@@ -526,7 +430,7 @@ export default function UserDashboard() {
         </>
       )}
 
-      {/* ── Logout modal ── */}
+      {/* Logout modal */}
       {showLogoutModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowLogoutModal(false)} />
@@ -540,38 +444,6 @@ export default function UserDashboard() {
               <div className="flex gap-3">
                 <button onClick={() => setShowLogoutModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors">Cancel</button>
                 <button onClick={handleLogout} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors">Logout</button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ── Delete post confirm modal ── */}
-      {confirmDelId && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setConfirmDelId(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
-              <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-7 h-7 text-red-600" />
-              </div>
-              <h3 className="text-[15px] font-bold text-gray-900 text-center mb-1">Delete post?</h3>
-              <p className="text-sm text-gray-400 text-center mb-5">This can't be undone.</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmDelId(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDeletePost(confirmDelId)}
-                  disabled={!!deletingId}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-                >
-                  {deletingId && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Delete
-                </button>
               </div>
             </div>
           </div>
