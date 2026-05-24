@@ -209,7 +209,6 @@ export default function EditProfilePage() {
     name: "", username: "", bio: "", location: "", website: "",
   });
 
-  // ── Load: fetch fresh profile from API so bio/username are always current ──
   useEffect(() => {
     const load = async () => {
       try {
@@ -217,7 +216,6 @@ export default function EditProfilePage() {
         if (!raw) { router.push("/login"); return; }
         const cached = JSON.parse(raw);
 
-        // Pre-fill from cache immediately
         setForm({
           name:     cached.name     || "",
           username: cached.username || "",
@@ -227,7 +225,6 @@ export default function EditProfilePage() {
         });
         setAvatarPreview(cached.avatar || null);
 
-        // Then fetch fresh from server to get latest bio/username
         const token = localStorage.getItem("userToken");
         if (token) {
           const res  = await fetch(`${API_URL}/user/profile`, {
@@ -244,7 +241,6 @@ export default function EditProfilePage() {
               website:  u.website  || cached.website  || "",
             });
             if (u.avatar) setAvatarPreview(u.avatar);
-            // Update cache
             localStorage.setItem("userData", JSON.stringify({ ...cached, ...u }));
           }
         }
@@ -289,9 +285,10 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleChange = (key, val) => {
-    setForm(f => ({ ...f, [key]: val }));
-    setError(""); setSuccess(false);
+  const handleChange = (fieldKey, val) => {
+    setForm(f => ({ ...f, [fieldKey]: val }));
+    setError("");
+    setSuccess(false);
   };
 
   const handleSave = async () => {
@@ -337,26 +334,27 @@ export default function EditProfilePage() {
 
   const initials = form.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
 
+  // ✅ Use fieldKey instead of key so React doesn't consume it
   const fields = [
     {
-      key: "name", label: "Full Name", Icon: User, type: "text",
+      fieldKey: "name", label: "Full Name", Icon: User, type: "text",
       placeholder: "Your full name", maxLength: 50,
     },
     {
-      key: "username", label: "Username", Icon: AtSign, type: "text",
+      fieldKey: "username", label: "Username", Icon: AtSign, type: "text",
       placeholder: "e.g. kalidasan_vv", maxLength: 20,
       hint: "3–20 chars · lowercase · letters, numbers, underscores",
     },
     {
-      key: "bio", label: "Bio", Icon: FileText, type: "textarea",
+      fieldKey: "bio", label: "Bio", Icon: FileText, type: "textarea",
       placeholder: "Tell people about yourself…", maxLength: 160,
     },
     {
-      key: "location", label: "Location", Icon: MapPin, type: "text",
+      fieldKey: "location", label: "Location", Icon: MapPin, type: "text",
       placeholder: "City, State", maxLength: 60,
     },
     {
-      key: "website", label: "Website", Icon: Globe, type: "text",
+      fieldKey: "website", label: "Website", Icon: Globe, type: "text",
       placeholder: "https://yoursite.com", maxLength: 100,
     },
   ];
@@ -434,9 +432,9 @@ export default function EditProfilePage() {
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm divide-y divide-gray-100">
             {fields.map(f => (
               <ProfileField
-                key={f.key}
+                key={f.fieldKey}
                 {...f}
-                value={form[f.key]}
+                value={form[f.fieldKey]}
                 onChange={handleChange}
               />
             ))}
