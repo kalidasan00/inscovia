@@ -17,13 +17,14 @@ export const getUsers = async (req, res) => {
 
     const where = {
       isActive: true,
-      ...(q    ? { name: { contains: q, mode: "insensitive" } } : {}),
+      role:     { not: "ADMIN" }, // ✅ exclude admin accounts
+      ...(q ? { name: { contains: q, mode: "insensitive" } } : {}),
       ...(role && role !== "all" ? { role: role.toUpperCase() } : {}),
     };
 
     const users = await prisma.user.findMany({
       where,
-      take: 50,
+      take:    50,
       orderBy: { createdAt: "desc" },
       select: {
         id:       true,
