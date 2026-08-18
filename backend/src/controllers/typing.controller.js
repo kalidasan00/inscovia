@@ -92,10 +92,16 @@ export const getLeaderboard = async (req, res) => {
 
     const take = Math.min(Math.max(Number(limit) || 10, 1), 50);
 
-    const leaderboard = await prisma.typingTestResult.findMany({
+    // Pull a larger pool ordered best-first, then keep only each person's
+    // single best row. Logged-in users are deduped by userId; guests (no
+    // account) are deduped by name — imperfect for guests since two people
+    // could share a name, but there's no other identity to key on.
+    // Pool size is generous so a person's earlier attempts don't push a
+    // genuinely different person's best result out of the pool entirely.
+    const pool = await prisma.typingTestResult.findMany({
       where,
       orderBy: [{ wpm: "desc" }, { accuracy: "desc" }],
-      take,
+      take: take * 20,
       select: {
         id: true,
         name: true,
@@ -107,6 +113,16 @@ export const getLeaderboard = async (req, res) => {
         createdAt: true,
       },
     });
+
+    const seen = new Set();
+    const leaderboard = [];
+    for (const row of pool) {
+      const key = row.userId ? `u:${row.userId}` : `g:${row.name.trim().toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      leaderboard.push(row);
+      if (leaderboard.length >= take) break;
+    }
 
     res.json({ success: true, leaderboard });
   } catch (error) {
