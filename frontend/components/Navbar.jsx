@@ -10,7 +10,7 @@ import {
   Menu, X, User, LogOut, LayoutDashboard,
   Search, FileText, Target, Bell,
   MapPin, BookOpen, Building2, Sparkles, Loader2,
-  Globe, Home, ChevronDown,
+  Globe, Home, ChevronDown, Keyboard,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -403,6 +403,7 @@ const MOBILE_NAV = [
   { href: "/centers?category=STUDY_ABROAD", label: "Study Abroad",        Icon: Globe },
   { href: "/previous-year-papers",          label: "Previous Year Papers", Icon: FileText },
   { href: "/practice",                      label: "Practice Zone",        Icon: Target },
+  { href: "/typing-test",                   label: "Typing Test",          Icon: Keyboard },
 ];
 
 export default function Navbar() {
@@ -557,6 +558,10 @@ export default function Navbar() {
               <Link href="/practice" aria-current={pathname === "/practice" ? "page" : undefined}
                 className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap hover:text-blue-600 hover:bg-gray-50 ${pathname === "/practice" ? "text-blue-600 bg-blue-50" : "text-gray-600"}`}>
                 <Target className="w-4 h-4 flex-shrink-0" /><span>Practice</span>
+              </Link>
+              <Link href="/typing-test" aria-current={pathname === "/typing-test" ? "page" : undefined}
+                className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap hover:text-blue-600 hover:bg-gray-50 ${pathname === "/typing-test" ? "text-blue-600 bg-blue-50" : "text-gray-600"}`}>
+                <Keyboard className="w-4 h-4 flex-shrink-0" /><span>Typing Test</span>
               </Link>
             </nav>
 
