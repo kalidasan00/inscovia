@@ -74,15 +74,20 @@ export const submitResult = async (req, res) => {
   }
 };
 
-// GET /api/typing/leaderboard?duration=30&difficulty=MEDIUM&limit=10
+// GET /api/typing/leaderboard?duration=30&difficulty=MEDIUM&limit=10&scope=week
+// scope: "all" (default) | "week"
 export const getLeaderboard = async (req, res) => {
   try {
-    const { duration, difficulty, limit } = req.query;
+    const { duration, difficulty, limit, scope } = req.query;
 
     const where = {};
     if (duration && [15, 30, 60].includes(Number(duration))) where.duration = Number(duration);
     if (difficulty && ["EASY", "MEDIUM", "HARD"].includes(difficulty.toUpperCase())) {
       where.difficulty = difficulty.toUpperCase();
+    }
+    if (scope === "week") {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      where.createdAt = { gte: weekAgo };
     }
 
     const take = Math.min(Math.max(Number(limit) || 10, 1), 50);
@@ -98,6 +103,7 @@ export const getLeaderboard = async (req, res) => {
         accuracy: true,
         duration: true,
         difficulty: true,
+        userId: true,
         createdAt: true,
       },
     });
@@ -106,5 +112,46 @@ export const getLeaderboard = async (req, res) => {
   } catch (error) {
     console.error("getLeaderboard error:", error);
     res.status(500).json({ success: false, error: "Failed to fetch leaderboard" });
+  }
+};
+
+// GET /api/typing/history?userId=xxx&limit=30
+// Returns a logged-in user's past results, oldest first, for the progress graph.
+export const getHistory = async (req, res) => {
+  try {
+    const { userId, limit } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: "userId is required" });
+    }
+
+    const take = Math.min(Math.max(Number(limit) || 30, 1), 100);
+
+    const history = await prisma.typingTestResult.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take,
+      select: {
+        id: true,
+        wpm: true,
+        accuracy: true,
+        duration: true,
+        difficulty: true,
+        createdAt: true,
+      },
+    });
+
+    // Return oldest → newest so the graph reads left-to-right chronologically
+    const ordered = history.reverse();
+
+    const best = ordered.reduce(
+      (acc, r) => (r.wpm > (acc?.wpm ?? -1) ? r : acc),
+      null
+    );
+
+    res.json({ success: true, history: ordered, best, totalTests: ordered.length });
+  } catch (error) {
+    console.error("getHistory error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch history" });
   }
 };
