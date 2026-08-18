@@ -24,6 +24,7 @@ router.get("/sitemap.xml", async (req, res) => {
       { url: '/centers',                 priority: '0.9', changefreq: 'daily' },
       { url: '/previous-year-papers',    priority: '0.9', changefreq: 'weekly' },
       { url: '/practice',                priority: '0.8', changefreq: 'weekly' },
+      { url: '/typing-test',             priority: '0.8', changefreq: 'weekly' },
       { url: '/blog',                    priority: '0.8', changefreq: 'weekly' },
     ];
 
