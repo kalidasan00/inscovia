@@ -86,6 +86,13 @@ enum BannerPlacement {
   FEATURED
 }
 
+// NEW: difficulty levels for the typing test passages
+enum TypingDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 // ─── Unified User Model ──────────────────────────────────────────────────────
 
 model User {
@@ -117,6 +124,7 @@ model User {
   postCommentLikes PostCommentLike[]
   following        Follow[]          @relation("Follower")
   followers        Follow[]          @relation("Following")
+  typingResults    TypingTestResult[]
 
   @@index([email])
   @@index([role])
@@ -362,6 +370,28 @@ model AptitudeQuestion {
   @@index([isActive])
   @@index([topic, subtopic])
   @@index([topic, difficulty])
+}
+
+// ─── TypingTestResult ─────────────────────────────────────────────────────────
+// NEW MODEL: stores each completed typing test run for the leaderboard/history
+
+model TypingTestResult {
+  id         String           @id @default(cuid())
+  name       String                                // guest display name, or pulled from account
+  userId     String?
+  user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  wpm        Int
+  accuracy   Float
+  duration   Int                                   // test length in seconds (15 / 30 / 60)
+  difficulty TypingDifficulty @default(MEDIUM)
+  errors     Int              @default(0)
+  createdAt  DateTime         @default(now())
+
+  @@index([wpm])
+  @@index([userId])
+  @@index([duration])
+  @@index([createdAt])
+  @@index([duration, wpm])
 }
 
 // ─── Analytics ───────────────────────────────────────────────────────────────

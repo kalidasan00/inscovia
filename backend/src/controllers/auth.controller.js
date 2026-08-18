@@ -175,6 +175,22 @@ export const registerInstitute = async (req, res) => {
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
     if (existingUser) {
+      // ✅ FIX: Prevent duplicate org+center if this request fires twice
+      // (double-click, slow network retry, resubmit after refresh, etc.)
+      const alreadyExists = await prisma.center.findFirst({
+        where: {
+          name: instituteName,
+          city,
+          org: { members: { some: { userId: existingUser.id } } }
+        }
+      });
+      if (alreadyExists) {
+        return res.status(409).json({
+          error: "You already have an institute with this name in this city",
+          centerSlug: alreadyExists.slug
+        });
+      }
+
       const result = await prisma.$transaction(async (tx) => {
         const org = await tx.organization.create({
           data: {
