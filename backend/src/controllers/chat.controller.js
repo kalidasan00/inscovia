@@ -205,7 +205,11 @@ Only recommend institutes listed above. Reference them by name.`;
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        // Groq deprecated llama-3.3-70b-versatile (and the other Llama chat
+        // models) — openai/gpt-oss-120b is their current recommended
+        // general-purpose replacement. If you'd rather trade some quality
+        // for lower cost/latency, openai/gpt-oss-20b is the smaller sibling.
+        model: "openai/gpt-oss-120b",
         max_tokens: 500,
         temperature: 0.7,
         messages: [
