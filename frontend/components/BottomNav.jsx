@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { Building2, Plus, LogOut, User, ChevronRight, X } from "lucide-react";
+import { Building2, Plus, LogOut, User, ChevronRight, X, GraduationCap } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -151,6 +151,7 @@ function BottomNavInner() {
   const isStudyAbroadActive =
     pathname?.startsWith("/centers") && searchParams?.get("category") === "STUDY_ABROAD";
   const isCentersActive = pathname?.startsWith("/centers") && !isStudyAbroadActive;
+  const isCollegesActive = pathname?.startsWith("/colleges");
   const isProfileActive =
     pathname?.startsWith("/institute/dashboard") ||
     pathname?.startsWith("/user/dashboard") ||
@@ -219,6 +220,12 @@ function BottomNavInner() {
       ),
     },
     {
+      name: "Colleges",
+      href: "/colleges",
+      isActive: isCollegesActive,
+      icon: <GraduationCap className="w-6 h-6" />,
+    },
+    {
       name: "Profile",
       href: null,
       isActive: isProfileActive,
@@ -231,14 +238,14 @@ function BottomNavInner() {
   return (
     <>
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-5 h-16">
           {navItems.map((item) => {
             const content = (
               <>
                 <div className={`transition-transform ${item.isActive ? "scale-110" : ""}`}>
                   {item.icon}
                 </div>
-                <span className={`text-xs mt-0.5 ${item.isActive ? "font-semibold" : "font-medium"}`}>
+                <span className={`text-[11px] mt-0.5 ${item.isActive ? "font-semibold" : "font-medium"}`}>
                   {item.name}
                 </span>
               </>

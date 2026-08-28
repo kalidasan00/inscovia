@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Head from "next/head";
 import dynamic from "next/dynamic";
 import {
-  Zap, RotateCcw, Share2, Trophy, Lock, TrendingUp, Target, AlertCircle, RefreshCw,
+  Zap, RotateCcw, Share2, Trophy, Lock, TrendingUp, Target, AlertCircle, RefreshCw, ChevronDown,
 } from "lucide-react";
 
 // recharts is only needed for logged-in users with history — code-split it out
@@ -17,6 +18,34 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 const GUEST_ATTEMPT_KEY = "inscovia_typing_guest_used";
 const FALLBACK_TEXT =
   "The quick brown fox jumps over the lazy dog while practicing typing speed and accuracy every single day.";
+const SITE_URL = "https://inscovia.com";
+
+const FAQ_ITEMS = [
+  {
+    q: "What is a good typing speed (WPM)?",
+    a: "Most people type between 35–45 WPM. 50–65 WPM is considered above average, and professional typists, transcriptionists, and programmers often type 70–100+ WPM. Anything over 40 WPM is solid for everyday work and exams.",
+  },
+  {
+    q: "How is WPM calculated?",
+    a: "WPM (Words Per Minute) is calculated as the number of correctly typed characters divided by 5 (the average word length), divided by the time taken in minutes. Only correctly typed characters count toward your score.",
+  },
+  {
+    q: "How is accuracy calculated?",
+    a: "Accuracy is the percentage of characters you typed correctly out of the total characters you attempted. For example, typing 95 correct characters out of 100 attempted gives you 95% accuracy.",
+  },
+  {
+    q: "Is this typing test free?",
+    a: "Yes. Guests get one free typing test with instant results and a leaderboard entry. Signing in (free) unlocks unlimited tests, a saved history, and a personal WPM progress graph over time.",
+  },
+  {
+    q: "Which typing exams or jobs require a WPM test?",
+    a: "Many government exams, data entry roles, court reporting, transcription jobs, and customer support positions require typing speed tests, often with a minimum requirement of 30–40 WPM.",
+  },
+  {
+    q: "How can I improve my typing speed?",
+    a: "Practice daily for 10–15 minutes, focus on accuracy before speed, learn proper finger placement (touch typing), and avoid looking at the keyboard. Consistent short practice sessions improve speed faster than occasional long ones.",
+  },
+];
 
 // ─── localStorage helpers ───
 
@@ -71,6 +100,8 @@ export default function TypingTestPage() {
   const [history, setHistory] = useState([]);
   const [historyBest, setHistoryBest] = useState(null);
   const [user, setUser] = useState(null);
+  const [openFaq, setOpenFaq] = useState(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const inputRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -292,6 +323,12 @@ export default function TypingTestPage() {
     fetchLeaderboard(scope);
   };
 
+  // Keep the home-screen leaderboard in sync with the selected duration/difficulty
+  useEffect(() => {
+    if (showLeaderboard) fetchLeaderboard(leaderboardScope);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duration, difficulty]);
+
   const shareScore = () => {
     if (!finalStats) return;
     const origin = typeof window !== "undefined" ? window.location.origin : "https://inscovia.com";
@@ -334,13 +371,68 @@ export default function TypingTestPage() {
 
   // ─── HOME ───
   if (screen === "home") {
+    const pageTitle = "Free Typing Speed Test Online — Check Your WPM & Accuracy | Inscovia";
+    const pageDescription =
+      "Take a free online typing speed test to measure your words per minute (WPM) and accuracy. Choose 15s, 30s, or 60s tests across easy, medium, and hard passages. Track your progress and compete on the leaderboard.";
+    const canonicalUrl = `${SITE_URL}/typing-test`;
+
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          name: "Inscovia Typing Speed Test",
+          applicationCategory: "EducationApplication",
+          operatingSystem: "Any",
+          url: canonicalUrl,
+          description: pageDescription,
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        },
+        {
+          "@type": "FAQPage",
+          mainEntity: FAQ_ITEMS.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        },
+        {
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Typing Test", item: canonicalUrl },
+          ],
+        },
+      ],
+    };
+
     return (
       <div className="min-h-screen bg-[#fafafa]">
-        <div className="max-w-xl mx-auto px-6 pt-16 pb-24 flex flex-col items-center text-center">
+        <Head>
+          <title>{pageTitle}</title>
+          <meta name="description" content={pageDescription} />
+          <link rel="canonical" href={canonicalUrl} />
+          <meta property="og:type" content="website" />
+          <meta property="og:title" content={pageTitle} />
+          <meta property="og:description" content={pageDescription} />
+          <meta property="og:url" content={canonicalUrl} />
+          <meta property="og:site_name" content="Inscovia" />
+          <meta name="twitter:card" content="summary" />
+          <meta name="twitter:title" content={pageTitle} />
+          <meta name="twitter:description" content={pageDescription} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+        </Head>
+
+        <div className="max-w-xl mx-auto px-6 pt-16 pb-8 flex flex-col items-center text-center">
           <p className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-2">Typing Test</p>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-1">how fast do you type?</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">
+            Free Typing Speed Test — Check Your WPM
+          </h1>
           <p className="text-sm text-gray-400 mb-10">
-            {isLoggedIn ? "unlimited tests · progress tracked" : "1 free test as a guest"}
+            {isLoggedIn ? "unlimited tests · progress tracked" : "1 free test as a guest · no signup required"}
           </p>
 
           {!isLoggedIn && hasUsedGuestAttempt() && (
@@ -390,9 +482,113 @@ export default function TypingTestPage() {
             {loading ? "loading..." : <>start test <Zap className="w-4 h-4" /></>}
           </button>
 
+          <button
+            onClick={() => {
+              const next = !showLeaderboard;
+              setShowLeaderboard(next);
+              if (next) fetchLeaderboard(leaderboardScope);
+            }}
+            className="mt-4 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600"
+          >
+            <Trophy className="w-3.5 h-3.5" /> {showLeaderboard ? "hide leaderboard" : "view leaderboard"}
+          </button>
+
+          {showLeaderboard && (
+            <div className="w-full mt-6 text-left">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-gray-500">
+                  {duration}s / {difficulty.toLowerCase()}
+                </p>
+                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full p-0.5">
+                  {[{ key: "all", label: "all-time" }, { key: "week", label: "week" }].map((opt) => (
+                    <button key={opt.key} onClick={() => changeLeaderboardScope(opt.key)}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                        leaderboardScope === opt.key ? "bg-gray-900 text-white" : "text-gray-400"
+                      }`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+                {leaderboardLoading && <p className="px-4 py-3 text-xs text-gray-400">loading...</p>}
+                {!leaderboardLoading && leaderboardError && (
+                  <div className="px-4 py-3 flex items-center justify-between gap-2">
+                    <span className="text-xs text-red-600 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" /> couldn't load leaderboard
+                    </span>
+                    <button onClick={() => fetchLeaderboard(leaderboardScope)} className="text-xs font-semibold text-gray-900 flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3" /> retry
+                    </button>
+                  </div>
+                )}
+                {!leaderboardLoading && !leaderboardError && leaderboard.length === 0 && (
+                  <p className="px-4 py-3 text-xs text-gray-400">no scores yet for this mode — be the first</p>
+                )}
+                {leaderboard.map((entry, i) => (
+                  <div key={entry.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
+                    <span className="w-5 text-xs text-gray-300 font-mono">{i + 1}</span>
+                    <span className="flex-1 truncate text-gray-800 flex items-center gap-1.5">
+                      {entry.name}
+                      {entry.userId && <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full font-semibold">verified</span>}
+                    </span>
+                    <span className="font-mono font-medium text-gray-900">{entry.wpm}</span>
+                    <span className="text-xs text-gray-400 w-10 text-right">{entry.accuracy}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Link href="/centers?category=IT_TECHNOLOGY" className="mt-12 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1.5">
             <Target className="w-3 h-3" /> want to type faster? find typing courses near you →
           </Link>
+        </div>
+
+        {/* ─── SEO content: intro + why it matters + FAQ ─── */}
+        <div className="max-w-2xl mx-auto px-6 pb-24 text-left">
+          <div className="border-t border-gray-200 pt-10 mb-10">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">About this typing speed test</h2>
+            <p className="text-sm text-gray-500 leading-relaxed mb-3">
+              Inscovia's typing test measures how fast and accurately you type in real time. Pick a
+              15, 30, or 60 second test, choose easy, medium, or hard text, and get an instant WPM
+              (words per minute) and accuracy score when you finish. It's free, works on any device,
+              and doesn't require downloading any software.
+            </p>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Whether you're preparing for a government exam with a typing speed requirement, a data
+              entry job, or just want to type faster at work, regular practice with a timed test is
+              the fastest way to build real speed and accuracy — not just theoretical knowledge of
+              where the keys are.
+            </p>
+          </div>
+
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Frequently asked questions</h2>
+            <div className="space-y-2">
+              {FAQ_ITEMS.map((item, i) => (
+                <div key={i} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+                  <button
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    aria-expanded={openFaq === i}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+                  >
+                    <span className="text-sm font-medium text-gray-800">{item.q}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${openFaq === i ? "rotate-180" : ""}`} />
+                  </button>
+                  {openFaq === i && (
+                    <p className="px-4 pb-4 text-sm text-gray-500 leading-relaxed">{item.a}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-400 border-t border-gray-200 pt-6">
+            <Link href="/practice" className="hover:text-gray-600 underline">Aptitude Practice Zone</Link>
+            <Link href="/previous-year-papers" className="hover:text-gray-600 underline">Previous Year Papers</Link>
+            <Link href="/centers?category=IT_TECHNOLOGY" className="hover:text-gray-600 underline">Typing & Computer Courses</Link>
+          </div>
         </div>
       </div>
     );
