@@ -19,6 +19,7 @@ enum InstituteCategory {
   MANAGEMENT
   SKILL_DEVELOPMENT
   EXAM_COACHING
+  COLLEGE
 }
 
 enum CenterCategory {
@@ -93,6 +94,35 @@ enum TypingDifficulty {
   HARD
 }
 
+// ─── College Enums ───────────────────────────────────────────────────────────
+
+enum CollegeCategory {
+  ENGINEERING
+  MEDICAL
+  NURSING
+  PHARMACY
+  AYURVEDA_HOMEOPATHY
+  ARTS_SCIENCE
+  MANAGEMENT
+  LAW
+  ARCHITECTURE
+  DEGREE
+  PG
+  POLYTECHNIC
+}
+
+enum CollegeType {
+  UNIVERSITY
+  COLLEGE
+  INSTITUTE
+}
+
+enum Ownership {
+  GOVERNMENT
+  PRIVATE
+  PUBLIC
+}
+
 // ─── Unified User Model ──────────────────────────────────────────────────────
 
 model User {
@@ -151,10 +181,11 @@ model Organization {
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
-  members OrgMember[]
-  centers Center[]
-  invites OrgInvite[]
-  banners Banner[]
+  members  OrgMember[]
+  centers  Center[]
+  colleges College[]
+  invites  OrgInvite[]
+  banners  Banner[]
 
   @@index([slug])
   @@index([city])
@@ -271,6 +302,106 @@ model Review {
 
   @@index([centerId])
   @@unique([userEmail, centerId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+// ─── College ─────────────────────────────────────────────────────────────────
+
+model College {
+  id                  String            @id @default(cuid())
+  slug                String            @unique
+  name                String
+  type                CollegeType
+  ownership           Ownership
+  primaryCategory     CollegeCategory
+  secondaryCategories CollegeCategory[] @default([])
+
+  established          Int?
+  affiliatedUniversity String?
+  autonomous           Boolean           @default(false)
+  deemedUniversity     Boolean           @default(false)
+  ugcRecognized        Boolean           @default(false)
+
+  // Rankings & Accreditation
+  naacGrade      String?
+  naacScore      Float?
+  naacYear       Int?
+  nirfRank       Int?
+  nirfCategory   String?
+  nirfYear       Int?
+  aicteApproved  Boolean? @default(false)
+  nbaAccredited  Boolean? @default(false)
+  regulatoryBody String?
+
+  website     String?
+  email       String?
+  phone       String?
+  whatsapp    String?
+  logo        String?
+  image       String?
+  gallery     String[] @default([])
+  description String   @db.Text
+
+  // Location
+  state     String
+  district  String
+  city      String
+  location  String
+  pinCode   String?
+  latitude  Float?
+  longitude Float?
+  mapsUrl   String?
+
+  // Nested sections (same Json pattern as Center.courseDetails)
+  courses    Json? @default("[]")
+  fees       Json?
+  admissions Json?
+  placements Json?
+  campus     Json?
+  hostel     Json?
+
+  facebook  String?
+  instagram String?
+  linkedin  String?
+  youtube   String?
+
+  rating Float @default(0)
+
+  orgId  String?
+  org    Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId String?
+
+  reviews CollegeReview[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([state, district, city])
+  @@index([orgId])
+  @@index([userId])
+  @@index([primaryCategory])
+  @@index([city])
+  @@index([state])
+  @@index([rating])
+}
+
+// ─── CollegeReview ───────────────────────────────────────────────────────────
+
+model CollegeReview {
+  id        String   @id @default(cuid())
+  userName  String
+  userEmail String
+  rating    Int
+  comment   String   @db.Text
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([collegeId])
+  @@unique([userEmail, collegeId])
   @@index([rating])
   @@index([createdAt])
 }
@@ -476,13 +607,13 @@ model InstituteUser {
   phone               String
   primaryCategory     InstituteCategory
   secondaryCategories InstituteCategory[] @default([])
-  teachingMode        TeachingMode
+  teachingMode        TeachingMode       @default(OFFLINE)
   state               String
   district            String
   city                String
   location            String
   latitude            Float?
-  longitude           Float?
+  longitude            Float?
   role                UserRole           @default(INSTITUTE)
   isVerified          Boolean            @default(false)
   isActive            Boolean            @default(true)

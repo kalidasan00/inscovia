@@ -37,6 +37,14 @@ const validCategories = [
 ];
 const validModes = ['ONLINE', 'OFFLINE', 'HYBRID'];
 
+// NEW: College-specific valid values
+const validCollegeCategories = [
+  'ENGINEERING', 'MEDICAL', 'NURSING', 'PHARMACY', 'AYURVEDA_HOMEOPATHY',
+  'ARTS_SCIENCE', 'MANAGEMENT', 'LAW', 'ARCHITECTURE', 'DEGREE', 'PG', 'POLYTECHNIC',
+];
+const validCollegeTypes = ['UNIVERSITY', 'COLLEGE', 'INSTITUTE'];
+const validOwnershipTypes = ['GOVERNMENT', 'PRIVATE', 'PUBLIC'];
+
 // ─── OTP ─────────────────────────────────────────────────────────────────────
 
 export const sendOTP = async (req, res) => {
@@ -138,56 +146,92 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// ─── REGISTER INSTITUTE ───────────────────────────────────────────────────────
+// ─── REGISTER INSTITUTE / COLLEGE ─────────────────────────────────────────────
 
 export const registerInstitute = async (req, res) => {
   try {
     const {
+      institutionType = "CENTER", // NEW: "CENTER" | "COLLEGE" — defaults to CENTER for backward compatibility
       instituteName, email, phone, password,
       primaryCategory, secondaryCategories = [],
-      teachingMode, state, district, city, location,
+      teachingMode, collegeType, ownership, // NEW: collegeType/ownership only used when institutionType === "COLLEGE"
+      state, district, city, location,
       otpVerified
     } = req.body;
+
+    const isCollege = institutionType === "COLLEGE";
 
     if (!instituteName || !email || !phone || !password || !primaryCategory ||
         !state || !district || !city || !location) {
       return res.status(400).json({ error: "All required fields must be filled" });
     }
-    if (!validCategories.includes(primaryCategory)) {
-      return res.status(400).json({ error: "Invalid primary category" });
-    }
-    const resolvedTeachingMode = teachingMode || 'OFFLINE';
-    if (!validModes.includes(resolvedTeachingMode)) {
-      return res.status(400).json({ error: "Invalid teaching mode" });
-    }
-    // ✅ REMOVED: Maximum 2 secondary categories limit
-    if (secondaryCategories.some(cat => !validCategories.includes(cat))) {
-      return res.status(400).json({ error: "Invalid secondary category" });
+
+    // NEW: branch validation by institution type
+    if (isCollege) {
+      if (!validCollegeCategories.includes(primaryCategory)) {
+        return res.status(400).json({ error: "Invalid primary category for a college" });
+      }
+      if (!validCollegeTypes.includes(collegeType)) {
+        return res.status(400).json({ error: "Invalid institution type (University/College/Institute)" });
+      }
+      if (!validOwnershipTypes.includes(ownership)) {
+        return res.status(400).json({ error: "Invalid ownership type" });
+      }
+      if (secondaryCategories.some(cat => !validCollegeCategories.includes(cat))) {
+        return res.status(400).json({ error: "Invalid secondary category" });
+      }
+    } else {
+      if (!validCategories.includes(primaryCategory)) {
+        return res.status(400).json({ error: "Invalid primary category" });
+      }
+      if (secondaryCategories.some(cat => !validCategories.includes(cat))) {
+        return res.status(400).json({ error: "Invalid secondary category" });
+      }
     }
     if (secondaryCategories.includes(primaryCategory)) {
       return res.status(400).json({ error: "Primary category cannot be a secondary category" });
     }
 
+    const resolvedTeachingMode = teachingMode || 'OFFLINE';
+    // Teaching mode only applies to Centers; still validated when provided for a Center.
+    if (!isCollege && !validModes.includes(resolvedTeachingMode)) {
+      return res.status(400).json({ error: "Invalid teaching mode" });
+    }
+
     const coords = await geocodeCity(city, district, state);
     const orgSlug = generateSlug(instituteName, city);
-    const centerSlug = generateSlug(instituteName, city);
+    const entitySlug = generateSlug(instituteName, city); // used for either Center or College
+
+    // NEW: org-level category marker — Colleges always store "COLLEGE" here (see
+    // InstituteCategory.COLLEGE in schema); the real category lives on the College row.
+    const orgPrimaryCategory = isCollege ? "COLLEGE" : primaryCategory;
+    const orgSecondaryCategories = isCollege ? [] : secondaryCategories;
+    const orgTeachingMode = isCollege ? "OFFLINE" : resolvedTeachingMode; // unused placeholder for Colleges
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
     if (existingUser) {
-      // ✅ FIX: Prevent duplicate org+center if this request fires twice
+      // ✅ FIX: Prevent duplicate org+center/college if this request fires twice
       // (double-click, slow network retry, resubmit after refresh, etc.)
-      const alreadyExists = await prisma.center.findFirst({
-        where: {
-          name: instituteName,
-          city,
-          org: { members: { some: { userId: existingUser.id } } }
-        }
-      });
+      const alreadyExists = isCollege
+        ? await prisma.college.findFirst({
+            where: {
+              name: instituteName,
+              city,
+              org: { members: { some: { userId: existingUser.id } } }
+            }
+          })
+        : await prisma.center.findFirst({
+            where: {
+              name: instituteName,
+              city,
+              org: { members: { some: { userId: existingUser.id } } }
+            }
+          });
       if (alreadyExists) {
         return res.status(409).json({
-          error: "You already have an institute with this name in this city",
-          centerSlug: alreadyExists.slug
+          error: `You already have a ${isCollege ? "college" : "institute"} with this name in this city`,
+          [isCollege ? "collegeSlug" : "centerSlug"]: alreadyExists.slug
         });
       }
 
@@ -195,8 +239,8 @@ export const registerInstitute = async (req, res) => {
         const org = await tx.organization.create({
           data: {
             name: instituteName, slug: orgSlug,
-            primaryCategory, secondaryCategories,
-            teachingMode: resolvedTeachingMode,
+            primaryCategory: orgPrimaryCategory, secondaryCategories: orgSecondaryCategories,
+            teachingMode: orgTeachingMode,
             state, district, city, location,
             latitude: coords?.latitude ?? null,
             longitude: coords?.longitude ?? null,
@@ -205,9 +249,28 @@ export const registerInstitute = async (req, res) => {
         await tx.orgMember.create({
           data: { userId: existingUser.id, orgId: org.id, role: "OWNER", status: "ACTIVE" }
         });
+
+        if (isCollege) {
+          const college = await tx.college.create({
+            data: {
+              name: instituteName, slug: entitySlug,
+              type: collegeType, ownership,
+              primaryCategory, secondaryCategories,
+              state, district, city, location,
+              latitude: coords?.latitude ?? null,
+              longitude: coords?.longitude ?? null,
+              description: `Welcome to ${instituteName}!`,
+              phone, email, rating: 0,
+              courses: [], gallery: [],
+              orgId: org.id,
+            }
+          });
+          return { org, entity: college };
+        }
+
         const center = await tx.center.create({
           data: {
-            name: instituteName, slug: centerSlug,
+            name: instituteName, slug: entitySlug,
             primaryCategory, secondaryCategories,
             teachingMode: resolvedTeachingMode,
             state, district, city, location,
@@ -219,19 +282,19 @@ export const registerInstitute = async (req, res) => {
             orgId: org.id,
           }
         });
-        return { org, center };
+        return { org, entity: center };
       });
 
       const token = jwt.sign(
         { id: existingUser.id, email: existingUser.email, orgId: result.org.id },
         JWT_SECRET, { expiresIn: "7d" }
       );
-      console.log(`✅ New org for existing user: ${email} → ${instituteName}`);
+      console.log(`✅ New org for existing user: ${email} → ${instituteName} (${institutionType})`);
       return res.status(201).json({
         success: true, message: "Organization created successfully", token,
         user: { id: existingUser.id, name: existingUser.name, email: existingUser.email },
         organization: { id: result.org.id, name: result.org.name, slug: result.org.slug },
-        center: { id: result.center.id, slug: result.center.slug, name: result.center.name }
+        [isCollege ? "college" : "center"]: { id: result.entity.id, slug: result.entity.slug, name: result.entity.name }
       });
     }
 
@@ -249,8 +312,8 @@ export const registerInstitute = async (req, res) => {
       const org = await tx.organization.create({
         data: {
           name: instituteName, slug: orgSlug,
-          primaryCategory, secondaryCategories,
-          teachingMode: resolvedTeachingMode,
+          primaryCategory: orgPrimaryCategory, secondaryCategories: orgSecondaryCategories,
+          teachingMode: orgTeachingMode,
           state, district, city, location,
           latitude: coords?.latitude ?? null,
           longitude: coords?.longitude ?? null,
@@ -259,9 +322,28 @@ export const registerInstitute = async (req, res) => {
       await tx.orgMember.create({
         data: { userId: user.id, orgId: org.id, role: "OWNER", status: "ACTIVE" }
       });
+
+      if (isCollege) {
+        const college = await tx.college.create({
+          data: {
+            name: instituteName, slug: entitySlug,
+            type: collegeType, ownership,
+            primaryCategory, secondaryCategories,
+            state, district, city, location,
+            latitude: coords?.latitude ?? null,
+            longitude: coords?.longitude ?? null,
+            description: `Welcome to ${instituteName}! We are a ${collegeType.toLowerCase()} in ${city}, ${state}.`,
+            phone, email, rating: 0,
+            courses: [], gallery: [],
+            orgId: org.id,
+          }
+        });
+        return { user, org, entity: college };
+      }
+
       const center = await tx.center.create({
         data: {
-          name: instituteName, slug: centerSlug,
+          name: instituteName, slug: entitySlug,
           primaryCategory, secondaryCategories,
           teachingMode: resolvedTeachingMode,
           state, district, city, location,
@@ -277,7 +359,7 @@ export const registerInstitute = async (req, res) => {
           orgId: org.id,
         }
       });
-      return { user, org, center };
+      return { user, org, entity: center };
     });
 
     const token = jwt.sign(
@@ -285,9 +367,9 @@ export const registerInstitute = async (req, res) => {
       JWT_SECRET, { expiresIn: "7d" }
     );
 
-    console.log(`✅ Institute registered: ${instituteName} (${email})`);
+    console.log(`✅ ${isCollege ? "College" : "Institute"} registered: ${instituteName} (${email})`);
     res.status(201).json({
-      success: true, message: "Institute registered successfully", token,
+      success: true, message: `${isCollege ? "College" : "Institute"} registered successfully`, token,
       user: { id: result.user.id, name: result.user.name, email: result.user.email, phone: result.user.phone },
       organization: {
         id: result.org.id, name: result.org.name, slug: result.org.slug,
@@ -295,7 +377,7 @@ export const registerInstitute = async (req, res) => {
         teachingMode: result.org.teachingMode, state: result.org.state,
         district: result.org.district, city: result.org.city, location: result.org.location,
       },
-      center: { id: result.center.id, slug: result.center.slug, name: result.center.name }
+      [isCollege ? "college" : "center"]: { id: result.entity.id, slug: result.entity.slug, name: result.entity.name }
     });
   } catch (error) {
     console.error("❌ Registration error:", error);
@@ -319,6 +401,13 @@ export const loginInstitute = async (req, res) => {
             org: {
               include: {
                 centers: {
+                  select: {
+                    id: true, slug: true, name: true,
+                    image: true, logo: true, rating: true,
+                    city: true, state: true,
+                  }
+                },
+                colleges: { // NEW
                   select: {
                     id: true, slug: true, name: true,
                     image: true, logo: true, rating: true,
@@ -356,7 +445,7 @@ export const loginInstitute = async (req, res) => {
       organizations: user.orgMemberships.map(m => ({
         id: m.org.id, name: m.org.name, slug: m.org.slug,
         role: m.role, primaryCategory: m.org.primaryCategory,
-        city: m.org.city, centers: m.org.centers,
+        city: m.org.city, centers: m.org.centers, colleges: m.org.colleges, // NEW: colleges included
       })),
       organization: {
         id: firstOrg.id, name: firstOrg.name, slug: firstOrg.slug,
@@ -367,6 +456,7 @@ export const loginInstitute = async (req, res) => {
         city: firstOrg.city, location: firstOrg.location,
       },
       center: firstOrg.centers?.[0] || null,
+      college: firstOrg.colleges?.[0] || null, // NEW
     });
   } catch (error) {
     console.error("❌ Login error:", error);
@@ -410,6 +500,27 @@ export const getCurrentUser = async (req, res) => {
                     avgScholarship: true, successRate: true, studentsPlaced: true,
                     createdAt: true, updatedAt: true,
                   }
+                },
+                colleges: { // NEW
+                  select: {
+                    id: true, slug: true, name: true,
+                    orgId: true,
+                    type: true, ownership: true,
+                    primaryCategory: true, secondaryCategories: true,
+                    established: true, affiliatedUniversity: true,
+                    autonomous: true, deemedUniversity: true, ugcRecognized: true,
+                    naacGrade: true, naacScore: true, naacYear: true,
+                    nirfRank: true, nirfCategory: true, nirfYear: true,
+                    aicteApproved: true, nbaAccredited: true, regulatoryBody: true,
+                    state: true, district: true, city: true, location: true,
+                    pinCode: true, latitude: true, longitude: true, mapsUrl: true,
+                    description: true, rating: true,
+                    courses: true, fees: true, admissions: true, placements: true, campus: true, hostel: true,
+                    image: true, logo: true, gallery: true,
+                    website: true, whatsapp: true, phone: true, email: true,
+                    facebook: true, instagram: true, linkedin: true, youtube: true,
+                    createdAt: true, updatedAt: true,
+                  }
                 }
               }
             }
@@ -427,6 +538,7 @@ export const getCurrentUser = async (req, res) => {
 
     const activeOrg = activeMembership?.org || null;
     const center = activeOrg?.centers?.[0] || null;
+    const college = activeOrg?.colleges?.[0] || null; // NEW
 
     res.json({
       user: {
@@ -446,6 +558,7 @@ export const getCurrentUser = async (req, res) => {
         role: activeMembership?.role || null,
       },
       center,
+      college, // NEW
       membership: {
         id: activeMembership?.id || null,
         role: activeMembership?.role || null,

@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { PrismaClient } from '@prisma/client';
 import centersRouter from "./routes/centers.routes.js";
+import collegesRouter from "./routes/colleges.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";
@@ -81,6 +82,7 @@ app.use('/', sitemapRoutes);
 
 // API Routes
 app.use("/api/centers", centersRouter);
+app.use("/api/colleges", collegesRouter);
 app.use("/api/auth", passwordResetRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
