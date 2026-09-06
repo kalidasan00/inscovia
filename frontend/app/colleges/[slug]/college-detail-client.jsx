@@ -1,8 +1,13 @@
+// app/colleges/[slug]/college-detail-client.jsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Phone, Mail, Globe, ChevronDown, Star } from "lucide-react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+const MAX_RETRIES = 3;
 
 const FacebookIcon = ({ className }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -30,172 +35,82 @@ const WhatsAppIcon = ({ className }) => (
   </svg>
 );
 
-const collegesData = {
-  "iit-madras": {
-    name: "Indian Institute of Technology (IIT) Madras",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    type: "Institute",
-    ownership: "Government",
-    tags: ["ENGINEERING", "RESEARCH"],
-    mode: "OFFLINE",
-    rating: 4.7,
-    established: 1959,
-    affiliatedUniversity: "Autonomous (Institute of National Importance)",
-    website: "https://www.iitm.ac.in",
-    phone: "+914422578000",
-    whatsapp: "9876543210",
-    email: "contact@iitm.ac.in",
-    facebook: "https://facebook.com/iitmadras",
-    instagram: "https://instagram.com/iitmadras",
-    linkedin: "https://linkedin.com/school/iit-madras",
-    youtube: "https://youtube.com/iitmadras",
-    description:
-      "IIT Madras is one of India's premier engineering institutions, known for cutting-edge research, strong industry partnerships, and a highly selective undergraduate and postgraduate program across engineering, sciences, and humanities. The institute has consistently ranked as the top engineering college in India and hosts one of the largest startup incubation programs among Indian academic institutions.",
-    courses: [
-      { name: "B.Tech Computer Science", duration: "4 Years", fee: "₹2,00,000/year" },
-      { name: "M.Tech Data Science", duration: "2 Years", fee: "₹1,00,000/year" },
-    ],
-    placements: { placementPercentage: 96, averagePackage: "₹21.5 LPA", highestPackage: "₹1.68 Cr" },
-    gallery: [],
-  },
-  "nit-calicut": {
-    name: "National Institute of Technology (NIT) Calicut",
-    city: "Kozhikode",
-    state: "Kerala",
-    type: "Institute",
-    ownership: "Government",
-    tags: ["ENGINEERING", "TECHNOLOGY"],
-    mode: "OFFLINE",
-    rating: 4.4,
-    established: 1961,
-    affiliatedUniversity: "Autonomous (Institute of National Importance)",
-    website: "https://www.nitc.ac.in",
-    phone: "+914952286100",
-    whatsapp: "9876543211",
-    email: "contact@nitc.ac.in",
-    facebook: "https://facebook.com/nitcalicut",
-    instagram: "https://instagram.com/nitcalicut",
-    linkedin: "https://linkedin.com/school/nit-calicut",
-    youtube: "https://youtube.com/nitcalicut",
-    description:
-      "NIT Calicut is a top-ranked National Institute of Technology offering undergraduate, postgraduate, and doctoral programs in engineering and architecture, with strong placement records and research output across core and emerging disciplines.",
-    courses: [{ name: "B.Tech Electronics and Communication", duration: "4 Years", fee: "₹1,45,000/year" }],
-    placements: { placementPercentage: 90, averagePackage: "₹14 LPA", highestPackage: "₹52 LPA" },
-    gallery: [],
-  },
-  "cusat": {
-    name: "Cochin University of Science and Technology (CUSAT)",
-    city: "Kochi",
-    state: "Kerala",
-    type: "University",
-    ownership: "Government",
-    tags: ["SCIENCE", "LAW"],
-    mode: "OFFLINE",
-    rating: 4.1,
-    established: 1971,
-    affiliatedUniversity: "Self-affiliating State University",
-    website: "https://www.cusat.ac.in",
-    phone: "+914842575000",
-    whatsapp: "9876543212",
-    email: "contact@cusat.ac.in",
-    facebook: "https://facebook.com/cusatofficial",
-    instagram: "https://instagram.com/cusatofficial",
-    linkedin: "https://linkedin.com/school/cusat",
-    youtube: "https://youtube.com/cusatofficial",
-    description:
-      "CUSAT is a state university offering a wide range of programs in science, engineering, law, and management, known for its strong research culture and industry-linked curriculum spread across its Kalamassery campus.",
-    courses: [
-      { name: "B.Tech Computer Science", duration: "4 Years", fee: "₹90,000/year" },
-      { name: "LLB", duration: "3 Years", fee: "₹40,000/year" },
-    ],
-    placements: { placementPercentage: 82, averagePackage: "₹8.5 LPA", highestPackage: "₹28 LPA" },
-    gallery: [],
-  },
-  "st-aloysius": {
-    name: "St. Aloysius College (Deemed to be University)",
-    city: "Mangaluru",
-    state: "Karnataka",
-    type: "University",
-    ownership: "Private",
-    tags: ["DATA SCIENCE", "MANAGEMENT"],
-    mode: "OFFLINE",
-    rating: 4.3,
-    established: 1880,
-    affiliatedUniversity: "Deemed to be University",
-    website: "https://www.staloysius.edu.in",
-    phone: "+918242449700",
-    whatsapp: "9876543213",
-    email: "contact@staloysius.edu.in",
-    facebook: "https://facebook.com/staloysiuscollege",
-    instagram: "https://instagram.com/staloysiuscollege",
-    linkedin: "https://linkedin.com/school/st-aloysius-college",
-    youtube: "https://youtube.com/staloysiuscollege",
-    description:
-      "St. Aloysius College is a reputed deemed university offering undergraduate and postgraduate programs including Data Science, Management, and Arts, with a strong focus on research and holistic education and one of the oldest institutions on the west coast of India.",
-    courses: [{ name: "MSc Data Science", duration: "2 Years", fee: "₹75,000/year" }],
-    placements: { placementPercentage: 78, averagePackage: "₹6.2 LPA", highestPackage: "₹18 LPA" },
-    gallery: [],
-  },
-  "iim-kozhikode": {
-    name: "Indian Institute of Management (IIM) Kozhikode",
-    city: "Kozhikode",
-    state: "Kerala",
-    type: "Institute",
-    ownership: "Government",
-    tags: ["MANAGEMENT", "MBA"],
-    mode: "OFFLINE",
-    rating: 4.6,
-    established: 1996,
-    affiliatedUniversity: "Autonomous (Institute of National Importance)",
-    website: "https://www.iimk.ac.in",
-    phone: "+14954012805",
-    whatsapp: "9876543214",
-    email: "contact@iimk.ac.in",
-    facebook: "https://facebook.com/iimkofficial",
-    instagram: "https://instagram.com/iimkofficial",
-    linkedin: "https://linkedin.com/school/iim-kozhikode",
-    youtube: "https://youtube.com/iimkofficial",
-    description:
-      "IIM Kozhikode is a leading management institute offering full-time MBA, executive MBA, and doctoral programs, recognized for its academic rigor and strong corporate connections, consistently ranking among the top management schools in India.",
-    courses: [{ name: "MBA", duration: "2 Years", fee: "₹11,00,000 (total)" }],
-    placements: { placementPercentage: 100, averagePackage: "₹26 LPA", highestPackage: "₹75 LPA" },
-    gallery: [],
-  },
-  "cet-trivandrum": {
-    name: "College of Engineering Trivandrum (CET)",
-    city: "Thiruvananthapuram",
-    state: "Kerala",
-    type: "College",
-    ownership: "Government",
-    tags: ["ENGINEERING", "SKILL DEVELOPMENT"],
-    mode: "OFFLINE",
-    rating: 4.0,
-    established: 1939,
-    affiliatedUniversity: "APJ Abdul Kalam Technological University",
-    website: "https://www.cet.ac.in",
-    phone: "+914712515022",
-    whatsapp: "9876543215",
-    email: "contact@cet.ac.in",
-    facebook: "https://facebook.com/cetofficial",
-    instagram: "https://instagram.com/cetofficial",
-    linkedin: "https://linkedin.com/school/cet-trivandrum",
-    youtube: "https://youtube.com/cetofficial",
-    description:
-      "CET is one of Kerala's oldest and most respected engineering colleges, offering undergraduate and postgraduate programs across core and emerging engineering disciplines, with a legacy dating back to 1939.",
-    courses: [{ name: "B.Tech Mechanical Engineering", duration: "4 Years", fee: "₹45,000/year" }],
-    placements: { placementPercentage: 75, averagePackage: "₹5.8 LPA", highestPackage: "₹22 LPA" },
-    gallery: [],
-  },
-};
-
 function formatTag(tag) {
   return tag?.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) || "";
 }
 
-export default function CollegeDetailPage({ params }) {
-  const college = collegesData[params.slug];
+function DetailSkeleton() {
+  return (
+    <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 animate-pulse">
+      <div className="bg-white rounded-xl shadow-md border overflow-hidden">
+        <div className="h-32 sm:h-40 bg-gray-200" />
+        <div className="pt-12 px-3 sm:px-4 pb-4 space-y-3">
+          <div className="h-5 bg-gray-200 rounded w-2/3" />
+          <div className="h-3 bg-gray-200 rounded w-1/3" />
+          <div className="h-3 bg-gray-200 rounded w-full" />
+          <div className="h-3 bg-gray-200 rounded w-full" />
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default function CollegeDetailClient({ initialCollege = null }) {
+  const { slug } = useParams();
+  const [college, setCollege] = useState(initialCollege);
+  const [loading, setLoading] = useState(!initialCollege);
+  const [fetchError, setFetchError] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  useEffect(() => {
+    if (initialCollege) return;
+
+    let retryCount = 0;
+    let cancelled = false;
+    const retryTimers = [];
+
+    async function loadCollege() {
+      try {
+        const res = await fetch(`${API_URL}/colleges/${slug}`, { cache: "no-store" });
+        if (cancelled) return;
+
+        if (!res.ok) {
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            const t = setTimeout(loadCollege, 2000 * retryCount);
+            retryTimers.push(t);
+          } else {
+            setFetchError(true);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const data = await res.json();
+        if (!cancelled) {
+          setCollege(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Error loading college:", err);
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          const t = setTimeout(loadCollege, 2000 * retryCount);
+          retryTimers.push(t);
+        } else {
+          setFetchError(true);
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCollege();
+    return () => {
+      cancelled = true;
+      retryTimers.forEach(clearTimeout);
+    };
+  }, [slug, initialCollege]);
 
   const shouldShowReadMore = useMemo(
     () => college?.description && college.description.length > 150,
@@ -217,17 +132,36 @@ export default function CollegeDetailPage({ params }) {
     return `https://wa.me/${number}?text=${message}`;
   }, [college]);
 
-  if (!college) {
+  if (loading) return <DetailSkeleton />;
+
+  if (fetchError || !college) {
     return (
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="text-center py-8">
-          <h2 className="text-xl font-semibold mb-2">College Not Found</h2>
-          <p className="text-gray-600 mb-4">The college you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold mb-2">
+            {fetchError ? "Unable to Load College" : "College Not Found"}
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {fetchError
+              ? "Something went wrong. Please check your connection and try again."
+              : "The college you're looking for doesn't exist."}
+          </p>
+          {fetchError && (
+            <button
+              onClick={() => { setFetchError(false); setLoading(true); }}
+              className="mr-3 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Try Again
+            </button>
+          )}
           <Link href="/colleges" className="text-accent hover:text-accent/80">← Back to Colleges</Link>
         </div>
       </main>
     );
   }
+
+  const courses = Array.isArray(college.courses) ? college.courses : [];
+  const placements = college.placements || null;
 
   return (
     <>
@@ -258,11 +192,18 @@ export default function CollegeDetailPage({ params }) {
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
         <div className="bg-white rounded-xl shadow-md border overflow-hidden">
           <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
+            {college.image && (
+              <img src={college.image} alt={`${college.name} cover`} className="w-full h-full object-cover" />
+            )}
             <div className="absolute -bottom-10 left-3 z-10">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-xl border-4 border-white overflow-hidden flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-6.16-3.42A12.083 12.083 0 006 18.75c0 .966.784 1.75 1.75 1.75h8.5a1.75 1.75 0 001.75-1.75 12.083 12.083 0 00-.84-4.42L12 14z" />
-                </svg>
+                {college.logo ? (
+                  <img src={college.logo} alt={`${college.name} logo`} className="w-full h-full object-cover" />
+                ) : (
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-6.16-3.42A12.083 12.083 0 006 18.75c0 .966.784 1.75 1.75 1.75h8.5a1.75 1.75 0 001.75-1.75 12.083 12.083 0 00-.84-4.42L12 14z" />
+                  </svg>
+                )}
               </div>
             </div>
           </div>
@@ -285,14 +226,14 @@ export default function CollegeDetailPage({ params }) {
             </div>
 
             <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b">
-              {college.tags.map((tag) => (
-                <span key={tag} className="px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
-                  {formatTag(tag)}
+              <span className="px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
+                {formatTag(college.primaryCategory)}
+              </span>
+              {college.secondaryCategories?.slice(0, 2).map((cat) => (
+                <span key={cat} className="px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-700">
+                  {formatTag(cat)}
                 </span>
               ))}
-              <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
-                {college.mode}
-              </span>
               <span className="px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-700">
                 {college.type}
               </span>
@@ -301,20 +242,26 @@ export default function CollegeDetailPage({ params }) {
               </span>
             </div>
 
-            {college.placements && (
+            {placements && (placements.placementPercentage || placements.averagePackage || placements.highestPackage) && (
               <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b">
-                <div className="text-center p-2 bg-blue-50 rounded-lg">
-                  <p className="text-lg font-bold text-blue-700">{college.placements.placementPercentage}%</p>
-                  <p className="text-xs text-gray-500">Placement Rate</p>
-                </div>
-                <div className="text-center p-2 bg-green-50 rounded-lg">
-                  <p className="text-lg font-bold text-green-700">{college.placements.averagePackage}</p>
-                  <p className="text-xs text-gray-500">Avg Package</p>
-                </div>
-                <div className="text-center p-2 bg-purple-50 rounded-lg">
-                  <p className="text-lg font-bold text-purple-700">{college.placements.highestPackage}</p>
-                  <p className="text-xs text-gray-500">Highest Package</p>
-                </div>
+                {placements.placementPercentage != null && (
+                  <div className="text-center p-2 bg-blue-50 rounded-lg">
+                    <p className="text-lg font-bold text-blue-700">{placements.placementPercentage}%</p>
+                    <p className="text-xs text-gray-500">Placement Rate</p>
+                  </div>
+                )}
+                {placements.averagePackage && (
+                  <div className="text-center p-2 bg-green-50 rounded-lg">
+                    <p className="text-lg font-bold text-green-700">{placements.averagePackage}</p>
+                    <p className="text-xs text-gray-500">Avg Package</p>
+                  </div>
+                )}
+                {placements.highestPackage && (
+                  <div className="text-center p-2 bg-purple-50 rounded-lg">
+                    <p className="text-lg font-bold text-purple-700">{placements.highestPackage}</p>
+                    <p className="text-xs text-gray-500">Highest Package</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -337,25 +284,31 @@ export default function CollegeDetailPage({ params }) {
             <div className="mb-3 pb-3 border-b">
               <h2 className="text-sm font-bold text-gray-900 mb-2">Established</h2>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                  <span className="text-gray-500">Year</span>
-                  <span className="font-medium text-gray-900">{college.established}</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg col-span-2 sm:col-span-1">
-                  <span className="text-gray-500">Affiliation</span>
-                  <span className="font-medium text-gray-900 text-right">{college.affiliatedUniversity}</span>
-                </div>
+                {college.established && (
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <span className="text-gray-500">Year</span>
+                    <span className="font-medium text-gray-900">{college.established}</span>
+                  </div>
+                )}
+                {college.affiliatedUniversity && (
+                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg col-span-2 sm:col-span-1">
+                    <span className="text-gray-500">Affiliation</span>
+                    <span className="font-medium text-gray-900 text-right">{college.affiliatedUniversity}</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {college.courses?.length > 0 && (
+            {courses.length > 0 && (
               <div className="mb-3 pb-3 border-b">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Courses</h2>
                 <div className="space-y-1.5">
-                  {college.courses.map((course, i) => (
+                  {courses.map((course, i) => (
                     <div key={i} className="flex items-center justify-between px-2.5 py-1.5 bg-gray-50 border rounded-lg">
                       <span className="text-xs text-gray-700 font-medium">{course.name}</span>
-                      <span className="text-xs text-gray-500">{course.duration} • {course.fee}</span>
+                      <span className="text-xs text-gray-500">
+                        {[course.duration, course.fee || course.tuitionFee].filter(Boolean).join(" • ")}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -422,6 +375,19 @@ export default function CollegeDetailPage({ params }) {
                 )}
               </div>
             </div>
+
+            {college.gallery && college.gallery.length > 0 && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold text-gray-900 mb-2">Gallery</h2>
+                <div className="grid grid-cols-3 gap-2">
+                  {college.gallery.map((img, i) => (
+                    <div key={img} className="aspect-square relative overflow-hidden rounded-lg border">
+                      <img src={img} alt={`${college.name} - Gallery image ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="pt-3 border-t mt-3">
               <Link href="/colleges" className="inline-flex items-center gap-1 text-indigo-600 text-xs font-medium">

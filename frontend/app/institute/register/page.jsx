@@ -14,6 +14,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 export default function RegisterInstitute() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
+    institutionType: "", // NEW: "CENTER" | "COLLEGE"
     instituteName: "",
     email: "",
     phone: "",
@@ -22,6 +23,8 @@ export default function RegisterInstitute() {
     primaryCategory: "",
     secondaryCategories: [],
     teachingMode: "",
+    collegeType: "", // NEW: "UNIVERSITY" | "COLLEGE" | "INSTITUTE" — College only
+    ownership: "",   // NEW: "GOVERNMENT" | "PRIVATE" | "PUBLIC" — College only
     state: "",
     district: "",
     city: "",
@@ -68,6 +71,19 @@ export default function RegisterInstitute() {
       teachingMode: isStudyAbroad ? "" : prev.teachingMode,
     }));
   }, [formData.primaryCategory]);
+
+  // NEW: Reset category/mode/college-only fields when institution type changes,
+  // since Center and College use different category lists and fields.
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      primaryCategory: "",
+      secondaryCategories: [],
+      teachingMode: "",
+      collegeType: "",
+      ownership: "",
+    }));
+  }, [formData.institutionType]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -177,6 +193,7 @@ export default function RegisterInstitute() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          institutionType: formData.institutionType, // NEW
           instituteName: formData.instituteName,
           email: formData.email,
           phone: formData.phone,
@@ -184,6 +201,8 @@ export default function RegisterInstitute() {
           primaryCategory: formData.primaryCategory,
           secondaryCategories: formData.secondaryCategories,
           teachingMode: formData.teachingMode || "ONLINE",
+          collegeType: formData.collegeType || undefined, // NEW
+          ownership: formData.ownership || undefined,     // NEW
           state: formData.state,
           district: formData.district,
           city: formData.city,
@@ -226,6 +245,7 @@ export default function RegisterInstitute() {
           Authorization: `Bearer ${userToken}`,
         },
         body: JSON.stringify({
+          institutionType: formData.institutionType, // NEW
           instituteName: formData.instituteName,
           email: formData.email,
           phone: formData.phone || "",
@@ -233,6 +253,8 @@ export default function RegisterInstitute() {
           primaryCategory: formData.primaryCategory,
           secondaryCategories: formData.secondaryCategories,
           teachingMode: formData.teachingMode || "ONLINE",
+          collegeType: formData.collegeType || undefined, // NEW
+          ownership: formData.ownership || undefined,     // NEW
           state: formData.state,
           district: formData.district,
           city: formData.city,
@@ -264,12 +286,16 @@ export default function RegisterInstitute() {
     }
   };
 
+  const isCollege = formData.institutionType === "COLLEGE";
+
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-12 pb-24 md:pb-12">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            {isExistingUser ? "Add New Institute" : "Register Your Institute"}
+            {isExistingUser
+              ? (isCollege ? "Add New College" : "Add New Institute")
+              : (isCollege ? "Register Your College" : "Register Your Institute")}
           </h1>
           <p className="text-gray-500 mt-1 text-sm">
             {isExistingUser
