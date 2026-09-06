@@ -1,7 +1,7 @@
 // backend/src/routes/college.routes.js
 import express from "express";
 import { getColleges, getCollegeBySlug, updateCollege } from "../controllers/college.controller.js";
-import { authenticate } from "../middleware/auth.js"; // adjust path if your auth middleware lives elsewhere
+import { authenticate } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
