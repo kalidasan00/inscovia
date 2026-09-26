@@ -148,10 +148,19 @@ function BottomNavInner() {
   ) return null;
 
   const isLoggedIn = isInstituteLoggedIn || isUserLoggedIn;
+
+  // ✅ FIX: category param is read once and used to disambiguate
+  // Study Abroad, Colleges, and plain Centers so they never light up together.
+  const category = searchParams?.get("category");
   const isStudyAbroadActive =
-    pathname?.startsWith("/centers") && searchParams?.get("category") === "STUDY_ABROAD";
-  const isCentersActive = pathname?.startsWith("/centers") && !isStudyAbroadActive;
-  const isCollegesActive = pathname?.startsWith("/colleges");
+    pathname?.startsWith("/centers") && category === "STUDY_ABROAD";
+  const isCollegesCategoryActive =
+    pathname?.startsWith("/centers") && category === "COLLEGES";
+  const isCentersActive =
+    pathname?.startsWith("/centers") && !isStudyAbroadActive && !isCollegesCategoryActive;
+  const isCollegesActive =
+    pathname?.startsWith("/colleges") || isCollegesCategoryActive;
+
   const isProfileActive =
     pathname?.startsWith("/institute/dashboard") ||
     pathname?.startsWith("/user/dashboard") ||

@@ -20,7 +20,6 @@ export default function InstituteDashboard() {
   const [institute, setInstitute] = useState(null);
   const [center, setCenter] = useState(null);
   const [centerSlug, setCenterSlug] = useState(null);
-  const [college, setCollege] = useState(null); // NEW: college data, if this org registered as a College
   const [currentUserRole, setCurrentUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(null);
@@ -32,8 +31,6 @@ export default function InstituteDashboard() {
 
   const isStudyAbroad = institute?.primaryCategory === "STUDY_ABROAD";
   const isSchoolTuition = institute?.primaryCategory === "SCHOOL_TUITION";
-  // NEW: a college dashboard is identified by data.college being present in /auth/me's response
-  const isCollege = !!college;
 
   useEffect(() => { checkAuthAndFetchData(); }, []);
 
@@ -46,10 +43,16 @@ export default function InstituteDashboard() {
       });
       if (!response.ok) throw new Error("Failed");
       const data = await response.json();
+
+      // ✅ College accounts now live in their own dashboard tree
+      if (data.college) {
+        router.push("/institute/dashboard/college");
+        return;
+      }
+
       setInstitute(data.user);
       setCenter(data.center);
       setCenterSlug(data.center?.slug);
-      setCollege(data.college || null); // NEW
       setCurrentUserRole(data.user?.role || data.membership?.role || "OWNER");
       localStorage.setItem("instituteLoggedIn", "true");
     } catch {
@@ -166,7 +169,7 @@ export default function InstituteDashboard() {
   const categoriesWithCourses = getCategoriesWithCourses(coursesByCategory);
 
   useEffect(() => {
-    if (!institute || isStudyAbroad || isSchoolTuition || isCollege) return;
+    if (!institute || isStudyAbroad || isSchoolTuition) return;
     if (categoriesWithCourses.length > 0 && !activeTab) {
       setActiveTab(categoriesWithCourses[0]);
     }
@@ -182,18 +185,6 @@ export default function InstituteDashboard() {
       MANAGEMENT:        "Management",
       SKILL_DEVELOPMENT: "Skill Development",
       EXAM_COACHING:     "Exam Coaching",
-      // NEW: college category labels
-      ENGINEERING:         "Engineering",
-      MEDICAL:             "Medical",
-      NURSING:             "Nursing",
-      PHARMACY:            "Pharmacy",
-      AYURVEDA_HOMEOPATHY: "Ayurveda / Homeopathy",
-      ARTS_SCIENCE:        "Arts & Science",
-      LAW:                 "Law",
-      ARCHITECTURE:        "Architecture",
-      DEGREE:              "Degree",
-      PG:                  "PG",
-      POLYTECHNIC:         "Polytechnic",
     };
     return labels[category] || category?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
   };
@@ -219,156 +210,6 @@ export default function InstituteDashboard() {
   }
 
   if (!institute) { router.push("/institute/login"); return null; }
-
-  // ─── NEW: Minimal College dashboard branch ───────────────────────────────
-  // Kept intentionally simple for now — basic info + Edit link only.
-  // Gallery, location editor, team, and banner promotion are Center-only
-  // until the college-specific API endpoints exist.
-  if (isCollege) {
-    return (
-      <>
-        <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-6 pb-24 md:pb-8">
-
-          <div className="mb-3">
-            <AccountSwitcher mode="institute" />
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md border overflow-hidden">
-
-            <div className="relative h-32 sm:h-40 bg-gradient-to-br from-indigo-600 to-purple-600">
-              {college?.image && (
-                <img src={college.image} alt={college.name} className="w-full h-full object-cover" />
-              )}
-              <button onClick={() => setShowLogoutModal(true)}
-                className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white rounded-lg transition-colors shadow-sm" title="Logout">
-                <LogOut className="w-4 h-4 text-gray-700" />
-              </button>
-              <div className="absolute -bottom-10 left-3">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-xl border-4 border-white overflow-hidden flex items-center justify-center">
-                  {college?.logo ? (
-                    <img src={college.logo} className="w-full h-full object-cover" alt="Logo" />
-                  ) : (
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-6.16-3.42A12.083 12.083 0 006 18.75c0 .966.784 1.75 1.75 1.75h8.5a1.75 1.75 0 001.75-1.75 12.083 12.083 0 00-.84-4.42L12 14z" />
-                    </svg>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-12 px-3 sm:px-4 pb-4">
-
-              <div className="mb-3">
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">{college.name}</h1>
-                <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  </svg>
-                  <span>{college.city}, {college.state}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 mb-3 pb-3 border-b">
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
-                  {formatCategory(college.primaryCategory)}
-                </span>
-                {college.secondaryCategories?.slice(0, 2).map((cat, i) => (
-                  <span key={i} className="px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-700">
-                    {formatCategory(cat)}
-                  </span>
-                ))}
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                  {college.type}
-                </span>
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
-                  {college.ownership}
-                </span>
-                {college.rating > 0 && (
-                  <span className="flex items-center gap-0.5 px-2 py-1 rounded-md text-xs font-medium bg-yellow-50 text-yellow-700">
-                    <span>★</span><span>{college.rating.toFixed(1)}</span>
-                  </span>
-                )}
-              </div>
-
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <h2 className="text-sm font-bold text-gray-900">About</h2>
-                  <Link href="/institute/dashboard/edit" className="text-accent text-xs font-medium">Edit</Link>
-                </div>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {college.description || "No description added yet"}
-                </p>
-              </div>
-
-              {(college.phone || college.whatsapp || college.email || college.website) && (
-                <div className="mb-3">
-                  <h2 className="text-sm font-bold text-gray-900 mb-2">Contact</h2>
-                  <div className="grid grid-cols-2 gap-2">
-                    {college.phone && (
-                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                        <span className="text-xs font-medium text-gray-900 truncate">{college.phone}</span>
-                      </div>
-                    )}
-                    {college.whatsapp && (
-                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                        <span className="text-xs font-medium text-gray-900 truncate">{college.whatsapp}</span>
-                      </div>
-                    )}
-                    {college.email && (
-                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg col-span-2">
-                        <span className="text-xs font-medium text-gray-900 truncate">{college.email}</span>
-                      </div>
-                    )}
-                    {college.website && (
-                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg col-span-2">
-                        <span className="text-xs text-indigo-600 font-medium truncate">Visit Website</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-xs text-amber-800">
-                  Courses, accreditation, placements, and gallery management for colleges are coming soon.
-                </p>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {showLogoutModal && (
-          <>
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={() => setShowLogoutModal(false)} />
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-8 h-8 text-red-600" />
-                </div>
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Logout?</h3>
-                  <p className="text-gray-600 text-sm">Are you sure you want to logout from your account?</p>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => setShowLogoutModal(false)}
-                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors">
-                    Cancel
-                  </button>
-                  <button onClick={handleLogout}
-                    className="flex-1 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors">
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        <Footer />
-      </>
-    );
-  }
-  // ─── END NEW College branch ───────────────────────────────────────────────
 
   return (
     <>

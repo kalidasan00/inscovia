@@ -1,9 +1,28 @@
+
+
+
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, User, ChevronDown, ChevronRight, LogIn, Check, Loader2, Plus, LogOut, X } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+
+// ✅ NEW: shared handler for expired/invalid tokens.
+// Clears the stale session entirely and sends the user back to login
+// instead of leaving them "logged in" with a dead token that 401s forever.
+function handleExpiredSession(router) {
+  [
+    "userLoggedIn", "userData", "userToken", "userOrgs",
+    "userCity", "userLat", "userLng",
+    "instituteLoggedIn", "instituteToken", "instituteData", "instituteOrgs",
+    "instituteCenter", "currentOrgId", "currentOrgRole",
+    "lastActiveDashboard",
+  ].forEach((k) => localStorage.removeItem(k));
+  window.dispatchEvent(new Event("authStateChanged"));
+  alert("Your session has expired. Please log in again.");
+  router.push("/login");
+}
 
 export default function AccountSwitcher({ mode = "user", currentOrgId, currentOrgName }) {
   const router = useRouter();
@@ -41,6 +60,14 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
             const res = await fetch(`${API_URL}/org/my`, {
               headers: { Authorization: `Bearer ${token}` },
             });
+
+            // ✅ NEW: expired/invalid token — stop here and force re-login
+            // instead of silently falling through to stale local data.
+            if (res.status === 401) {
+              handleExpiredSession(router);
+              return;
+            }
+
             if (res.ok) {
               const data = await res.json();
               const validOrgs = data.organizations || [];
@@ -143,6 +170,12 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
     try {
       const token = localStorage.getItem("userToken");
 
+      // ✅ NEW: no token at all — don't even attempt the call
+      if (!token) {
+        handleExpiredSession(router);
+        return;
+      }
+
       const res = await fetch(`${API_URL}/org/switch`, {
         method: "POST",
         headers: {
@@ -151,8 +184,16 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
         },
         body: JSON.stringify({ orgId: org.id }),
       });
+
+      // ✅ NEW: 401 means the token is expired/invalid — clear session and
+      // redirect instead of throwing and leaving the user stuck retrying.
+      if (res.status === 401) {
+        handleExpiredSession(router);
+        return;
+      }
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Failed to switch account");
 
       localStorage.setItem("instituteLoggedIn", "true");
       localStorage.setItem("instituteToken", data.token);
@@ -169,6 +210,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
       window.location.href = "/institute/dashboard";
     } catch (err) {
       console.error("Switch error:", err.message);
+      alert(err.message || "Failed to switch account. Please try again.");
     } finally {
       setSwitching(null);
     }
