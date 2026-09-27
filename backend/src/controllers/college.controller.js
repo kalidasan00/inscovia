@@ -85,15 +85,20 @@ export const getCollegeBySlug = async (req, res) => {
 };
 
 // ─── UPDATE COLLEGE (dashboard Edit) ───────────────────────────────────────
-// PUT /api/colleges/:slug — requires auth; only the owning org's member can edit
+// PUT /api/colleges/:slug — requires auth
+// Owner can be EITHER a solo user (college.userId) OR an org member (college.orgId)
 export const updateCollege = async (req, res) => {
   try {
     const { slug } = req.params;
     const college = await prisma.college.findUnique({ where: { slug } });
     if (!college) return res.status(404).json({ error: "College not found" });
 
-    // req.orgId is expected to be set by the auth middleware (same pattern as Center routes)
-    if (!req.orgId || college.orgId !== req.orgId) {
+    // ✅ FIX: previously only checked req.orgId, which meant a solo user
+    // (college.userId set, college.orgId null) could NEVER edit their own college.
+    // Confirmed against centers.controller.js pattern: req.userId / req.orgId are correct.
+    const authorizedByOrg = college.orgId && college.orgId === req.orgId;
+    const authorizedByUser = college.userId && college.userId === req.userId;
+    if (!authorizedByOrg && !authorizedByUser) {
       return res.status(403).json({ error: "Not authorized to edit this college" });
     }
 
@@ -105,7 +110,7 @@ export const updateCollege = async (req, res) => {
       naacGrade, naacScore, naacYear,
       nirfRank, nirfCategory, nirfYear,
       aicteApproved, nbaAccredited, regulatoryBody,
-      courses, fees, admissions, placements, campus, hostel,
+      courses, fees, admissions, placements, campus, hostel, faculty,
       pinCode, mapsUrl,
     } = req.body;
 
@@ -124,17 +129,19 @@ export const updateCollege = async (req, res) => {
         ...(logo !== undefined && { logo }),
         ...(image !== undefined && { image }),
         ...(gallery !== undefined && { gallery }),
-        ...(established !== undefined && { established }),
+
+        // ✅ FIX: cast numeric fields — form inputs send strings, Prisma needs Int/Float
+        ...(established !== undefined && { established: established === "" || established === null ? null : Number(established) }),
         ...(affiliatedUniversity !== undefined && { affiliatedUniversity }),
         ...(autonomous !== undefined && { autonomous }),
         ...(deemedUniversity !== undefined && { deemedUniversity }),
         ...(ugcRecognized !== undefined && { ugcRecognized }),
         ...(naacGrade !== undefined && { naacGrade }),
-        ...(naacScore !== undefined && { naacScore }),
-        ...(naacYear !== undefined && { naacYear }),
-        ...(nirfRank !== undefined && { nirfRank }),
+        ...(naacScore !== undefined && { naacScore: naacScore === "" || naacScore === null ? null : Number(naacScore) }),
+        ...(naacYear !== undefined && { naacYear: naacYear === "" || naacYear === null ? null : Number(naacYear) }),
+        ...(nirfRank !== undefined && { nirfRank: nirfRank === "" || nirfRank === null ? null : Number(nirfRank) }),
         ...(nirfCategory !== undefined && { nirfCategory }),
-        ...(nirfYear !== undefined && { nirfYear }),
+        ...(nirfYear !== undefined && { nirfYear: nirfYear === "" || nirfYear === null ? null : Number(nirfYear) }),
         ...(aicteApproved !== undefined && { aicteApproved }),
         ...(nbaAccredited !== undefined && { nbaAccredited }),
         ...(regulatoryBody !== undefined && { regulatoryBody }),
@@ -144,6 +151,7 @@ export const updateCollege = async (req, res) => {
         ...(placements !== undefined && { placements }),
         ...(campus !== undefined && { campus }),
         ...(hostel !== undefined && { hostel }),
+        ...(faculty !== undefined && { faculty }), // ✅ FIX: faculty field was missing entirely
         ...(pinCode !== undefined && { pinCode }),
         ...(mapsUrl !== undefined && { mapsUrl }),
       },

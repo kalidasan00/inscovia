@@ -360,6 +360,7 @@ model College {
   placements Json?
   campus     Json?
   hostel     Json?
+  faculty    Json? @default("[]")
 
   facebook  String?
   instagram String?

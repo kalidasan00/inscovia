@@ -228,3 +228,223 @@ export const deleteGalleryImage = async (req, res) => {
     });
   }
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ✅ NEW: College gallery — same optimized pattern as Center above, adapted for:
+//   - prisma.college instead of prisma.center
+//   - ownership via orgId OR userId (College supports solo users, Center here doesn't)
+//   - 6-photo cap (matches College frontend) instead of Center's 3
+//   - folder "college-gallery" instead of "gallery" (keeps Cloudinary media separated)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const uploadCollegeGalleryImage = async (req, res) => {
+  let uploadedImageUrl = null;
+
+  try {
+    const { slug } = req.params;
+
+    if (!req.orgId && !req.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({
+        message: "No image file provided",
+        debug: {
+          file: req.file ? "present" : "missing",
+          buffer: req.file?.buffer ? "present" : "missing"
+        }
+      });
+    }
+
+    // Ownership via orgId OR userId
+    const college = await prisma.college.findFirst({
+      where: {
+        slug,
+        OR: [
+          ...(req.orgId ? [{ orgId: req.orgId }] : []),
+          ...(req.userId ? [{ userId: req.userId }] : []),
+        ],
+      },
+      select: {
+        id: true,
+        orgId: true,
+        userId: true,
+        name: true,
+        gallery: true
+      }
+    });
+
+    if (!college) {
+      return res.status(404).json({ message: "College not found or unauthorized" });
+    }
+
+    const currentGallery = college.gallery || [];
+    if (currentGallery.length >= 6) {
+      return res.status(400).json({
+        message: "Maximum 6 photos allowed",
+        current: currentGallery.length
+      });
+    }
+
+    const config = getTransformations('gallery');
+
+    const result = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Upload timeout after 30 seconds'));
+      }, 30000);
+
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "college-gallery",
+          transformation: config.transformation,
+          resource_type: 'auto'
+        },
+        (error, result) => {
+          clearTimeout(timeout);
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+
+    uploadedImageUrl = result.secure_url;
+
+    const updatedCollege = await prisma.$transaction(async (tx) => {
+      const currentCollege = await tx.college.findUnique({
+        where: { id: college.id },
+        select: { gallery: true }
+      });
+
+      const gallery = currentCollege.gallery || [];
+      if (gallery.length >= 6) {
+        throw new Error('Gallery limit reached');
+      }
+
+      return await tx.college.update({
+        where: { id: college.id },
+        data: {
+          gallery: {
+            push: uploadedImageUrl
+          }
+        }
+      });
+    });
+
+    const sizeKB = (result.bytes / 1024).toFixed(2);
+    console.log(`✅ Gallery image uploaded for ${college.name}: ${sizeKB}KB (${updatedCollege.gallery.length}/6)`);
+
+    return res.json({
+      message: "Image uploaded successfully",
+      imageUrl: uploadedImageUrl,
+      gallery: updatedCollege.gallery,
+      size: sizeKB + 'KB'
+    });
+
+  } catch (error) {
+    console.error("❌ College gallery upload error:", error);
+
+    if (uploadedImageUrl) {
+      try {
+        const publicId = getPublicIdFromUrl(uploadedImageUrl);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+          console.log(`🧹 Cleaned up orphaned image: ${publicId}`);
+        }
+      } catch (cleanupError) {
+        console.error('⚠️ Failed to cleanup orphaned image:', cleanupError);
+      }
+    }
+
+    if (error.message === 'Gallery limit reached') {
+      return res.status(400).json({
+        message: "Maximum 6 photos allowed (concurrent upload detected)"
+      });
+    }
+
+    if (error.message.includes('timeout')) {
+      return res.status(408).json({ message: "Upload timeout - please try again" });
+    }
+
+    res.status(500).json({
+      message: "Server error",
+      error: process.env.NODE_ENV === 'production' ? 'Upload failed' : error.message
+    });
+  }
+};
+
+export const deleteCollegeGalleryImage = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { imageUrl } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({ message: "Image URL required" });
+    }
+
+    if (!req.orgId && !req.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const college = await prisma.college.findFirst({
+      where: {
+        slug,
+        OR: [
+          ...(req.orgId ? [{ orgId: req.orgId }] : []),
+          ...(req.userId ? [{ userId: req.userId }] : []),
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        gallery: true
+      }
+    });
+
+    if (!college) {
+      return res.status(404).json({ message: "College not found or unauthorized" });
+    }
+
+    const currentGallery = college.gallery || [];
+    if (!currentGallery.includes(imageUrl)) {
+      return res.status(404).json({ message: "Image not found in gallery" });
+    }
+
+    const updatedGallery = currentGallery.filter(url => url !== imageUrl);
+
+    const updatedCollege = await prisma.college.update({
+      where: { id: college.id },
+      data: {
+        gallery: updatedGallery
+      }
+    });
+
+    const publicId = getPublicIdFromUrl(imageUrl);
+    if (publicId) {
+      cloudinary.uploader.destroy(publicId)
+        .then(() => {
+          console.log(`✅ Deleted from Cloudinary: ${publicId}`);
+        })
+        .catch((error) => {
+          console.log('⚠️ Could not delete from Cloudinary:', error.message);
+        });
+    }
+
+    console.log(`✅ Gallery image deleted for ${college.name} (${updatedCollege.gallery.length}/6)`);
+
+    res.json({
+      message: "Image deleted successfully",
+      gallery: updatedCollege.gallery
+    });
+
+  } catch (error) {
+    console.error("❌ College gallery delete error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: process.env.NODE_ENV === 'production' ? 'Delete failed' : error.message
+    });
+  }
+};
+
+
