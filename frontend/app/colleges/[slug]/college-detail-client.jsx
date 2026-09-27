@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Phone, Mail, Globe, ChevronDown, Star } from "lucide-react";
+import { MapPin, Phone, Mail, Globe, ChevronDown, Star, User } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 const MAX_RETRIES = 3;
@@ -160,8 +160,34 @@ export default function CollegeDetailClient({ initialCollege = null }) {
     );
   }
 
-  const courses = Array.isArray(college.courses) ? college.courses : [];
-  const placements = college.placements || null;
+  // ✅ FIX: parse courses safely (was assumed array, but backend/dashboard treats this as
+  // potentially a JSON string, same pattern used everywhere else in the app)
+  const courses = (() => {
+    const c = college.courses;
+    if (!c) return [];
+    if (typeof c === "string") { try { return JSON.parse(c); } catch { return []; } }
+    return Array.isArray(c) ? c : [];
+  })();
+
+  // ✅ FIX: parse placements safely + normalize field name
+  const placements = (() => {
+    const p = college.placements;
+    if (!p) return null;
+    if (typeof p === "string") { try { return JSON.parse(p); } catch { return null; } }
+    return p;
+  })();
+
+  // ✅ NEW: faculty, same parsing pattern as courses/placements
+  const faculty = (() => {
+    const f = college.faculty;
+    if (!f) return [];
+    if (typeof f === "string") { try { return JSON.parse(f); } catch { return []; } }
+    return Array.isArray(f) ? f : [];
+  })();
+
+  const reviews = Array.isArray(college.reviews) ? college.reviews : [];
+
+  const hasRankingInfo = college.naacGrade || college.nirfRank || college.aicteApproved || college.nbaAccredited;
 
   return (
     <>
@@ -242,17 +268,18 @@ export default function CollegeDetailClient({ initialCollege = null }) {
               </span>
             </div>
 
-            {placements && (placements.placementPercentage || placements.averagePackage || placements.highestPackage) && (
+            {/* ✅ FIX: placements.avgPackage (was averagePackage — never matched dashboard data) */}
+            {placements && (placements.placementPercentage || placements.avgPackage || placements.highestPackage) && (
               <div className="grid grid-cols-3 gap-2 mb-3 pb-3 border-b">
                 {placements.placementPercentage != null && (
                   <div className="text-center p-2 bg-blue-50 rounded-lg">
-                    <p className="text-lg font-bold text-blue-700">{placements.placementPercentage}%</p>
+                    <p className="text-lg font-bold text-blue-700">{placements.placementPercentage}</p>
                     <p className="text-xs text-gray-500">Placement Rate</p>
                   </div>
                 )}
-                {placements.averagePackage && (
+                {placements.avgPackage && (
                   <div className="text-center p-2 bg-green-50 rounded-lg">
-                    <p className="text-lg font-bold text-green-700">{placements.averagePackage}</p>
+                    <p className="text-lg font-bold text-green-700">{placements.avgPackage}</p>
                     <p className="text-xs text-gray-500">Avg Package</p>
                   </div>
                 )}
@@ -299,6 +326,35 @@ export default function CollegeDetailClient({ initialCollege = null }) {
               </div>
             </div>
 
+            {/* ✅ NEW: Ranking & Accreditation — was completely missing from public page */}
+            {hasRankingInfo && (
+              <div className="mb-3 pb-3 border-b">
+                <h2 className="text-sm font-bold text-gray-900 mb-2">Ranking & Accreditation</h2>
+                <div className="flex flex-wrap gap-1.5">
+                  {college.naacGrade && (
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      NAAC {college.naacGrade}
+                    </span>
+                  )}
+                  {college.nirfRank && (
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                      NIRF #{college.nirfRank}
+                    </span>
+                  )}
+                  {college.aicteApproved && (
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                      AICTE Approved
+                    </span>
+                  )}
+                  {college.nbaAccredited && (
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                      NBA Accredited
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {courses.length > 0 && (
               <div className="mb-3 pb-3 border-b">
                 <h2 className="text-sm font-bold text-gray-900 mb-2">Courses</h2>
@@ -306,9 +362,41 @@ export default function CollegeDetailClient({ initialCollege = null }) {
                   {courses.map((course, i) => (
                     <div key={i} className="flex items-center justify-between px-2.5 py-1.5 bg-gray-50 border rounded-lg">
                       <span className="text-xs text-gray-700 font-medium">{course.name}</span>
+                      {/* ✅ FIX: course.fees (was course.fee || course.tuitionFee — never matched dashboard data) */}
                       <span className="text-xs text-gray-500">
-                        {[course.duration, course.fee || course.tuitionFee].filter(Boolean).join(" • ")}
+                        {[course.duration, course.fees ? `₹${Number(course.fees).toLocaleString("en-IN")}` : null]
+                          .filter(Boolean)
+                          .join(" • ")}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Faculty — was completely missing from public page */}
+            {faculty.length > 0 && (
+              <div className="mb-3 pb-3 border-b">
+                <h2 className="text-sm font-bold text-gray-900 mb-2">Faculty</h2>
+                <div className="grid grid-cols-1 gap-2">
+                  {faculty.map((member, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-50 border rounded-lg">
+                      <div className="w-11 h-11 rounded-full bg-white border overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {member.photo ? (
+                          <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{member.name}</p>
+                        <p className="text-xs text-gray-600 truncate">{member.designation}</p>
+                        {(member.qualification || member.department) && (
+                          <p className="text-xs text-gray-400 truncate">
+                            {[member.qualification, member.department].filter(Boolean).join(" • ")}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -383,6 +471,28 @@ export default function CollegeDetailClient({ initialCollege = null }) {
                   {college.gallery.map((img, i) => (
                     <div key={img} className="aspect-square relative overflow-hidden rounded-lg border">
                       <img src={img} alt={`${college.name} - Gallery image ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Reviews — data was already being fetched (getCollegeBySlug includes it)
+                but never rendered anywhere. Showing up to 5, matching gallery's simple style. */}
+            {reviews.length > 0 && (
+              <div className="mb-3">
+                <h2 className="text-sm font-bold text-gray-900 mb-2">Reviews</h2>
+                <div className="space-y-2">
+                  {reviews.slice(0, 5).map((review) => (
+                    <div key={review.id} className="p-2.5 bg-gray-50 border rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-gray-900">{review.userName}</span>
+                        <div className="flex items-center gap-0.5">
+                          <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                          <span className="text-xs font-medium text-gray-700">{review.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed">{review.comment}</p>
                     </div>
                   ))}
                 </div>
