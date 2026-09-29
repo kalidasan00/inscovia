@@ -11,6 +11,7 @@ import {
   Search, FileText, Target, Bell,
   MapPin, BookOpen, Building2, Sparkles, Loader2,
   Globe, Home, ChevronDown, Keyboard,
+  GraduationCap, Newspaper,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -397,6 +398,7 @@ const CitySelector = memo(function CitySelector({ city, onCityChange }) {
   );
 });
 
+// Mobile menu — unchanged
 const MOBILE_NAV = [
   { href: "/",                              label: "Home",                 Icon: Home },
   { href: "/centers",                       label: "Browse Centers",       Icon: Search },
@@ -404,6 +406,16 @@ const MOBILE_NAV = [
   { href: "/previous-year-papers",          label: "Previous Year Papers", Icon: FileText },
   { href: "/practice",                      label: "Practice Zone",        Icon: Target },
   { href: "/typing-test",                   label: "Typing Test",          Icon: Keyboard },
+];
+
+// Desktop bar only. Change the Colleges / Feed hrefs here if your routes differ.
+const DESKTOP_NAV = [
+  { href: "/",            label: "Home",        Icon: null,          alwaysLabel: true },
+  { href: "/centers",     label: "Centers",     Icon: null,          alwaysLabel: true },
+  { href: "/colleges",    label: "Colleges",    Icon: GraduationCap },
+  { href: "/feed",        label: "Feed",        Icon: Newspaper },
+  { href: "/practice",    label: "Practice",    Icon: Target },
+  { href: "/typing-test", label: "Typing Test", Icon: Keyboard },
 ];
 
 export default function Navbar() {
@@ -424,15 +436,10 @@ export default function Navbar() {
   const dashboardHref = isInstituteLoggedIn ? "/institute/dashboard" : "/user/dashboard";
   const accountLabel  = isInstituteLoggedIn ? "Dashboard" : "Account";
 
+  // Still used by the mobile menu
   const isStudyAbroadActive = useMemo(() =>
     pathname?.startsWith("/centers") && searchParams?.get("category") === "STUDY_ABROAD",
     [pathname, searchParams]
-  );
-
-  const navLinkCls = useCallback((path) =>
-    `text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap hover:text-blue-600 hover:bg-gray-50 ${
-      pathname === path ? "text-blue-600 bg-blue-50" : "text-gray-600"
-    }`, [pathname]
   );
 
   useEffect(() => {
@@ -526,43 +533,40 @@ export default function Navbar() {
 
       {/* DESKTOP */}
       <div className="hidden lg:block">
-        <div className="max-w-screen-xl mx-auto px-6 xl:px-8">
-          <div className="flex items-center h-16 gap-4">
+        {/* page-container (globals.css) keeps navbar edges aligned with page content */}
+        <div className="page-container">
+          <div className="flex items-center h-16 gap-3 xl:gap-4">
 
             <Link href="/" aria-label="Inscovia — home" className="flex items-center flex-shrink-0">
               <Image src="/Inscovia - 1 2.png" alt="Inscovia" width={140} height={40} priority className="h-9 w-auto" />
             </Link>
 
-            <div className="flex items-center gap-2 flex-1 min-w-0 mx-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0 mx-1 xl:mx-2">
               {isUserLoggedIn && (
                 <div className="flex-shrink-0">
                   <CitySelector city={userCity} onCityChange={handleCityChange} />
                 </div>
               )}
-              <div className="flex-1 min-w-0 max-w-sm">
+              <div className="flex-1 min-w-0 max-w-sm 2xl:max-w-md">
                 <NavSearch centers={centers} />
               </div>
             </div>
 
-            <nav className="flex items-center gap-1 flex-shrink-0" aria-label="Primary">
-              <Link href="/" className={navLinkCls("/")} aria-current={pathname === "/" ? "page" : undefined}>Home</Link>
-              <Link href="/centers" className={navLinkCls("/centers")} aria-current={pathname === "/centers" ? "page" : undefined}>Centers</Link>
-              <Link href="/centers?category=STUDY_ABROAD" aria-current={isStudyAbroadActive ? "page" : undefined}
-                className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap hover:text-blue-600 hover:bg-gray-50 ${isStudyAbroadActive ? "text-blue-600 bg-blue-50" : "text-gray-600"}`}>
-                <Globe className="w-4 h-4 flex-shrink-0" /><span>Abroad</span>
-              </Link>
-              <Link href="/previous-year-papers" aria-current={pathname === "/previous-year-papers" ? "page" : undefined}
-                className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap hover:text-blue-600 hover:bg-gray-50 ${pathname === "/previous-year-papers" ? "text-blue-600 bg-blue-50" : "text-gray-600"}`}>
-                <FileText className="w-4 h-4 flex-shrink-0" /><span>Papers</span>
-              </Link>
-              <Link href="/practice" aria-current={pathname === "/practice" ? "page" : undefined}
-                className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap hover:text-blue-600 hover:bg-gray-50 ${pathname === "/practice" ? "text-blue-600 bg-blue-50" : "text-gray-600"}`}>
-                <Target className="w-4 h-4 flex-shrink-0" /><span>Practice</span>
-              </Link>
-              <Link href="/typing-test" aria-current={pathname === "/typing-test" ? "page" : undefined}
-                className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap hover:text-blue-600 hover:bg-gray-50 ${pathname === "/typing-test" ? "text-blue-600 bg-blue-50" : "text-gray-600"}`}>
-                <Keyboard className="w-4 h-4 flex-shrink-0" /><span>Typing Test</span>
-              </Link>
+            <nav className="flex items-center gap-0.5 xl:gap-1 flex-shrink-0" aria-label="Primary">
+              {DESKTOP_NAV.map(({ href, label, Icon, alwaysLabel }) => {
+                const active = pathname === href;
+                return (
+                  <Link key={href} href={href} title={label}
+                    aria-label={label}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0 hover:text-blue-600 hover:bg-gray-50 ${
+                      active ? "text-blue-600 bg-blue-50" : "text-gray-600"
+                    }`}>
+                    {Icon && <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />}
+                    <span className={alwaysLabel ? "" : "hidden xl:inline"}>{label}</span>
+                  </Link>
+                );
+              })}
             </nav>
 
             <div className="w-px h-6 bg-gray-200 flex-shrink-0" />
@@ -596,7 +600,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* MOBILE */}
+      {/* MOBILE — unchanged */}
       <div className="lg:hidden">
         <div className="max-w-7xl mx-auto px-3 sm:px-4">
           <div className="flex items-center justify-between h-14 sm:h-16">

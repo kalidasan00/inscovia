@@ -23,7 +23,7 @@ a {
 /* ── Smooth scrolling (mobile UX) ── */
 html {
   scroll-behavior: smooth;
-  -webkit-tap-highlight-color: transparent; /* ✅ removes blue flash on mobile tap */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Toast animation ── */
@@ -68,12 +68,23 @@ html {
   margin-right: 4px;
 }
 
-/* ── Mobile touch targets (accessibility + speed perception) ── */
+/* ── Touch targets: only on touch devices (phones/tablets) ── */
 @layer base {
-  button,
-  a,
-  [role="button"] {
-    min-height: 44px; /* ✅ Apple/Google recommended minimum tap target */
-    min-width: 44px;
+  @media (pointer: coarse) {
+    button,
+    [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+}
+
+/* ── Shared page container: navbar + sections use this so edges align ── */
+@layer components {
+  .page-container {
+    width: 100%;
+    max-width: 1600px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 3vw, 48px);
   }
 }

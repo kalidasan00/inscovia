@@ -57,67 +57,67 @@ export default function HomeClient({ initialCenters = [] }) {
         <HeroSection />
 
         {/* ── Featured Institutes — rendered by FeaturedBanner which handles its own fetch ── */}
-        <section className="max-w-6xl mx-auto px-4 pt-6 pb-0">
+        <section className="page-container pt-6 pb-0">
           <FeaturedBanner />
         </section>
 
         {/* ── Browse by Category ── */}
-        <section className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Browse by Category</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <section className="page-container py-6 sm:py-8 lg:py-10">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Browse by Category</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
 
             <Link href="/centers?category=IT_TECHNOLOGY"
-              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-blue-300 transition-all">
+              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 lg:p-5 hover:shadow-md hover:border-blue-300 transition-all">
               <div className="flex flex-col items-center text-center">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-blue-200 transition-colors">
                   <MonitorSmartphone className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">Technology</h3>
-                <span className="text-[10px] sm:text-xs text-gray-500">{loading ? "..." : `${technologyCount} centers`}</span>
+                <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-900 mb-0.5 sm:mb-1">Technology</h3>
+                <span className="text-[10px] sm:text-xs lg:text-sm text-gray-500">{loading ? "..." : `${technologyCount} centers`}</span>
               </div>
             </Link>
 
             <Link href="/centers?category=MANAGEMENT"
-              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-green-300 transition-all">
+              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 lg:p-5 hover:shadow-md hover:border-green-300 transition-all">
               <div className="flex flex-col items-center text-center">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-green-200 transition-colors">
                   <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">Management</h3>
-                <span className="text-[10px] sm:text-xs text-gray-500">{loading ? "..." : `${managementCount} centers`}</span>
+                <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-900 mb-0.5 sm:mb-1">Management</h3>
+                <span className="text-[10px] sm:text-xs lg:text-sm text-gray-500">{loading ? "..." : `${managementCount} centers`}</span>
               </div>
             </Link>
 
             <Link href="/centers?category=SKILL_DEVELOPMENT"
-              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-purple-300 transition-all">
+              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 lg:p-5 hover:shadow-md hover:border-purple-300 transition-all">
               <div className="flex flex-col items-center text-center">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-purple-200 transition-colors">
                   <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">Skills</h3>
-                <span className="text-[10px] sm:text-xs text-gray-500">{loading ? "..." : `${skillDevCount} centers`}</span>
+                <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-900 mb-0.5 sm:mb-1">Skills</h3>
+                <span className="text-[10px] sm:text-xs lg:text-sm text-gray-500">{loading ? "..." : `${skillDevCount} centers`}</span>
               </div>
             </Link>
 
             <Link href="/centers?category=EXAM_COACHING"
-              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 hover:shadow-md hover:border-orange-300 transition-all">
+              className="group bg-white rounded-lg sm:rounded-xl shadow-sm border p-3 sm:p-4 lg:p-5 hover:shadow-md hover:border-orange-300 transition-all">
               <div className="flex flex-col items-center text-center">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-orange-200 transition-colors">
                   <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                 </div>
-                <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-0.5 sm:mb-1">Coaching</h3>
-                <span className="text-[10px] sm:text-xs text-gray-500">{loading ? "..." : `${examCoachingCount} centers`}</span>
+                <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-900 mb-0.5 sm:mb-1">Coaching</h3>
+                <span className="text-[10px] sm:text-xs lg:text-sm text-gray-500">{loading ? "..." : `${examCoachingCount} centers`}</span>
               </div>
             </Link>
 
             <Link href="/centers"
-              className="group bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 hover:shadow-md transition-all">
+              className="group bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl shadow-sm p-3 sm:p-4 lg:p-5 hover:shadow-md transition-all">
               <div className="flex flex-col items-center text-center">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3">
                   <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <h3 className="text-xs sm:text-sm font-semibold text-white mb-0.5 sm:mb-1">All Centers</h3>
-                <span className="text-[10px] sm:text-xs text-white/80">{loading ? "..." : `${totalCount} total`}</span>
+                <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-white mb-0.5 sm:mb-1">All Centers</h3>
+                <span className="text-[10px] sm:text-xs lg:text-sm text-white/80">{loading ? "..." : `${totalCount} total`}</span>
               </div>
             </Link>
 
@@ -125,9 +125,9 @@ export default function HomeClient({ initialCenters = [] }) {
         </section>
 
         {/* ── Popular Courses ── */}
-        <section className="max-w-6xl mx-auto px-4 py-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Popular Courses</h2>
-          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <section className="page-container py-6 lg:py-8">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Popular Courses</h2>
+          <div className="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-9 gap-3 lg:gap-4">
             {[
               { name: "AI/ML",             icon: Code2,      color: "bg-blue-100 text-blue-600",     query: "Artificial Intelligence Machine Learning" },
               { name: "Data Science",      icon: BarChart3,  color: "bg-purple-100 text-purple-600", query: "Data Science" },
@@ -146,7 +146,7 @@ export default function HomeClient({ initialCenters = [] }) {
                   <div className={`w-10 h-10 ${course.color} rounded-lg flex items-center justify-center mx-auto mb-2`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <h3 className="text-xs font-semibold text-gray-900">{course.name}</h3>
+                  <h3 className="text-xs lg:text-sm font-semibold text-gray-900">{course.name}</h3>
                 </Link>
               );
             })}
@@ -154,9 +154,9 @@ export default function HomeClient({ initialCenters = [] }) {
         </section>
 
         {/* ── Top Exams ── */}
-        <section className="max-w-6xl mx-auto px-4 py-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Prepare for Top Exams</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <section className="page-container py-6 lg:py-8">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Prepare for Top Exams</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
             {[
               { name: "JEE",  fullName: "Joint Entrance Exam", color: "from-red-500 to-orange-500" },
               { name: "NEET", fullName: "Medical Entrance",    color: "from-green-500 to-teal-500" },
@@ -170,18 +170,18 @@ export default function HomeClient({ initialCenters = [] }) {
                 <div className={`w-12 h-12 bg-gradient-to-br ${exam.color} rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
                   <GraduationCap className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-sm font-bold text-gray-900 text-center mb-1">{exam.name}</h3>
-                <p className="text-[10px] text-gray-500 text-center">{exam.fullName}</p>
+                <h3 className="text-sm lg:text-base font-bold text-gray-900 text-center mb-1">{exam.name}</h3>
+                <p className="text-[10px] lg:text-xs text-gray-500 text-center">{exam.fullName}</p>
               </Link>
             ))}
           </div>
         </section>
 
         {/* ── Select City ── */}
-        <section className="max-w-6xl mx-auto px-4 py-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Select Your City</h2>
+        <section className="page-container py-6 lg:py-8">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Select Your City</h2>
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-9 gap-3">
               {[...Array(12)].map((_, i) => (
                 <div key={i} className="bg-white rounded-lg shadow-sm border p-4 animate-pulse">
                   <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto" />
@@ -189,13 +189,13 @@ export default function HomeClient({ initialCenters = [] }) {
               ))}
             </div>
           ) : cities.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-9 gap-3">
               {cities.slice(0, 18).map((city) => (
                 <Link key={city} href={`/centers?city=${encodeURIComponent(city)}`}
                   className="group bg-white rounded-lg shadow-sm border p-4 hover:shadow-md hover:border-indigo-200 transition-all">
                   <div className="flex items-center justify-center gap-2">
-                    <MapPin className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
-                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{city}</h3>
+                    <MapPin className="w-4 h-4 flex-shrink-0 text-indigo-600 group-hover:scale-110 transition-transform" />
+                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors truncate">{city}</h3>
                   </div>
                 </Link>
               ))}
@@ -216,9 +216,9 @@ export default function HomeClient({ initialCenters = [] }) {
         </section>
 
         {/* ── CTA Banner ── */}
-        <section className="max-w-6xl mx-auto px-4 py-8">
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-white mb-3">Find Your Perfect Course</h2>
+        <section className="page-container py-8">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 lg:p-12 text-center">
+            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">Find Your Perfect Course</h2>
             <p className="text-white/90 mb-6">Browse verified training centers across India</p>
             <Link href="/centers"
               className="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-gray-50 transition-all">

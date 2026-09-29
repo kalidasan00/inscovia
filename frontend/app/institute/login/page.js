@@ -49,19 +49,44 @@ export default function InstituteLogin() {
     }
   };
 
-  // ✅ ADDED: save auth data and redirect
+  // ✅ FIX: previously only set institute*-prefixed keys, never userToken/userData/
+  // userOrgs/currentOrgId/currentOrgRole. AccountSwitcher reads "userData" to decide
+  // whether to render at all (`if (!user) return null`), and uses "userToken" to
+  // validate orgs against the API — so logins through this page left AccountSwitcher
+  // completely non-functional, and left no "currentOrgId" for it to know which org
+  // is active. Now sets the exact same full set of keys as the main /login page so
+  // both entry points behave identically.
   const saveAndRedirect = (data) => {
-    localStorage.setItem("instituteLoggedIn", "true");
-    localStorage.setItem("instituteToken", data.token);
-    localStorage.setItem("instituteData", JSON.stringify(data.user));
-    // ✅ Save organizations for switcher
-    localStorage.setItem("instituteOrgs", JSON.stringify(data.organizations || []));
+    localStorage.setItem("userToken", data.token);
+    localStorage.setItem("userLoggedIn", "true");
+    localStorage.setItem("userData", JSON.stringify(data.user));
+
+    if (data.organizations && data.organizations.length > 0) {
+      localStorage.setItem("userOrgs", JSON.stringify(data.organizations));
+    }
+
+    if (data.organization) {
+      localStorage.setItem("instituteLoggedIn", "true");
+      localStorage.setItem("instituteToken", data.token);
+      // ✅ FIX: was storing data.user here — should be the organization, matching
+      // what the rest of the app expects at this key.
+      localStorage.setItem("instituteData", JSON.stringify(data.organization));
+      localStorage.setItem("instituteCenter", JSON.stringify(data.center || null));
+      localStorage.setItem("currentOrgId", data.organization.id);
+      localStorage.setItem(
+        "currentOrgRole",
+        data.organizations?.find((o) => o.id === data.organization.id)?.role || null
+      );
+    }
+
     window.dispatchEvent(new Event('authStateChanged'));
     window.dispatchEvent(new Event('storage'));
     router.push("/institute/dashboard");
   };
 
-  // ✅ ADDED: switch to selected org
+  // ✅ FIX: switching orgs now also refreshes userToken (not just instituteToken) —
+  // previously kept the OLD userToken after switching, which is what AccountSwitcher
+  // uses to re-validate orgs, causing it to potentially work against a stale token.
   const handleSelectOrg = async (org) => {
     setSwitchingOrg(true);
     try {
@@ -76,8 +101,12 @@ export default function InstituteLogin() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to switch org");
 
-      // ✅ Save with new token for selected org
-      saveAndRedirect({ ...userData, token: data.token });
+      saveAndRedirect({
+        ...userData,
+        token: data.token,
+        organization: data.organization || org,
+        center: data.center,
+      });
     } catch (err) {
       setError(err.message);
       setSwitchingOrg(false);
