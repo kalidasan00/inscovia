@@ -20,6 +20,14 @@ export const getMyOrgs = async (req, res) => {
             primaryCategory: true, city: true, state: true,
             centers: {
               select: { id: true, slug: true, name: true, image: true, logo: true }
+            },
+            // ✅ FIX: colleges were never fetched here at all, unlike loginInstitute
+            // and getCurrentUser which both return college data. This meant any
+            // code relying on /org/my (like AccountSwitcher refreshing org data)
+            // silently lost college info for College-type organizations, while
+            // Center-type organizations were unaffected — a College-specific gap.
+            colleges: {
+              select: { id: true, slug: true, name: true, image: true, logo: true }
             }
           }
         }
@@ -67,6 +75,28 @@ export const switchOrg = async (req, res) => {
                 services: true, topUniversities: true,
                 avgScholarship: true, successRate: true, studentsPlaced: true,
               }
+            },
+            // ✅ FIX: colleges were never included here either — switching into
+            // a College org returned no college data at all, only `center: null`.
+            colleges: {
+              select: {
+                id: true, slug: true, name: true,
+                type: true, ownership: true,
+                image: true, logo: true, rating: true,
+                city: true, state: true,
+                primaryCategory: true, secondaryCategories: true,
+                district: true, location: true,
+                latitude: true, longitude: true,
+                description: true,
+                courses: true, fees: true, admissions: true, placements: true,
+                campus: true, hostel: true, faculty: true,
+                gallery: true, website: true, whatsapp: true,
+                phone: true, email: true, facebook: true,
+                instagram: true, linkedin: true, youtube: true,
+                established: true, affiliatedUniversity: true,
+                naacGrade: true, nirfRank: true,
+                aicteApproved: true, nbaAccredited: true,
+              }
             }
           }
         }
@@ -86,6 +116,7 @@ export const switchOrg = async (req, res) => {
 
     const org = membership.org;
     const center = org.centers?.[0] || null;
+    const college = org.colleges?.[0] || null; // ✅ FIX: was never computed or returned
 
     res.json({
       success: true,
@@ -99,6 +130,7 @@ export const switchOrg = async (req, res) => {
         city: org.city, location: org.location,
       },
       center,
+      college, // ✅ FIX: now included, matching loginInstitute/getCurrentUser shape
       role: membership.role,
     });
   } catch (error) {
