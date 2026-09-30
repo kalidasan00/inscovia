@@ -37,12 +37,12 @@ export default function CollegeDashboard() {
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [activeTab, setActiveTab] = useState("About");
 
-  // ✅ NEW: Ranking tab state
+  // Ranking tab state
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [rankingForm, setRankingForm] = useState({ naacGrade: "", nirfRank: "", aicteApproved: false, nbaAccredited: false });
   const [savingRanking, setSavingRanking] = useState(false);
 
-  // ✅ NEW: Faculty tab state
+  // Faculty tab state
   const [showFacultyModal, setShowFacultyModal] = useState(false);
   const [facultyEditIndex, setFacultyEditIndex] = useState(null); // null = adding new
   const [facultyForm, setFacultyForm] = useState(EMPTY_FACULTY_FORM);
@@ -54,13 +54,75 @@ export default function CollegeDashboard() {
 
   useEffect(() => { checkAuthAndFetchData(); }, []);
 
+  // ✅ No institute login page: if the personal session is still valid we go
+  // to the user dashboard, otherwise to the normal login.
+  const goToDashboardOrLogin = () => {
+    if (localStorage.getItem("userToken")) router.push("/user/dashboard");
+    else router.push("/login");
+  };
+
+  // ✅ Returns an institute token. If none is stored but the user is logged in
+  // with their personal account, mint one by switching into their college org
+  // (same call the AccountSwitcher makes).
+  const getInstituteToken = async () => {
+    const existing = localStorage.getItem("instituteToken");
+    if (existing) return existing;
+
+    const userToken = localStorage.getItem("userToken");
+    if (!userToken) return null;
+
+    try {
+      const orgs = JSON.parse(localStorage.getItem("userOrgs") || "[]");
+      const currentId = localStorage.getItem("currentOrgId");
+      const collegeOrgs = orgs.filter((o) => o.primaryCategory === "COLLEGE");
+      const target = collegeOrgs.find((o) => o.id === currentId) || collegeOrgs[0];
+      if (!target) return null;
+
+      const res = await fetch(`${API_URL}/org/switch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userToken}`,
+        },
+        body: JSON.stringify({ orgId: target.id }),
+      });
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      localStorage.setItem("instituteLoggedIn", "true");
+      localStorage.setItem("instituteToken", data.token);
+      localStorage.setItem("instituteData", JSON.stringify(data.organization));
+      if (data.center) localStorage.setItem("instituteCenter", JSON.stringify(data.center));
+      else localStorage.removeItem("instituteCenter");
+      if (data.college) localStorage.setItem("instituteCollege", JSON.stringify(data.college));
+      else localStorage.removeItem("instituteCollege");
+      localStorage.setItem("currentOrgId", data.organization?.id || target.id);
+      localStorage.setItem("currentOrgRole", data.role);
+      localStorage.setItem("lastActiveDashboard", "institute");
+      window.dispatchEvent(new Event("authStateChanged"));
+      return data.token;
+    } catch {
+      return null;
+    }
+  };
+
   const checkAuthAndFetchData = async () => {
-    const token = localStorage.getItem("instituteToken");
-    if (!token) { router.push("/institute/login"); return; }
+    const token = await getInstituteToken();
+    if (!token) { goToDashboardOrLogin(); return; }
     try {
       const response = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // ✅ Only a real 401 (bad/expired token) clears the institute session.
+      // Other errors (500, network) no longer log the user out.
+      if (response.status === 401) {
+        localStorage.removeItem("instituteToken");
+        localStorage.removeItem("instituteData");
+        localStorage.removeItem("instituteLoggedIn");
+        goToDashboardOrLogin();
+        return;
+      }
       if (!response.ok) throw new Error("Failed");
       const data = await response.json();
 
@@ -72,10 +134,7 @@ export default function CollegeDashboard() {
       setCollege(data.college);
       localStorage.setItem("instituteLoggedIn", "true");
     } catch {
-      localStorage.removeItem("instituteToken");
-      localStorage.removeItem("instituteData");
-      localStorage.removeItem("instituteLoggedIn");
-      router.push("/institute/login");
+      goToDashboardOrLogin();
     } finally {
       setLoading(false);
     }
@@ -85,12 +144,13 @@ export default function CollegeDashboard() {
     localStorage.removeItem("instituteToken");
     localStorage.removeItem("instituteData");
     localStorage.removeItem("instituteLoggedIn");
+    localStorage.removeItem("instituteCollege");
     window.dispatchEvent(new Event("authStateChanged"));
     setShowLogoutModal(false);
-    router.push("/institute/login");
+    router.push(localStorage.getItem("userToken") ? "/user/dashboard" : "/");
   };
 
-  // ✅ Gallery — mirrors Center's gallery upload/delete pattern
+  // Gallery — mirrors Center's gallery upload/delete pattern
   const handleGalleryUpload = async (e) => {
     const files = Array.from(e.target.files);
     const currentGallery = college?.gallery || [];
@@ -144,7 +204,7 @@ export default function CollegeDashboard() {
     }
   };
 
-  // ✅ Courses summary for the dashboard home (full management lives on /courses)
+  // Courses summary for the dashboard home (full management lives on /courses)
   const courses = (() => {
     const c = college?.courses;
     if (!c) return [];
@@ -152,7 +212,7 @@ export default function CollegeDashboard() {
     return Array.isArray(c) ? c : [];
   })();
 
-  // ✅ Placements summary for the dashboard home (full management lives on /admissions)
+  // Placements summary for the dashboard home (full management lives on /admissions)
   const placements = (() => {
     const p = college?.placements;
     if (!p) return {};
@@ -161,7 +221,7 @@ export default function CollegeDashboard() {
   })();
   const hasPlacementStats = placements.placementPercentage || placements.avgPackage || placements.highestPackage;
 
-  // ✅ NEW: Faculty list, parsed same way as courses/placements
+  // Faculty list, parsed same way as courses/placements
   const faculty = (() => {
     const f = college?.faculty;
     if (!f) return [];
@@ -169,7 +229,7 @@ export default function CollegeDashboard() {
     return Array.isArray(f) ? f : [];
   })();
 
-  // ✅ NEW: Ranking handlers
+  // Ranking handlers
   const openRankingModal = () => {
     setRankingForm({
       naacGrade: college.naacGrade || "",
@@ -213,7 +273,7 @@ export default function CollegeDashboard() {
     }
   };
 
-  // ✅ NEW: Faculty CRUD handlers
+  // Faculty CRUD handlers
   const openAddFacultyModal = () => {
     setFacultyEditIndex(null);
     setFacultyForm(EMPTY_FACULTY_FORM);
@@ -593,7 +653,6 @@ export default function CollegeDashboard() {
               </div>
             )}
 
-            {/* ✅ REPLACED: Faculty tab — real add/edit/delete instead of placeholder */}
             {activeTab === "Faculty" && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
@@ -725,7 +784,7 @@ export default function CollegeDashboard() {
         </>
       )}
 
-      {/* ✅ NEW: Ranking edit modal */}
+      {/* Ranking edit modal */}
       {showRankingModal && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={closeRankingModal} />
@@ -800,7 +859,7 @@ export default function CollegeDashboard() {
         </>
       )}
 
-      {/* ✅ NEW: Faculty add/edit modal */}
+      {/* Faculty add/edit modal */}
       {showFacultyModal && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" onClick={closeFacultyModal} />

@@ -1,6 +1,3 @@
-
-
-
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +5,7 @@ import { Building2, User, ChevronDown, ChevronRight, LogIn, Check, Loader2, Plus
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-// ✅ NEW: shared handler for expired/invalid tokens.
+// ✅ shared handler for expired/invalid tokens.
 // Clears the stale session entirely and sends the user back to login
 // instead of leaving them "logged in" with a dead token that 401s forever.
 function handleExpiredSession(router) {
@@ -16,7 +13,7 @@ function handleExpiredSession(router) {
     "userLoggedIn", "userData", "userToken", "userOrgs",
     "userCity", "userLat", "userLng",
     "instituteLoggedIn", "instituteToken", "instituteData", "instituteOrgs",
-    "instituteCenter", "currentOrgId", "currentOrgRole",
+    "instituteCenter", "instituteCollege", "currentOrgId", "currentOrgRole",
     "lastActiveDashboard",
   ].forEach((k) => localStorage.removeItem(k));
   window.dispatchEvent(new Event("authStateChanged"));
@@ -61,7 +58,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
               headers: { Authorization: `Bearer ${token}` },
             });
 
-            // ✅ NEW: expired/invalid token — stop here and force re-login
+            // expired/invalid token — stop here and force re-login
             // instead of silently falling through to stale local data.
             if (res.status === 401) {
               handleExpiredSession(router);
@@ -85,6 +82,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
                   localStorage.removeItem("instituteToken");
                   localStorage.removeItem("instituteData");
                   localStorage.removeItem("instituteCenter");
+                  localStorage.removeItem("instituteCollege");
                   localStorage.removeItem("currentOrgId");
                   localStorage.removeItem("currentOrgRole");
                   localStorage.setItem("lastActiveDashboard", "user");
@@ -170,7 +168,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
     try {
       const token = localStorage.getItem("userToken");
 
-      // ✅ NEW: no token at all — don't even attempt the call
+      // no token at all — don't even attempt the call
       if (!token) {
         handleExpiredSession(router);
         return;
@@ -185,7 +183,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
         body: JSON.stringify({ orgId: org.id }),
       });
 
-      // ✅ NEW: 401 means the token is expired/invalid — clear session and
+      // 401 means the token is expired/invalid — clear session and
       // redirect instead of throwing and leaving the user stuck retrying.
       if (res.status === 401) {
         handleExpiredSession(router);
@@ -198,7 +196,14 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
       localStorage.setItem("instituteLoggedIn", "true");
       localStorage.setItem("instituteToken", data.token);
       localStorage.setItem("instituteData", JSON.stringify(data.organization));
-      localStorage.setItem("instituteCenter", JSON.stringify(data.center));
+
+      // ✅ FIX: an org has EITHER a center OR a college. Store whichever exists
+      // and clear the other, instead of saving the string "null" for colleges.
+      if (data.center) localStorage.setItem("instituteCenter", JSON.stringify(data.center));
+      else localStorage.removeItem("instituteCenter");
+      if (data.college) localStorage.setItem("instituteCollege", JSON.stringify(data.college));
+      else localStorage.removeItem("instituteCollege");
+
       localStorage.setItem("instituteOrgs", JSON.stringify(orgs));
       localStorage.setItem("currentOrgId", data.organization?.id || org.id);
       localStorage.setItem("currentOrgRole", data.role);
@@ -207,7 +212,12 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
 
       window.dispatchEvent(new Event("authStateChanged"));
       setOpen(false);
-      window.location.href = "/institute/dashboard";
+
+      // ✅ FIX: college orgs go straight to the college dashboard.
+      // Centers keep the existing /institute/dashboard route.
+      window.location.href = data.college
+        ? "/institute/dashboard/college"
+        : "/institute/dashboard";
     } catch (err) {
       console.error("Switch error:", err.message);
       alert(err.message || "Failed to switch account. Please try again.");
@@ -228,6 +238,7 @@ export default function AccountSwitcher({ mode = "user", currentOrgId, currentOr
       "userLoggedIn", "userData", "userToken", "userOrgs",
       "userCity", "userLat", "userLng",
       "instituteLoggedIn", "instituteToken", "instituteData", "instituteOrgs",
+      "instituteCenter", "instituteCollege",
       "lastActiveDashboard",
     ].forEach((k) => localStorage.removeItem(k));
     setLastActive(null);
