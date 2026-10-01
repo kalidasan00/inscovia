@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import Head from "next/head";
 import dynamic from "next/dynamic";
 import {
   Zap, RotateCcw, Share2, Trophy, Lock, TrendingUp, Target, AlertCircle, RefreshCw, ChevronDown,
@@ -18,7 +17,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 const GUEST_ATTEMPT_KEY = "inscovia_typing_guest_used";
 const FALLBACK_TEXT =
   "The quick brown fox jumps over the lazy dog while practicing typing speed and accuracy every single day.";
-const SITE_URL = "https://inscovia.com";
+const SITE_URL = "https://www.inscovia.com";
 
 const FAQ_ITEMS = [
   {
@@ -331,7 +330,7 @@ export default function TypingTestPage() {
 
   const shareScore = () => {
     if (!finalStats) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://inscovia.com";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://www.inscovia.com";
     const shareText = `⌨️ I typed at ${finalStats.wpm} WPM with ${finalStats.accuracy}% accuracy on Inscovia's Typing Test!\nTry it: ${origin}/typing-test`;
     if (navigator.share) {
       navigator.share({ title: "My Typing Score", text: shareText }).catch(() => {});
@@ -371,7 +370,9 @@ export default function TypingTestPage() {
 
   // ─── HOME ───
   if (screen === "home") {
-    const pageTitle = "Free Typing Speed Test Online — Check Your WPM & Accuracy | Inscovia";
+    // Title, description, canonical and Open Graph tags are set in
+    // app/typing-test/layout.js (the App Router way). `next/head` is ignored
+    // in the app/ directory, so only the structured data is rendered here.
     const pageDescription =
       "Take a free online typing speed test to measure your words per minute (WPM) and accuracy. Choose 15s, 30s, or 60s tests across easy, medium, and hard passages. Track your progress and compete on the leaderboard.";
     const canonicalUrl = `${SITE_URL}/typing-test`;
@@ -380,13 +381,13 @@ export default function TypingTestPage() {
       "@context": "https://schema.org",
       "@graph": [
         {
-          "@type": "SoftwareApplication",
+          "@type": "WebApplication",
           name: "Inscovia Typing Speed Test",
-          applicationCategory: "EducationApplication",
+          applicationCategory: "EducationalApplication",
           operatingSystem: "Any",
           url: canonicalUrl,
           description: pageDescription,
-          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
         },
         {
           "@type": "FAQPage",
@@ -408,23 +409,10 @@ export default function TypingTestPage() {
 
     return (
       <div className="min-h-screen bg-[#fafafa]">
-        <Head>
-          <title>{pageTitle}</title>
-          <meta name="description" content={pageDescription} />
-          <link rel="canonical" href={canonicalUrl} />
-          <meta property="og:type" content="website" />
-          <meta property="og:title" content={pageTitle} />
-          <meta property="og:description" content={pageDescription} />
-          <meta property="og:url" content={canonicalUrl} />
-          <meta property="og:site_name" content="Inscovia" />
-          <meta name="twitter:card" content="summary" />
-          <meta name="twitter:title" content={pageTitle} />
-          <meta name="twitter:description" content={pageDescription} />
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-          />
-        </Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
 
         <div className="max-w-xl mx-auto px-6 pt-16 pb-8 flex flex-col items-center text-center">
           <p className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-2">Typing Test</p>
@@ -545,7 +533,7 @@ export default function TypingTestPage() {
           </Link>
         </div>
 
-        {/* ─── SEO content: intro + why it matters + FAQ ─── */}
+        {/* ─── SEO content: intro + how it works + speed table + tips + FAQ ─── */}
         <div className="max-w-2xl mx-auto px-6 pb-24 text-left">
           <div className="border-t border-gray-200 pt-10 mb-10">
             <h2 className="text-lg font-semibold text-gray-900 mb-3">About this typing speed test</h2>
@@ -564,6 +552,52 @@ export default function TypingTestPage() {
           </div>
 
           <div className="mb-10">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">How the typing test works</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Choose a duration (15, 30 or 60 seconds) and a difficulty level, then press start and
+              type the passage shown on screen. The timer begins with your first keystroke. When time
+              runs out, you see your WPM, accuracy and number of errors. Easy passages use common
+              words, while hard passages include longer words and more punctuation.
+            </p>
+          </div>
+
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">What is a good typing speed?</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left bg-white border border-gray-200 rounded-xl">
+                <thead className="bg-gray-50 text-gray-500">
+                  <tr>
+                    <th className="px-4 py-2 font-medium">Level</th>
+                    <th className="px-4 py-2 font-medium">Speed (WPM)</th>
+                    <th className="px-4 py-2 font-medium">What it means</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-gray-600">
+                  <tr><td className="px-4 py-2">Beginner</td><td className="px-4 py-2">Below 30</td><td className="px-4 py-2">Still learning key positions</td></tr>
+                  <tr><td className="px-4 py-2">Average</td><td className="px-4 py-2">35 to 45</td><td className="px-4 py-2">Comfortable for everyday work</td></tr>
+                  <tr><td className="px-4 py-2">Above average</td><td className="px-4 py-2">50 to 65</td><td className="px-4 py-2">Strong for office and data entry roles</td></tr>
+                  <tr><td className="px-4 py-2">Professional</td><td className="px-4 py-2">70 and above</td><td className="px-4 py-2">Typical for transcription and programming</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-gray-500 leading-relaxed mt-3">
+              Typing exams are often longer than 60 seconds, so use this test to check your baseline
+              speed and accuracy, then build stamina with regular practice.
+            </p>
+          </div>
+
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">Tips to type faster</h2>
+            <ul className="list-disc pl-5 space-y-1.5 text-sm text-gray-500 leading-relaxed">
+              <li>Aim for accuracy first. Speed follows once errors drop.</li>
+              <li>Keep your fingers on the home row and use all ten fingers.</li>
+              <li>Look at the screen, not the keyboard.</li>
+              <li>Practice for 10 to 15 minutes every day instead of one long session.</li>
+              <li>Retake the test at the same difficulty to track real progress.</li>
+            </ul>
+          </div>
+
+          <div className="mb-10">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Frequently asked questions</h2>
             <div className="space-y-2">
               {FAQ_ITEMS.map((item, i) => (
@@ -576,15 +610,18 @@ export default function TypingTestPage() {
                     <span className="text-sm font-medium text-gray-800">{item.q}</span>
                     <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${openFaq === i ? "rotate-180" : ""}`} />
                   </button>
-                  {openFaq === i && (
-                    <p className="px-4 pb-4 text-sm text-gray-500 leading-relaxed">{item.a}</p>
-                  )}
+                  {/* Always in the HTML (so search engines can read it); just hidden until opened */}
+                  <p className={`px-4 pb-4 text-sm text-gray-500 leading-relaxed ${openFaq === i ? "" : "hidden"}`}>
+                    {item.a}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-400 border-t border-gray-200 pt-6">
+            <Link href="/centers" className="hover:text-gray-600 underline">Training Institutes in India</Link>
+            <Link href="/colleges" className="hover:text-gray-600 underline">Colleges in India</Link>
             <Link href="/practice" className="hover:text-gray-600 underline">Aptitude Practice Zone</Link>
             <Link href="/previous-year-papers" className="hover:text-gray-600 underline">Previous Year Papers</Link>
             <Link href="/centers?category=IT_TECHNOLOGY" className="hover:text-gray-600 underline">Typing & Computer Courses</Link>

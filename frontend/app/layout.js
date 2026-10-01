@@ -22,18 +22,17 @@ export const metadata = {
   metadataBase: new URL("https://www.inscovia.com"),
 
   title: {
-    default: "Inscovia - Find Best Training Centers & Coaching Institutes in India",
+    default: "Find Training Institutes & Colleges in India | Inscovia",
     template: "%s | Inscovia",
   },
 
   description:
-    "Discover and compare top-rated training centers and coaching institutes across India. Technology, Management, Skill Development, and Exam Preparation courses.",
+    "Compare top training institutes and colleges across India. Browse IT courses, exam coaching, engineering and MBA, check fees and enquire free.",
 
   authors: [{ name: "Inscovia" }],
   creator: "Inscovia",
 
-  // ✅ REMOVED canonical from layout — each page sets its own
-  // Having homepage canonical here was telling Google every page = duplicate of homepage
+  // Canonical is NOT set here. Each page sets its own via alternates.canonical.
 
   robots: {
     index: true,
@@ -50,24 +49,25 @@ export const metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://www.inscovia.com",
     siteName: "Inscovia",
-    title: "Inscovia - Find Best Training Centers in India",
-    description: "Discover and compare top-rated training centers across India",
+    title: "Find Training Institutes & Colleges in India | Inscovia",
+    description:
+      "Compare top training institutes and colleges across India. IT courses, exam coaching, engineering and MBA.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Inscovia",
+        alt: "Inscovia - Training Institutes & Colleges in India",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "Inscovia - Find Best Training Centers in India",
-    description: "Discover and compare training centers across India",
+    title: "Find Training Institutes & Colleges in India | Inscovia",
+    description: "Compare top training institutes and colleges across India.",
+    images: ["/og-image.png"],
   },
 
   icons: {
@@ -85,9 +85,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en-IN" className={inter.variable}>
       <head>
-        {/* ✅ Preconnect to Cloudinary — saves 200-400ms on first image */}
         <link rel="preconnect" href="https://res.cloudinary.com" />
-        {/* ✅ GA4 via App Router — _document.js is Pages Router only and was being ignored */}
         <script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-0KHJ3KVE37"
@@ -104,9 +102,19 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="bg-gray-50 text-gray-900 font-sans antialiased">
-        {/* ✅ Providers scoped only where needed — move these down to only the
-            pages/layouts that actually use favorites or compare if possible.
-            For now kept here but memoize your context values in the provider files. */}
+        {/* Site-wide structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Inscovia",
+              url: "https://www.inscovia.com/",
+            }),
+          }}
+        />
+
         <FavoritesProvider>
           <CompareProvider>
             <RootLayoutInner>{children}</RootLayoutInner>
