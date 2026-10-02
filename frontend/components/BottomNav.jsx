@@ -1,11 +1,30 @@
 // components/BottomNav.jsx
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { Building2, Plus, LogOut, User, ChevronRight, X, GraduationCap } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+
+const ALL_SESSION_KEYS = [
+  "userLoggedIn", "userData", "userToken", "userOrgs",
+  "userCity", "userLat", "userLng",
+  "instituteLoggedIn", "instituteToken", "instituteData", "instituteOrgs",
+  "instituteCenter", "instituteCollege", "currentOrgId", "currentOrgRole",
+  "lastActiveDashboard",
+];
+
+// An org has EITHER a center OR a college. Colleges have their own dashboard.
+function getInstituteDashboardPath() {
+  try {
+    return localStorage.getItem("instituteCollege")
+      ? "/institute/dashboard/college"
+      : "/institute/dashboard";
+  } catch {
+    return "/institute/dashboard";
+  }
+}
 
 function BottomNavInner() {
   const pathname = usePathname();
@@ -18,8 +37,13 @@ function BottomNavInner() {
   const [user, setUser] = useState(null);
   const [institute, setInstitute] = useState(null);
   const [orgs, setOrgs] = useState([]);
+  const [currentOrgId, setCurrentOrgId] = useState(null);
   const [switchingOrg, setSwitchingOrg] = useState(null);
   const [lastActive, setLastActive] = useState(null); // "institute" | "user"
+
+  // long-press bookkeeping (refs survive re-renders, plain variables did not)
+  const pressTimer = useRef(null);
+  const longPressed = useRef(false);
 
   // ✅ activeAccount: path-based first, then lastActive, then fallback
   const activeAccount = pathname?.startsWith("/institute/dashboard")
@@ -29,7 +53,9 @@ function BottomNavInner() {
     : lastActive // ← use last visited on neutral pages
     ?? (isInstituteLoggedIn ? "institute" : isUserLoggedIn ? "user" : null);
 
-  const activeOrg = orgs?.[0] ?? null;
+  // ✅ FIX: use the ACTIVE org, not orgs[0]
+  const activeOrg =
+    orgs.find((o) => o.id === currentOrgId) ?? orgs?.[0] ?? null;
   const instituteName = activeOrg?.name || institute?.name || institute?.centerName || "Institute";
   const instituteInitial = instituteName[0].toUpperCase();
 
@@ -55,6 +81,8 @@ function BottomNavInner() {
       const last = localStorage.getItem("lastActiveDashboard");
       if (last) setLastActive(last);
 
+      setCurrentOrgId(localStorage.getItem("currentOrgId"));
+
       try {
         const userData = localStorage.getItem("userData");
         if (userData) setUser(JSON.parse(userData));
@@ -73,10 +101,26 @@ function BottomNavInner() {
     };
   }, []);
 
+  const clearSession = () => {
+    ALL_SESSION_KEYS.forEach((k) => localStorage.removeItem(k));
+    setLastActive(null);
+    window.dispatchEvent(new Event("authStateChanged"));
+  };
+
+  // ✅ FIX: same logic as AccountSwitcher. The old version saved the wrong data
+  // (instituteData = the user), never saved center/college or the org id,
+  // and always sent the user to the center dashboard.
   const handleSwitchToInstitute = async (org) => {
     setSwitchingOrg(org.id);
     try {
       const userToken = localStorage.getItem("userToken");
+      if (!userToken) {
+        clearSession();
+        setShowSheet(false);
+        router.push("/login");
+        return;
+      }
+
       const res = await fetch(`${API_URL}/org/switch`, {
         method: "POST",
         headers: {
@@ -85,45 +129,66 @@ function BottomNavInner() {
         },
         body: JSON.stringify({ orgId: org.id }),
       });
+
+      if (res.status === 401) {
+        clearSession();
+        setShowSheet(false);
+        router.push("/login");
+        return;
+      }
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Failed to switch account");
+
       localStorage.setItem("instituteLoggedIn", "true");
       localStorage.setItem("instituteToken", data.token);
-      localStorage.setItem("instituteData", JSON.stringify(user));
+      localStorage.setItem("instituteData", JSON.stringify(data.organization));
+
+      // an org has EITHER a center OR a college: store one, clear the other
+      if (data.center) localStorage.setItem("instituteCenter", JSON.stringify(data.center));
+      else localStorage.removeItem("instituteCenter");
+      if (data.college) localStorage.setItem("instituteCollege", JSON.stringify(data.college));
+      else localStorage.removeItem("instituteCollege");
+
       localStorage.setItem("instituteOrgs", JSON.stringify(orgs));
+      localStorage.setItem("currentOrgId", data.organization?.id || org.id);
+      localStorage.setItem("currentOrgRole", data.role);
       localStorage.setItem("lastActiveDashboard", "institute");
       setLastActive("institute");
+
       window.dispatchEvent(new Event("authStateChanged"));
       setShowSheet(false);
-      router.push("/institute/dashboard");
+
+      window.location.href = data.college
+        ? "/institute/dashboard/college"
+        : "/institute/dashboard";
     } catch (err) {
       console.error("Switch error:", err.message);
+      alert(err.message || "Failed to switch account. Please try again.");
     } finally {
       setSwitchingOrg(null);
     }
   };
 
   const handleLogout = () => {
-    [
-      "userLoggedIn", "userData", "userToken", "userOrgs",
-      "userCity", "userLat", "userLng",
-      "instituteLoggedIn", "instituteToken", "instituteData", "instituteOrgs",
-      "lastActiveDashboard",
-    ].forEach((k) => localStorage.removeItem(k));
-    setLastActive(null);
-    window.dispatchEvent(new Event("authStateChanged"));
+    clearSession();
     setShowSheet(false);
     router.push("/");
   };
 
   // ✅ Tap: go directly to last active dashboard
   const handleProfileTap = () => {
+    // a long press already opened the sheet: don't also navigate on release
+    if (longPressed.current) {
+      longPressed.current = false;
+      return;
+    }
     if (!isInstituteLoggedIn && !isUserLoggedIn) {
       router.push("/login");
       return;
     }
     if (isInstituteLoggedIn && !isUserLoggedIn) {
-      router.push("/institute/dashboard");
+      router.push(getInstituteDashboardPath());
       return;
     }
     if (isUserLoggedIn && !isInstituteLoggedIn) {
@@ -132,13 +197,27 @@ function BottomNavInner() {
     }
     // Both active — go to last visited
     const last = localStorage.getItem("lastActiveDashboard");
-    router.push(last === "user" ? "/user/dashboard" : "/institute/dashboard");
+    router.push(last === "user" ? "/user/dashboard" : getInstituteDashboardPath());
   };
 
   // ✅ Long press: open sheet to switch
   const handleProfileLongPress = () => {
     if (isInstituteLoggedIn || isUserLoggedIn) {
+      longPressed.current = true;
       setShowSheet(true);
+    }
+  };
+
+  const startPress = (item) => {
+    longPressed.current = false;
+    if (item.onLongPress) {
+      pressTimer.current = setTimeout(() => item.onLongPress(), 600);
+    }
+  };
+  const cancelPress = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
     }
   };
 
@@ -149,7 +228,7 @@ function BottomNavInner() {
 
   const isLoggedIn = isInstituteLoggedIn || isUserLoggedIn;
 
-  // ✅ FIX: category param is read once and used to disambiguate
+  // ✅ category param is read once and used to disambiguate
   // Study Abroad, Colleges, and plain Centers so they never light up together.
   const category = searchParams?.get("category");
   const isStudyAbroadActive =
@@ -207,16 +286,16 @@ function BottomNavInner() {
       ),
     },
     {
-    name: "Feed",
-    href: "/feed",
-    isActive: pathname?.startsWith("/feed") || pathname?.startsWith("/users"),
-    icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-      </svg>
-    ),
-  },
+      name: "Feed",
+      href: "/feed",
+      isActive: pathname?.startsWith("/feed") || pathname?.startsWith("/users"),
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+        </svg>
+      ),
+    },
     {
       name: "Centers",
       href: "/centers",
@@ -261,18 +340,14 @@ function BottomNavInner() {
             );
 
             if (item.onClick) {
-              let pressTimer = null;
               return (
                 <button
                   key={item.name}
                   onClick={item.onClick}
-                  onTouchStart={() => {
-                    if (item.onLongPress) {
-                      pressTimer = setTimeout(() => item.onLongPress(), 600);
-                    }
-                  }}
-                  onTouchEnd={() => { if (pressTimer) clearTimeout(pressTimer); }}
-                  onTouchMove={() => { if (pressTimer) clearTimeout(pressTimer); }}
+                  onTouchStart={() => startPress(item)}
+                  onTouchEnd={cancelPress}
+                  onTouchMove={cancelPress}
+                  onContextMenu={(e) => e.preventDefault()}
                   className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${
                     item.isActive ? "text-accent" : "text-gray-600 hover:text-gray-900"
                   }`}
@@ -384,39 +459,46 @@ function BottomNavInner() {
                   <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-1 pt-2">
                     Your Institutes
                   </p>
-                  {orgs.map((org) => (
-                    <button
-                      key={org.id}
-                      onClick={() => handleSwitchToInstitute(org)}
-                      disabled={switchingOrg === org.id}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors disabled:opacity-50 text-left ${
-                        activeAccount === "institute"
-                          ? "bg-indigo-50 border border-indigo-100"
-                          : "hover:bg-indigo-50"
-                      }`}
-                    >
-                      <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Building2 className="w-4 h-4 text-indigo-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{org.name}</p>
-                        <p className="text-[10px] text-gray-500">
-                          {org.city} ·{" "}
-                          <span className="capitalize text-indigo-600">
-                            {org.role?.toLowerCase()}
-                          </span>
-                        </p>
-                      </div>
-                      {activeAccount === "institute" && (
-                        <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
-                      )}
-                      {switchingOrg === org.id ? (
-                        <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      )}
-                    </button>
-                  ))}
+                  {orgs.map((org) => {
+                    // ✅ FIX: only the org that is actually active gets highlighted
+                    const isActiveOrg = activeAccount === "institute" && org.id === currentOrgId;
+                    const isCollegeOrg = (org.colleges?.length || 0) > 0;
+                    return (
+                      <button
+                        key={org.id}
+                        onClick={() => handleSwitchToInstitute(org)}
+                        disabled={switchingOrg === org.id}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors disabled:opacity-50 text-left ${
+                          isActiveOrg
+                            ? "bg-indigo-50 border border-indigo-100"
+                            : "hover:bg-indigo-50"
+                        }`}
+                      >
+                        <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          {isCollegeOrg
+                            ? <GraduationCap className="w-4 h-4 text-indigo-600" />
+                            : <Building2 className="w-4 h-4 text-indigo-600" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{org.name}</p>
+                          <p className="text-[10px] text-gray-500">
+                            {org.city} ·{" "}
+                            <span className="capitalize text-indigo-600">
+                              {org.role?.toLowerCase()}
+                            </span>
+                          </p>
+                        </div>
+                        {isActiveOrg && (
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                        )}
+                        {switchingOrg === org.id ? (
+                          <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </>
               )}
 
