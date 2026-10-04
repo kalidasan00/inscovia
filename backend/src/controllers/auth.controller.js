@@ -41,9 +41,14 @@ const validModes = ['ONLINE', 'OFFLINE', 'HYBRID'];
 const validCollegeCategories = [
   'ENGINEERING', 'MEDICAL', 'NURSING', 'PHARMACY', 'AYURVEDA_HOMEOPATHY',
   'ARTS_SCIENCE', 'MANAGEMENT', 'LAW', 'ARCHITECTURE', 'DEGREE', 'PG', 'POLYTECHNIC',
+  'COMPUTER_APPLICATIONS_IT', 'EDUCATION', 'DESIGN', 'COMMERCE', 'HOTEL_MANAGEMENT',
+  'AGRICULTURE', 'AVIATION', 'DENTAL', 'ALLIED_HEALTH_SCIENCES', 'PARAMEDICAL', 'OTHER',
 ];
-const validCollegeTypes = ['UNIVERSITY', 'COLLEGE', 'INSTITUTE'];
-const validOwnershipTypes = ['GOVERNMENT', 'PRIVATE', 'PUBLIC'];
+const validCollegeTypes = [
+  'UNIVERSITY', 'COLLEGE', 'INSTITUTE',
+  'DEEMED_UNIVERSITY', 'AUTONOMOUS_COLLEGE', 'AFFILIATED_COLLEGE', 'CONSTITUENT_COLLEGE', 'OTHER',
+];
+const validOwnershipTypes = ['GOVERNMENT', 'PRIVATE', 'PUBLIC', 'OTHER'];
 
 // ─── OTP ─────────────────────────────────────────────────────────────────────
 
@@ -154,6 +159,7 @@ export const registerInstitute = async (req, res) => {
       institutionType = "CENTER", // NEW: "CENTER" | "COLLEGE" — defaults to CENTER for backward compatibility
       instituteName, email, phone, password,
       primaryCategory, secondaryCategories = [],
+      primaryCategoryOther, // NEW: free-text category, only used when College + primaryCategory === "OTHER"
       teachingMode, collegeType, ownership, // NEW: collegeType/ownership only used when institutionType === "COLLEGE"
       state, district, city, location,
       otpVerified
@@ -171,8 +177,11 @@ export const registerInstitute = async (req, res) => {
       if (!validCollegeCategories.includes(primaryCategory)) {
         return res.status(400).json({ error: "Invalid primary category for a college" });
       }
+      if (primaryCategory === "OTHER" && !String(primaryCategoryOther || "").trim()) {
+        return res.status(400).json({ error: "Please enter your category" });
+      }
       if (!validCollegeTypes.includes(collegeType)) {
-        return res.status(400).json({ error: "Invalid institution type (University/College/Institute)" });
+        return res.status(400).json({ error: "Invalid institution type" });
       }
       if (!validOwnershipTypes.includes(ownership)) {
         return res.status(400).json({ error: "Invalid ownership type" });
@@ -207,6 +216,14 @@ export const registerInstitute = async (req, res) => {
     const orgPrimaryCategory = isCollege ? "COLLEGE" : primaryCategory;
     const orgSecondaryCategories = isCollege ? [] : secondaryCategories;
     const orgTeachingMode = isCollege ? "OFFLINE" : resolvedTeachingMode; // unused placeholder for Colleges
+
+    // NEW: custom category text (College + "Other" only) and a readable type label for the description
+    const collegeOtherCategory = isCollege && primaryCategory === "OTHER"
+      ? String(primaryCategoryOther).trim()
+      : null;
+    const collegeTypeLabel = isCollege
+      ? (collegeType === "OTHER" ? "institution" : collegeType.toLowerCase().replace(/_/g, " "))
+      : "";
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -256,6 +273,7 @@ export const registerInstitute = async (req, res) => {
               name: instituteName, slug: entitySlug,
               type: collegeType, ownership,
               primaryCategory, secondaryCategories,
+              primaryCategoryOther: collegeOtherCategory,
               state, district, city, location,
               latitude: coords?.latitude ?? null,
               longitude: coords?.longitude ?? null,
@@ -329,10 +347,11 @@ export const registerInstitute = async (req, res) => {
             name: instituteName, slug: entitySlug,
             type: collegeType, ownership,
             primaryCategory, secondaryCategories,
+            primaryCategoryOther: collegeOtherCategory,
             state, district, city, location,
             latitude: coords?.latitude ?? null,
             longitude: coords?.longitude ?? null,
-            description: `Welcome to ${instituteName}! We are a ${collegeType.toLowerCase()} in ${city}, ${state}.`,
+            description: `Welcome to ${instituteName}! We are a ${collegeTypeLabel} in ${city}, ${state}.`,
             phone, email, rating: 0,
             courses: [], gallery: [],
             orgId: org.id,
