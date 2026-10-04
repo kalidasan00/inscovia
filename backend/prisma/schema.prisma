@@ -109,18 +109,35 @@ enum CollegeCategory {
   DEGREE
   PG
   POLYTECHNIC
+  COMPUTER_APPLICATIONS_IT
+  EDUCATION
+  DESIGN
+  COMMERCE
+  HOTEL_MANAGEMENT
+  AGRICULTURE
+  AVIATION
+  DENTAL
+  ALLIED_HEALTH_SCIENCES
+  PARAMEDICAL
+  OTHER
 }
 
 enum CollegeType {
   UNIVERSITY
   COLLEGE
   INSTITUTE
+  DEEMED_UNIVERSITY
+  AUTONOMOUS_COLLEGE
+  AFFILIATED_COLLEGE
+  CONSTITUENT_COLLEGE
+  OTHER
 }
 
 enum Ownership {
   GOVERNMENT
   PRIVATE
   PUBLIC
+  OTHER
 }
 
 // ─── Unified User Model ──────────────────────────────────────────────────────
@@ -316,6 +333,7 @@ model College {
   ownership           Ownership
   primaryCategory     CollegeCategory
   secondaryCategories CollegeCategory[] @default([])
+  primaryCategoryOther String?
 
   established          Int?
   affiliatedUniversity String?
